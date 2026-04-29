@@ -67,6 +67,29 @@ export type ApiMarketResponse = {
   message?: string;
 };
 
+export type BotShopListing = {
+  listingId: number;
+  price: number;
+  itemTemplateId: number;
+  name: string;
+  description: string;
+  emoji: string | null;
+  imageUrl: string | null;
+  tradeable: boolean;
+  sellable: boolean;
+  botSellPrice: number | null;
+  itemType: string;
+  rarityName: string;
+  rarityColorHex: string | null;
+};
+
+export type ApiBotShopResponse = {
+  ok: boolean;
+  listings?: BotShopListing[];
+  error?: string;
+  message?: string;
+};
+
 export type AdminCounts = {
   guilds_count: number;
   members_count: number;

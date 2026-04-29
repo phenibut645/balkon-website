@@ -1,21 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getAdminStats, getDiscordLoginUrl, getInventory, getMarket, getMe, logout } from "@/lib/api";
-import { AdminStats, ApiMeResponse, InventoryItem, MarketListing } from "@/lib/types";
+import { getAdminStats, getBotShop, getDiscordLoginUrl, getInventory, getMarket, getMe, logout } from "@/lib/api";
+import { AdminStats, ApiMeResponse, BotShopListing, InventoryItem, MarketListing } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
 import { AppHeader } from "@/components/dashboard/AppHeader";
 import { ProfileDropdown } from "@/components/dashboard/ProfileDropdown";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { InventoryPanel } from "@/components/dashboard/InventoryPanel";
 import { MarketPanel } from "@/components/dashboard/MarketPanel";
+import { BotShopPanel } from "@/components/dashboard/BotShopPanel";
 import { AdminDashboardPanel } from "@/components/dashboard/AdminDashboardPanel";
 import { AdminLogsPanel } from "@/components/dashboard/AdminLogsPanel";
 import { AdminObsPanel } from "@/components/dashboard/AdminObsPanel";
 import { PlaceholderPanel } from "@/components/dashboard/PlaceholderPanel";
 
 type AuthState = "loading" | "guest" | "user";
-type UserTab = "overview" | "inventory" | "market" | "profile";
+type UserTab = "overview" | "inventory" | "market" | "botShop" | "profile";
 type AdminTab = "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems";
 type DashboardTab = UserTab | AdminTab;
 type DashboardMode = "user" | "admin";
@@ -52,6 +53,10 @@ export default function HomePage() {
   const [marketLoaded, setMarketLoaded] = useState(false);
   const [marketLoading, setMarketLoading] = useState(false);
   const [marketError, setMarketError] = useState<string | null>(null);
+  const [botShopListings, setBotShopListings] = useState<BotShopListing[]>([]);
+  const [botShopLoaded, setBotShopLoaded] = useState(false);
+  const [botShopLoading, setBotShopLoading] = useState(false);
+  const [botShopError, setBotShopError] = useState<string | null>(null);
   const [inventoryPage, setInventoryPage] = useState(1);
   const [inventoryFilter, setInventoryFilter] = useState<InventoryFilter>("all");
   const [canUseAdminMode, setCanUseAdminMode] = useState(false);
@@ -72,6 +77,7 @@ export default function HomePage() {
     { id: "overview" as const, label: t.tabOverview },
     { id: "inventory" as const, label: t.tabInventory },
     { id: "market" as const, label: t.tabMarket },
+    { id: "botShop" as const, label: t.tabBotShop },
     { id: "profile" as const, label: t.tabProfile },
   ]), [t]);
 
@@ -183,6 +189,10 @@ export default function HomePage() {
     setMarketLoaded(false);
     setMarketLoading(false);
     setMarketError(null);
+    setBotShopListings([]);
+    setBotShopLoaded(false);
+    setBotShopLoading(false);
+    setBotShopError(null);
     setInventoryPage(1);
     setDashboardMode("user");
     setCanUseAdminMode(false);
@@ -279,6 +289,28 @@ export default function HomePage() {
     setMarketError(response.message || response.error || t.marketError);
   }, [marketLoading, t.marketError]);
 
+  const loadBotShop = useCallback(async (): Promise<void> => {
+    if (botShopLoading) {
+      return;
+    }
+
+    setBotShopLoading(true);
+    setBotShopError(null);
+
+    const response = await getBotShop();
+    if (response.ok && Array.isArray(response.listings)) {
+      setBotShopListings(response.listings);
+      setBotShopLoaded(true);
+      setBotShopLoading(false);
+      return;
+    }
+
+    setBotShopListings([]);
+    setBotShopLoaded(true);
+    setBotShopLoading(false);
+    setBotShopError(response.message || response.error || t.botShopError);
+  }, [botShopLoading, t.botShopError]);
+
   useEffect(() => {
     if (inventoryPage > totalInventoryPages) {
       setInventoryPage(totalInventoryPages);
@@ -301,6 +333,12 @@ export default function HomePage() {
       void loadMarket();
     }
   }, [authState, activeTab, marketLoaded, marketLoading, loadMarket]);
+
+  useEffect(() => {
+    if (authState === "user" && activeTab === "botShop" && !botShopLoaded && !botShopLoading) {
+      void loadBotShop();
+    }
+  }, [authState, activeTab, botShopLoaded, botShopLoading, loadBotShop]);
 
   useEffect(() => {
     if (authState !== "user") {
@@ -477,6 +515,20 @@ export default function HomePage() {
                 onRefresh={() => {
                   setMarketLoaded(false);
                   void loadMarket();
+                }}
+              />
+            ) : null}
+
+            {activeTab === "botShop" ? (
+              <BotShopPanel
+                t={t}
+                loadingGifs={LOADING_GIFS}
+                botShopListings={botShopListings}
+                botShopLoading={botShopLoading}
+                botShopError={botShopError}
+                onRefresh={() => {
+                  setBotShopLoaded(false);
+                  void loadBotShop();
                 }}
               />
             ) : null}

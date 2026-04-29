@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { DashboardText } from "@/lib/dashboardText";
 
 type BotUiStatus = "online" | "offline" | "development";
-type DashboardTab = "overview" | "inventory" | "market" | "profile" | "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems";
+type DashboardTab = "overview" | "inventory" | "market" | "botShop" | "profile" | "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems";
 
 type AppHeaderProps = {
   appVersion: string;
