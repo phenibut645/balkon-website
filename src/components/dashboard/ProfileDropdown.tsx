@@ -2,7 +2,7 @@ import type { RefObject } from "react";
 import { DashboardText, LanguageCode } from "@/lib/dashboardText";
 
 type DashboardMode = "user" | "admin";
-type DashboardTab = "overview" | "inventory" | "market" | "botShop" | "profile" | "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems";
+type DashboardTab = "overview" | "inventory" | "market" | "botShop" | "craft" | "profile" | "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems";
 
 type ProfileDropdownProps = {
   profileMenuRef: RefObject<HTMLDivElement>;

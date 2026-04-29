@@ -1,4 +1,4 @@
-import { AdminStatsResponse, ApiBotShopResponse, ApiInventoryResponse, ApiMarketResponse, ApiMeResponse } from "./types";
+import { AdminStatsResponse, ApiBotShopResponse, ApiCraftRecipesResponse, ApiInventoryResponse, ApiMarketResponse, ApiMeResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
@@ -172,6 +172,41 @@ export async function getBotShop(): Promise<ApiBotShopResponse> {
         ok: false,
         error: data?.error || "BOTSHOP_LOAD_FAILED",
         message: data?.message || "Failed to load bot shop.",
+      };
+    }
+
+    if (!data || typeof data !== "object") {
+      return {
+        ok: false,
+        error: "INVALID_RESPONSE",
+        message: "Invalid API response.",
+      };
+    }
+
+    return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getCraftRecipes(): Promise<ApiCraftRecipesResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/craft/recipes`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiCraftRecipesResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "CRAFT_RECIPES_LOAD_FAILED",
+        message: data?.message || "Failed to load craft recipes.",
       };
     }
 

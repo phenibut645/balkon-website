@@ -90,6 +90,32 @@ export type ApiBotShopResponse = {
   message?: string;
 };
 
+export type CraftRecipeIngredient = {
+  itemTemplateId: number;
+  name: string;
+  emoji: string | null;
+  amount: number;
+};
+
+export type CraftRecipe = {
+  recipeId: number;
+  name: string;
+  description: string | null;
+  resultAmount: number;
+  resultItemTemplateId: number;
+  resultName: string;
+  resultEmoji: string | null;
+  resultRarityName: string;
+  ingredients: CraftRecipeIngredient[];
+};
+
+export type ApiCraftRecipesResponse = {
+  ok: boolean;
+  recipes?: CraftRecipe[];
+  error?: string;
+  message?: string;
+};
+
 export type AdminCounts = {
   guilds_count: number;
   members_count: number;

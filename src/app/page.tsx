@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getAdminStats, getBotShop, getDiscordLoginUrl, getInventory, getMarket, getMe, logout } from "@/lib/api";
-import { AdminStats, ApiMeResponse, BotShopListing, InventoryItem, MarketListing } from "@/lib/types";
+import { getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMe, logout } from "@/lib/api";
+import { AdminStats, ApiMeResponse, BotShopListing, CraftRecipe, InventoryItem, MarketListing } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
 import { AppHeader } from "@/components/dashboard/AppHeader";
 import { ProfileDropdown } from "@/components/dashboard/ProfileDropdown";
@@ -10,13 +10,14 @@ import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { InventoryPanel } from "@/components/dashboard/InventoryPanel";
 import { MarketPanel } from "@/components/dashboard/MarketPanel";
 import { BotShopPanel } from "@/components/dashboard/BotShopPanel";
+import { CraftPanel } from "@/components/dashboard/CraftPanel";
 import { AdminDashboardPanel } from "@/components/dashboard/AdminDashboardPanel";
 import { AdminLogsPanel } from "@/components/dashboard/AdminLogsPanel";
 import { AdminObsPanel } from "@/components/dashboard/AdminObsPanel";
 import { PlaceholderPanel } from "@/components/dashboard/PlaceholderPanel";
 
 type AuthState = "loading" | "guest" | "user";
-type UserTab = "overview" | "inventory" | "market" | "botShop" | "profile";
+type UserTab = "overview" | "inventory" | "market" | "botShop" | "craft" | "profile";
 type AdminTab = "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems";
 type DashboardTab = UserTab | AdminTab;
 type DashboardMode = "user" | "admin";
@@ -57,6 +58,10 @@ export default function HomePage() {
   const [botShopLoaded, setBotShopLoaded] = useState(false);
   const [botShopLoading, setBotShopLoading] = useState(false);
   const [botShopError, setBotShopError] = useState<string | null>(null);
+  const [craftRecipes, setCraftRecipes] = useState<CraftRecipe[]>([]);
+  const [craftLoaded, setCraftLoaded] = useState(false);
+  const [craftLoading, setCraftLoading] = useState(false);
+  const [craftError, setCraftError] = useState<string | null>(null);
   const [inventoryPage, setInventoryPage] = useState(1);
   const [inventoryFilter, setInventoryFilter] = useState<InventoryFilter>("all");
   const [canUseAdminMode, setCanUseAdminMode] = useState(false);
@@ -78,6 +83,7 @@ export default function HomePage() {
     { id: "inventory" as const, label: t.tabInventory },
     { id: "market" as const, label: t.tabMarket },
     { id: "botShop" as const, label: t.tabBotShop },
+    { id: "craft" as const, label: t.tabCraft },
     { id: "profile" as const, label: t.tabProfile },
   ]), [t]);
 
@@ -193,6 +199,10 @@ export default function HomePage() {
     setBotShopLoaded(false);
     setBotShopLoading(false);
     setBotShopError(null);
+    setCraftRecipes([]);
+    setCraftLoaded(false);
+    setCraftLoading(false);
+    setCraftError(null);
     setInventoryPage(1);
     setDashboardMode("user");
     setCanUseAdminMode(false);
@@ -311,6 +321,28 @@ export default function HomePage() {
     setBotShopError(response.message || response.error || t.botShopError);
   }, [botShopLoading, t.botShopError]);
 
+  const loadCraftRecipes = useCallback(async (): Promise<void> => {
+    if (craftLoading) {
+      return;
+    }
+
+    setCraftLoading(true);
+    setCraftError(null);
+
+    const response = await getCraftRecipes();
+    if (response.ok && Array.isArray(response.recipes)) {
+      setCraftRecipes(response.recipes);
+      setCraftLoaded(true);
+      setCraftLoading(false);
+      return;
+    }
+
+    setCraftRecipes([]);
+    setCraftLoaded(true);
+    setCraftLoading(false);
+    setCraftError(response.message || response.error || t.craftError);
+  }, [craftLoading, t.craftError]);
+
   useEffect(() => {
     if (inventoryPage > totalInventoryPages) {
       setInventoryPage(totalInventoryPages);
@@ -339,6 +371,12 @@ export default function HomePage() {
       void loadBotShop();
     }
   }, [authState, activeTab, botShopLoaded, botShopLoading, loadBotShop]);
+
+  useEffect(() => {
+    if (authState === "user" && activeTab === "craft" && !craftLoaded && !craftLoading) {
+      void loadCraftRecipes();
+    }
+  }, [authState, activeTab, craftLoaded, craftLoading, loadCraftRecipes]);
 
   useEffect(() => {
     if (authState !== "user") {
@@ -529,6 +567,20 @@ export default function HomePage() {
                 onRefresh={() => {
                   setBotShopLoaded(false);
                   void loadBotShop();
+                }}
+              />
+            ) : null}
+
+            {activeTab === "craft" ? (
+              <CraftPanel
+                t={t}
+                loadingGifs={LOADING_GIFS}
+                recipes={craftRecipes}
+                loading={craftLoading}
+                error={craftError}
+                onRefresh={() => {
+                  setCraftLoaded(false);
+                  void loadCraftRecipes();
                 }}
               />
             ) : null}
