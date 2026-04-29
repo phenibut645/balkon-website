@@ -1,4 +1,4 @@
-import { AdminStatsResponse, ApiInventoryResponse, ApiMeResponse } from "./types";
+import { AdminStatsResponse, ApiInventoryResponse, ApiMarketResponse, ApiMeResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
@@ -102,6 +102,41 @@ export async function getAdminStats(): Promise<AdminStatsResponse> {
         ok: false,
         error: data?.error || "ADMIN_STATS_LOAD_FAILED",
         message: data?.message || "Failed to load admin stats.",
+      };
+    }
+
+    if (!data || typeof data !== "object") {
+      return {
+        ok: false,
+        error: "INVALID_RESPONSE",
+        message: "Invalid API response.",
+      };
+    }
+
+    return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getMarket(): Promise<ApiMarketResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/market`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiMarketResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "MARKET_LOAD_FAILED",
+        message: data?.message || "Failed to load market.",
       };
     }
 

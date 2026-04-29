@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getAdminStats, getDiscordLoginUrl, getInventory, getMe, logout } from "@/lib/api";
-import { AdminStats, ApiMeResponse, InventoryItem } from "@/lib/types";
+import { getAdminStats, getDiscordLoginUrl, getInventory, getMarket, getMe, logout } from "@/lib/api";
+import { AdminStats, ApiMeResponse, InventoryItem, MarketListing } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
 import { AppHeader } from "@/components/dashboard/AppHeader";
 import { ProfileDropdown } from "@/components/dashboard/ProfileDropdown";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { InventoryPanel } from "@/components/dashboard/InventoryPanel";
+import { MarketPanel } from "@/components/dashboard/MarketPanel";
 import { AdminDashboardPanel } from "@/components/dashboard/AdminDashboardPanel";
 import { AdminLogsPanel } from "@/components/dashboard/AdminLogsPanel";
 import { AdminObsPanel } from "@/components/dashboard/AdminObsPanel";
@@ -47,6 +48,10 @@ export default function HomePage() {
   const [inventoryLoaded, setInventoryLoaded] = useState(false);
   const [inventoryLoading, setInventoryLoading] = useState(false);
   const [inventoryError, setInventoryError] = useState<string | null>(null);
+  const [marketListings, setMarketListings] = useState<MarketListing[]>([]);
+  const [marketLoaded, setMarketLoaded] = useState(false);
+  const [marketLoading, setMarketLoading] = useState(false);
+  const [marketError, setMarketError] = useState<string | null>(null);
   const [inventoryPage, setInventoryPage] = useState(1);
   const [inventoryFilter, setInventoryFilter] = useState<InventoryFilter>("all");
   const [canUseAdminMode, setCanUseAdminMode] = useState(false);
@@ -174,6 +179,10 @@ export default function HomePage() {
     setInventoryLoaded(false);
     setInventoryLoading(false);
     setInventoryError(null);
+    setMarketListings([]);
+    setMarketLoaded(false);
+    setMarketLoading(false);
+    setMarketError(null);
     setInventoryPage(1);
     setDashboardMode("user");
     setCanUseAdminMode(false);
@@ -248,6 +257,28 @@ export default function HomePage() {
     setInventoryPage(1);
   }, [inventoryLoading]);
 
+  const loadMarket = useCallback(async (): Promise<void> => {
+    if (marketLoading) {
+      return;
+    }
+
+    setMarketLoading(true);
+    setMarketError(null);
+
+    const response = await getMarket();
+    if (response.ok && Array.isArray(response.listings)) {
+      setMarketListings(response.listings);
+      setMarketLoaded(true);
+      setMarketLoading(false);
+      return;
+    }
+
+    setMarketListings([]);
+    setMarketLoaded(true);
+    setMarketLoading(false);
+    setMarketError(response.message || response.error || t.marketError);
+  }, [marketLoading, t.marketError]);
+
   useEffect(() => {
     if (inventoryPage > totalInventoryPages) {
       setInventoryPage(totalInventoryPages);
@@ -264,6 +295,12 @@ export default function HomePage() {
       void loadInventory();
     }
   }, [authState, activeTab, inventoryLoaded, inventoryLoading, loadInventory]);
+
+  useEffect(() => {
+    if (authState === "user" && activeTab === "market" && !marketLoaded && !marketLoading) {
+      void loadMarket();
+    }
+  }, [authState, activeTab, marketLoaded, marketLoading, loadMarket]);
 
   useEffect(() => {
     if (authState !== "user") {
@@ -431,9 +468,17 @@ export default function HomePage() {
             ) : null}
 
             {activeTab === "market" ? (
-              <div className="panel panel-overview">
-                <p className="state-text">{t.marketSoon}</p>
-              </div>
+              <MarketPanel
+                t={t}
+                loadingGifs={LOADING_GIFS}
+                marketListings={marketListings}
+                marketLoading={marketLoading}
+                marketError={marketError}
+                onRefresh={() => {
+                  setMarketLoaded(false);
+                  void loadMarket();
+                }}
+              />
             ) : null}
 
             {activeTab === "adminDashboard" ? (

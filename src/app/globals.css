@@ -461,7 +461,23 @@ body {
   overflow: hidden;
 }
 
+.panel-market {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .inventory-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.market-scroll {
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
@@ -618,6 +634,12 @@ body {
   gap: 10px;
 }
 
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+
 .inventory-card {
   position: relative;
   border: 1px solid rgba(80, 97, 132, 0.45);
@@ -633,7 +655,31 @@ body {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
 }
 
+.market-card {
+  position: relative;
+  border: 1px solid rgba(80, 97, 132, 0.45);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(15, 21, 33, 0.7);
+  backdrop-filter: blur(10px);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.market-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
 .inventory-media {
+  height: 128px;
+  border-bottom: 1px solid rgba(83, 98, 128, 0.32);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 8px;
+}
+
+.market-media {
   height: 128px;
   border-bottom: 1px solid rgba(83, 98, 128, 0.32);
   display: grid;
@@ -650,7 +696,22 @@ body {
   border-radius: 10px;
 }
 
+.market-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 10px;
+}
+
 .inventory-emoji-fallback {
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  font-size: 44px;
+}
+
+.market-emoji-fallback {
   width: 100%;
   height: 100%;
   place-items: center;
@@ -661,7 +722,17 @@ body {
   padding: 10px;
 }
 
+.market-content {
+  padding: 10px;
+}
+
 .inventory-title {
+  margin: 0;
+  font-size: 15px;
+  color: #f4f7ff;
+}
+
+.market-title {
   margin: 0;
   font-size: 15px;
   color: #f4f7ff;
@@ -675,7 +746,21 @@ body {
   color: #b0bdd8;
 }
 
+.market-description {
+  margin: 7px 0 8px;
+  min-height: 30px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #b0bdd8;
+}
+
 .inventory-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.market-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -872,6 +957,10 @@ body {
   }
 
   .inventory-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .market-grid {
     grid-template-columns: 1fr;
   }
 

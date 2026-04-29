@@ -38,6 +38,35 @@ export type ApiInventoryResponse = {
   message?: string;
 };
 
+export type MarketListing = {
+  listingId: number;
+  sellerDiscordId: string;
+  price: number;
+  inventoryItemId: number;
+  ownerDiscordId: string;
+  originalOwnerDiscordId: string | null;
+  obtainedAt: string | Date;
+  tier: number;
+  itemTemplateId: number;
+  name: string;
+  description: string;
+  emoji: string | null;
+  imageUrl: string | null;
+  tradeable: boolean;
+  sellable: boolean;
+  botSellPrice: number | null;
+  itemType: string;
+  rarityName: string;
+  rarityColorHex: string | null;
+};
+
+export type ApiMarketResponse = {
+  ok: boolean;
+  listings?: MarketListing[];
+  error?: string;
+  message?: string;
+};
+
 export type AdminCounts = {
   guilds_count: number;
   members_count: number;
