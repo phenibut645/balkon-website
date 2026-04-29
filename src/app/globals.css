@@ -96,6 +96,13 @@ body {
   color: #d7def0;
 }
 
+.display-name {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #f3f6ff;
+}
+
 .badges {
   display: flex;
   gap: 8px;

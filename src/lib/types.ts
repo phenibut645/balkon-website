@@ -6,6 +6,7 @@ export type ApiMeResponse = {
     username?: string | null;
     globalName?: string | null;
     avatar?: string | null;
+    avatarUrl?: string | null;
   };
   error?: string;
   message?: string;
