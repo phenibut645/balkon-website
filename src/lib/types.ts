@@ -163,3 +163,65 @@ export type AdminStatsResponse = {
   error?: string;
   message?: string;
 };
+
+export type ApiBaseResponse = {
+  ok: boolean;
+  error?: string;
+  message?: string;
+};
+
+export type AdminItem = {
+  id: number;
+  name: string;
+  description: string;
+  emoji: string | null;
+  imageUrl: string | null;
+  tradeable: boolean;
+  sellable: boolean;
+  botSellPrice: number | null;
+  itemType: string;
+  rarityName: string;
+  rarityColorHex: string | null;
+};
+
+export type AdminItemInput = {
+  name: string;
+  description: string;
+  emoji?: string | null;
+  imageUrl?: string | null;
+  rarityName: string;
+  typeName: string;
+  tradeable: boolean;
+  botSellPrice?: number | null;
+};
+
+export type ApiAdminItemsResponse = ApiBaseResponse & {
+  items?: AdminItem[];
+};
+
+export type ApiAdminItemMutationResponse = ApiBaseResponse & {
+  data?: {
+    itemTemplateId: number;
+  };
+};
+
+export type AdminRarityOption = {
+  id: number;
+  name: string;
+  color_hex: string | null;
+  created_by_discord_id: string | null;
+};
+
+export type ApiAdminRaritiesResponse = ApiBaseResponse & {
+  rarities?: AdminRarityOption[];
+};
+
+export type AdminSearchOption = {
+  id: number;
+  name: string;
+  color_hex?: string | null;
+};
+
+export type ApiAdminSearchResponse = ApiBaseResponse & {
+  options?: AdminSearchOption[];
+};

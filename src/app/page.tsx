@@ -14,6 +14,7 @@ import { CraftPanel } from "@/components/dashboard/CraftPanel";
 import { AdminDashboardPanel } from "@/components/dashboard/AdminDashboardPanel";
 import { AdminLogsPanel } from "@/components/dashboard/AdminLogsPanel";
 import { AdminObsPanel } from "@/components/dashboard/AdminObsPanel";
+import { AdminItemsPanel } from "@/components/dashboard/AdminItemsPanel";
 import { PlaceholderPanel } from "@/components/dashboard/PlaceholderPanel";
 
 type AuthState = "loading" | "guest" | "user";
@@ -610,7 +611,7 @@ export default function HomePage() {
             ) : null}
 
             {activeTab === "adminItems" ? (
-              <PlaceholderPanel title={t.adminTabItems} description={t.adminItemsSoon} />
+              <AdminItemsPanel t={t} />
             ) : null}
 
             {activeTab === "profile" ? (

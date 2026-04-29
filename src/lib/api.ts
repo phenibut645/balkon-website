@@ -1,4 +1,17 @@
-import { AdminStatsResponse, ApiBotShopResponse, ApiCraftRecipesResponse, ApiInventoryResponse, ApiMarketResponse, ApiMeResponse } from "./types";
+import {
+  AdminItemInput,
+  AdminStatsResponse,
+  ApiAdminItemMutationResponse,
+  ApiAdminItemsResponse,
+  ApiAdminRaritiesResponse,
+  ApiAdminSearchResponse,
+  ApiBaseResponse,
+  ApiBotShopResponse,
+  ApiCraftRecipesResponse,
+  ApiInventoryResponse,
+  ApiMarketResponse,
+  ApiMeResponse,
+} from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
@@ -219,6 +232,270 @@ export async function getCraftRecipes(): Promise<ApiCraftRecipesResponse> {
     }
 
     return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getAdminItems(): Promise<ApiAdminItemsResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/items`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminItemsResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_ITEMS_LOAD_FAILED",
+        message: data?.message || "Failed to load admin items.",
+      };
+    }
+
+    if (!data || typeof data !== "object") {
+      return {
+        ok: false,
+        error: "INVALID_RESPONSE",
+        message: "Invalid API response.",
+      };
+    }
+
+    return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function createAdminItem(input: AdminItemInput): Promise<ApiAdminItemMutationResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/items`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminItemMutationResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_ITEM_CREATE_FAILED",
+        message: data?.message || "Failed to create admin item.",
+      };
+    }
+
+    if (!data || typeof data !== "object") {
+      return {
+        ok: false,
+        error: "INVALID_RESPONSE",
+        message: "Invalid API response.",
+      };
+    }
+
+    return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function updateAdminItem(itemTemplateId: number, input: AdminItemInput): Promise<ApiAdminItemMutationResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/items/${itemTemplateId}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminItemMutationResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_ITEM_UPDATE_FAILED",
+        message: data?.message || "Failed to update admin item.",
+      };
+    }
+
+    if (!data || typeof data !== "object") {
+      return {
+        ok: false,
+        error: "INVALID_RESPONSE",
+        message: "Invalid API response.",
+      };
+    }
+
+    return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function deleteAdminItem(itemTemplateId: number): Promise<ApiBaseResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/items/${itemTemplateId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiBaseResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_ITEM_DELETE_FAILED",
+        message: data?.message || "Failed to delete admin item.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getAdminItemRarities(): Promise<ApiAdminRaritiesResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/item-rarities`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminRaritiesResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_RARITIES_LOAD_FAILED",
+        message: data?.message || "Failed to load rarities.",
+      };
+    }
+
+    if (!data || typeof data !== "object") {
+      return {
+        ok: false,
+        error: "INVALID_RESPONSE",
+        message: "Invalid API response.",
+      };
+    }
+
+    return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function searchAdminItemTypes(query: string): Promise<ApiAdminSearchResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/search/item-types?q=${encodeURIComponent(query)}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminSearchResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_ITEM_TYPES_SEARCH_FAILED",
+        message: data?.message || "Failed to search item types.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function searchAdminItemTemplates(query: string): Promise<ApiAdminSearchResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/search/item-templates?q=${encodeURIComponent(query)}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminSearchResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_ITEM_TEMPLATES_SEARCH_FAILED",
+        message: data?.message || "Failed to search item templates.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function searchAdminRarities(query: string): Promise<ApiAdminSearchResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/search/rarities?q=${encodeURIComponent(query)}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminSearchResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_RARITIES_SEARCH_FAILED",
+        message: data?.message || "Failed to search rarities.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
   } catch {
     return {
       ok: false,

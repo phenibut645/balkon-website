@@ -1066,6 +1066,150 @@ body {
   gap: 8px;
 }
 
+.admin-items-panel {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.admin-item-form {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(84, 103, 141, 0.4);
+  border-radius: 12px;
+  background: rgba(20, 27, 42, 0.72);
+  box-shadow: 0 0 0 1px rgba(120, 140, 176, 0.08) inset;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.admin-field-label {
+  margin: 0 0 6px;
+  display: block;
+  color: #9eb0d4;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-field-input {
+  width: 100%;
+  border: 1px solid rgba(103, 121, 157, 0.48);
+  border-radius: 10px;
+  background: rgba(18, 24, 37, 0.72);
+  color: #e6ecfb;
+  font-size: 13px;
+  padding: 9px 10px;
+  outline: none;
+}
+
+.admin-field-input:focus {
+  border-color: rgba(116, 135, 180, 0.75);
+  box-shadow: 0 0 14px rgba(86, 106, 154, 0.24);
+}
+
+.admin-textarea {
+  resize: vertical;
+  min-height: 76px;
+}
+
+.admin-checkbox-wrap {
+  display: flex;
+  align-items: flex-end;
+}
+
+.admin-checkbox-label {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: #cfdaf3;
+  font-size: 13px;
+}
+
+.admin-form-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-danger-btn {
+  border-color: rgba(185, 88, 99, 0.45);
+  color: #ffd0d4;
+  background: rgba(90, 37, 45, 0.38);
+}
+
+.admin-danger-btn:hover {
+  background: rgba(118, 49, 61, 0.45);
+}
+
+.admin-search-input {
+  max-width: 360px;
+}
+
+.admin-select-wrap {
+  position: relative;
+}
+
+.admin-select-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 180px;
+  overflow: auto;
+  background: rgba(15, 21, 34, 0.92);
+  border: 1px solid rgba(99, 116, 157, 0.5);
+  border-radius: 10px;
+  padding: 6px;
+  display: grid;
+  gap: 4px;
+  z-index: 25;
+}
+
+.admin-select-option {
+  border: 0;
+  text-align: left;
+  border-radius: 8px;
+  background: transparent;
+  color: #cfd9f2;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.admin-select-option:hover {
+  background: rgba(72, 86, 119, 0.35);
+}
+
+.admin-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 10, 17, 0.7);
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  z-index: 240;
+  padding: 16px;
+}
+
+.admin-dialog-card {
+  width: min(420px, 100%);
+  border: 1px solid rgba(84, 103, 141, 0.45);
+  border-radius: 14px;
+  background: rgba(20, 27, 42, 0.94);
+  padding: 14px;
+  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.45);
+  display: grid;
+  gap: 10px;
+}
+
 .pagination-status {
   color: #aab7d6;
   font-size: 12px;
@@ -1183,6 +1327,14 @@ body {
   .admin-stats-grid,
   .admin-list-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-search-input {
+    max-width: none;
   }
 
   .inventory-toolbar {
