@@ -1,0 +1,142 @@
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: "Segoe UI", "Inter", sans-serif;
+  background: radial-gradient(circle at top, #22293d, #0e111b 55%);
+  color: #f2f4f8;
+}
+
+.page-root {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.card {
+  width: 100%;
+  max-width: 540px;
+  background: rgba(20, 25, 39, 0.9);
+  border: 1px solid #2b344d;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+}
+
+.title {
+  margin: 0 0 10px;
+  font-size: 32px;
+  line-height: 1.15;
+}
+
+.subtitle {
+  margin: 0 0 22px;
+  color: #a7b0c6;
+  line-height: 1.5;
+}
+
+.loading {
+  color: #a7b0c6;
+}
+
+.discord-button,
+.logout-button {
+  border: 0;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.discord-button {
+  width: 100%;
+  background: #5865f2;
+  color: white;
+}
+
+.discord-button:hover,
+.logout-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.user-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin: 8px 0 20px;
+}
+
+.avatar {
+  width: 66px;
+  height: 66px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid #3e4b6d;
+  background: #151b2d;
+}
+
+.avatar.placeholder {
+  background: linear-gradient(160deg, #475275, #2e3652);
+}
+
+.user-id {
+  margin: 0 0 10px;
+  color: #d7def0;
+}
+
+.badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-block;
+  background: #29314a;
+  border: 1px solid #3b4563;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: #cdd6ee;
+}
+
+.no-roles {
+  margin: 0;
+  color: #9aa5bf;
+}
+
+.logout-button {
+  background: #e55363;
+  color: white;
+}
+
+.logout-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 560px) {
+  .card {
+    padding: 22px;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .user-row {
+    align-items: flex-start;
+  }
+}
