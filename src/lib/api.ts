@@ -1,4 +1,4 @@
-import { ApiInventoryResponse, ApiMeResponse } from "./types";
+import { AdminStatsResponse, ApiInventoryResponse, ApiMeResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
@@ -67,6 +67,41 @@ export async function getInventory(): Promise<ApiInventoryResponse> {
         ok: false,
         error: data?.error || "INVENTORY_LOAD_FAILED",
         message: data?.message || "Failed to load inventory.",
+      };
+    }
+
+    if (!data || typeof data !== "object") {
+      return {
+        ok: false,
+        error: "INVALID_RESPONSE",
+        message: "Invalid API response.",
+      };
+    }
+
+    return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getAdminStats(): Promise<AdminStatsResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/stats`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as AdminStatsResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_STATS_LOAD_FAILED",
+        message: data?.message || "Failed to load admin stats.",
       };
     }
 

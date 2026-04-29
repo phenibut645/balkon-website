@@ -37,3 +37,51 @@ export type ApiInventoryResponse = {
   error?: string;
   message?: string;
 };
+
+export type AdminCounts = {
+  guilds_count: number;
+  members_count: number;
+  items_count: number;
+  inventory_count: number;
+  market_count: number;
+  store_count: number;
+  recipes_count: number;
+  streamers_count: number;
+  settings_count: number;
+  actions_count: number;
+};
+
+export type AdminBootstrapStatus = {
+  guildId: string;
+  guildName?: string;
+  source: "guildCreate" | "clientReady";
+  status: "ok" | "error";
+  syncedChannels?: number;
+  removedChannels?: number;
+  syncedRoles?: number;
+  removedRoles?: number;
+  configuredLogChannels?: number;
+  bootstrapChannelId?: string | null;
+  message?: string;
+  updatedAt: string;
+};
+
+export type AdminObsSetting = {
+  setting_key: string;
+  setting_value: string | null;
+  updated_at: string | Date | null;
+};
+
+export type AdminStats = {
+  counts: AdminCounts;
+  contributors: string[];
+  obsSettings: AdminObsSetting[];
+  bootstrapStatuses: AdminBootstrapStatus[];
+};
+
+export type AdminStatsResponse = {
+  ok: boolean;
+  stats?: AdminStats;
+  error?: string;
+  message?: string;
+};
