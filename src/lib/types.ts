@@ -217,7 +217,10 @@ export type ApiAdminRaritiesResponse = ApiBaseResponse & {
 };
 
 export type AdminSearchOption = {
-  id: number;
+  /** Numeric id — present when backend returns the `id` field directly. */
+  id?: number;
+  /** Primary identifier returned by the backend autocomplete endpoint as `value`. */
+  value?: string | number;
   name: string;
   color_hex?: string | null;
 };

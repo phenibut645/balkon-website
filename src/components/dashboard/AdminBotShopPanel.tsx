@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   deleteAdminBotShopListing,
   getAdminBotShop,
@@ -16,7 +16,7 @@ type AdminBotShopPanelProps = {
   t: DashboardText;
 };
 
-type SelectedItemOption = AdminSearchOption & { id: number; name: string };
+type SelectedItemOption = { id: number; name: string };
 
 export function AdminBotShopPanel({ t }: AdminBotShopPanelProps) {
   const [listings, setListings] = useState<AdminBotShopListing[]>([]);
@@ -61,7 +61,6 @@ export function AdminBotShopPanel({ t }: AdminBotShopPanelProps) {
     return response.options;
   }, []);
 
-  // When a value is typed in the searchable select, clear the previously-locked selection
   function handleSelectQueryChange(next: string): void {
     setSelectQuery(next);
     if (selectedItem && next !== selectedItem.name) {
@@ -69,10 +68,25 @@ export function AdminBotShopPanel({ t }: AdminBotShopPanelProps) {
     }
   }
 
-  // Called when user picks an option from the dropdown
-  function handleItemPick(option: AdminSearchOption): void {
-    setSelectedItem({ id: option.id, name: option.name });
-    setSelectQuery(option.name);
+  function getOptionNumericId(option: AdminSearchOption): number | null {
+    // Backend autocomplete returns { name, value } where value is the numeric id.
+    // Fall back to option.id for any endpoint that sends it directly.
+    const raw = option.value ?? option.id;
+    if (raw === undefined || raw === null) return null;
+    const n = typeof raw === "string" ? parseInt(raw, 10) : raw;
+    return Number.isInteger(n) && n > 0 ? n : null;
+  }
+
+  function handleOptionSelect(option: AdminSearchOption): void {
+    const id = getOptionNumericId(option);
+    if (id === null) {
+      setFormError(t.adminBotShopValidationInvalidId);
+      return;
+    }
+    // Strip leading "#N " prefix from name for a clean chip label.
+    const displayName = option.name.replace(/^#\d+\s*/, "").trim() || option.name;
+    setSelectedItem({ id, name: displayName });
+    setFormError(null);
   }
 
   function handleClearItem(): void {
@@ -130,17 +144,6 @@ export function AdminBotShopPanel({ t }: AdminBotShopPanelProps) {
     await loadListings();
   }
 
-  const searchableSelectWithPick = useMemo(() => ({
-    label: t.adminBotShopSelectItem,
-    value: selectQuery,
-    onChange: handleSelectQueryChange,
-    loadOptions: searchItems,
-    placeholder: t.adminBotShopSearchItem,
-    noOptionsText: t.adminBotShopNoResults,
-    onOptionSelect: handleItemPick,
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [selectQuery, t, searchItems]);
-
   return (
     <div className="panel panel-overview admin-items-panel">
       <div className="inventory-toolbar">
@@ -150,7 +153,6 @@ export function AdminBotShopPanel({ t }: AdminBotShopPanelProps) {
         </button>
       </div>
 
-      {/* Add / update form */}
       <form className="admin-item-form" onSubmit={handleSubmit}>
         <p className="admin-field-label" style={{ fontSize: "14px", color: "#f0f5ff", marginBottom: 6 }}>
           {t.adminBotShopAddTitle}
@@ -158,8 +160,15 @@ export function AdminBotShopPanel({ t }: AdminBotShopPanelProps) {
 
         <div className="admin-form-grid">
           <div>
-            <SearchableSelectWithCallback
-              {...searchableSelectWithPick}
+            <SearchableSelect
+              label={t.adminBotShopSelectItem}
+              value={selectQuery}
+              onChange={handleSelectQueryChange}
+              onOptionSelect={handleOptionSelect}
+              loadOptions={searchItems}
+              placeholder={t.adminBotShopSearchItem}
+              noOptionsText={t.adminBotShopNoResults}
+              disabled={submitting}
             />
             {selectedItem ? (
               <div className="admin-botshop-selected-chip">
@@ -234,7 +243,7 @@ export function AdminBotShopPanel({ t }: AdminBotShopPanelProps) {
                     <p className="display-name" style={{ margin: 0 }}>{listing.name}</p>
                   </div>
                   <span className="meta-badge price">
-                    {Number.isInteger(listing.price) ? listing.price : listing.price.toFixed(2)}
+                    {Number.isInteger(listing.price) ? listing.price : listing.price.toFixed(2)} ODM
                   </span>
                 </div>
 
@@ -286,61 +295,5 @@ export function AdminBotShopPanel({ t }: AdminBotShopPanelProps) {
         onConfirm={() => void handleDeleteConfirm()}
       />
     </div>
-  );
-}
-
-// ---- internal adapter ----
-// SearchableSelect calls onChange(value:string) but we need to intercept option selection.
-// This thin wrapper keeps the public SearchableSelect API clean.
-
-type SearchableSelectWithCallbackProps = {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  loadOptions: (query: string) => Promise<AdminSearchOption[]>;
-  placeholder: string;
-  noOptionsText: string;
-  onOptionSelect: (option: AdminSearchOption) => void;
-};
-
-function SearchableSelectWithCallback({
-  label,
-  value,
-  onChange,
-  loadOptions,
-  placeholder,
-  noOptionsText,
-  onOptionSelect,
-}: SearchableSelectWithCallbackProps) {
-  // Wrap loadOptions to intercept the returned options list and wire selection back via onChange
-  // We proxy through SearchableSelect's internal onOptionSelect using an outer state trick:
-  // SearchableSelect calls onChange(option.name) when an option is mousedown'ed.
-  // We keep a ref-like memo of the latest options so we can match the name back to an id.
-  const [latestOptions, setLatestOptions] = useState<AdminSearchOption[]>([]);
-
-  const wrappedLoad = useCallback(async (query: string): Promise<AdminSearchOption[]> => {
-    const options = await loadOptions(query);
-    setLatestOptions(options);
-    return options;
-  }, [loadOptions]);
-
-  function handleChange(next: string): void {
-    // Check if next matches a loaded option name exactly (option was selected)
-    const matched = latestOptions.find(opt => opt.name === next);
-    if (matched) {
-      onOptionSelect(matched);
-    }
-    onChange(next);
-  }
-
-  return (
-    <SearchableSelect
-      label={label}
-      value={value}
-      onChange={handleChange}
-      loadOptions={wrappedLoad}
-      placeholder={placeholder}
-      noOptionsText={noOptionsText}
-    />
   );
 }

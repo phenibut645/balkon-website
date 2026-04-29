@@ -11,6 +11,7 @@ type SearchableSelectProps = {
   placeholder: string;
   noOptionsText: string;
   disabled?: boolean;
+  onOptionSelect?: (option: AdminSearchOption) => void;
 };
 
 export function SearchableSelect({
@@ -21,6 +22,7 @@ export function SearchableSelect({
   placeholder,
   noOptionsText,
   disabled = false,
+  onOptionSelect,
 }: SearchableSelectProps) {
   const [query, setQuery] = useState(value);
   const [options, setOptions] = useState<AdminSearchOption[]>([]);
@@ -78,12 +80,13 @@ export function SearchableSelect({
           {!loading
             ? options.map(option => (
               <button
-                key={option.id}
+                key={String(option.value ?? option.id ?? option.name)}
                 type="button"
                 className="admin-select-option"
                 onMouseDown={() => {
                   setQuery(option.name);
                   onChange(option.name);
+                  onOptionSelect?.(option);
                   setOpen(false);
                 }}
               >
