@@ -1,4 +1,4 @@
-import { ApiMeResponse } from "./types";
+import { ApiInventoryResponse, ApiMeResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
@@ -50,5 +50,40 @@ export async function logout(): Promise<{ ok: boolean }> {
     return { ok: Boolean(data?.ok) };
   } catch {
     return { ok: false };
+  }
+}
+
+export async function getInventory(): Promise<ApiInventoryResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/inventory`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiInventoryResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "INVENTORY_LOAD_FAILED",
+        message: data?.message || "Failed to load inventory.",
+      };
+    }
+
+    if (!data || typeof data !== "object") {
+      return {
+        ok: false,
+        error: "INVALID_RESPONSE",
+        message: "Invalid API response.",
+      };
+    }
+
+    return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
   }
 }
