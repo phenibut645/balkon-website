@@ -259,3 +259,19 @@ export type ApiAdminBotShopMutationResponse = ApiBaseResponse & {
     listingId: number;
   };
 };
+
+export type UserBalance = {
+  odm: number;
+  ldm: number;
+};
+
+export type ApiEconomyMeResponse = ApiBaseResponse & {
+  balance?: UserBalance;
+};
+
+export type ApiBotShopBuyResponse = ApiBaseResponse & {
+  data?: {
+    inserted: number;
+    listingId: number;
+  };
+};

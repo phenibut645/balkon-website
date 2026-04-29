@@ -14,6 +14,8 @@ import {
   ApiInventoryResponse,
   ApiMarketResponse,
   ApiMeResponse,
+  ApiEconomyMeResponse,
+  ApiBotShopBuyResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
@@ -36,6 +38,66 @@ export async function getMe(): Promise<ApiMeResponse> {
         ok: false,
         error: data?.error || "UNAUTHORIZED",
         message: data?.message || "Authentication required.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getMyBalance(): Promise<ApiEconomyMeResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/economy/me`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiEconomyMeResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ECONOMY_LOAD_FAILED",
+        message: data?.message || "Failed to load balance.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function buyBotShopListing(listingId: number, amount: number): Promise<ApiBotShopBuyResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/botshop/${listingId}/buy`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount }),
+    });
+
+    const data = await response.json().catch(() => null) as ApiBotShopBuyResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "BOTSHOP_BUY_FAILED",
+        message: data?.message || "Purchase failed.",
       };
     }
 

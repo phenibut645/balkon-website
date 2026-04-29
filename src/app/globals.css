@@ -1374,5 +1374,73 @@ body {
 
   .profile-menu-container {
     justify-self: end;
+
+  .balance-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    margin-left: auto;
+    padding: 6px 10px;
+    border: 1px solid rgba(134, 201, 255, 0.38);
+    border-radius: 999px;
+    background: linear-gradient(145deg, rgba(60, 118, 176, 0.35), rgba(21, 31, 48, 0.7));
+  }
+
+  .balance-pill-label {
+    font-size: 11px;
+    color: #b9d9ff;
+    font-weight: 600;
+  }
+
+  .balance-pill-value {
+    font-size: 13px;
+    color: #f2f8ff;
+    font-weight: 700;
+  }
+
+  .dropdown-balance-block {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(110, 156, 214, 0.25);
+    background: rgba(17, 24, 39, 0.45);
+  }
+
+  .dropdown-balance-row {
+    margin: 4px 0 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #cfdcf0;
+  }
+
+  .botshop-buy-row {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .botshop-amount-input {
+    width: 78px;
+    min-height: 32px;
+    border-radius: 9px;
+    border: 1px solid rgba(143, 164, 204, 0.45);
+    background: rgba(10, 14, 24, 0.75);
+    color: #f2f6ff;
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+
+  .botshop-total {
+    font-size: 11px;
+    color: #b5c8eb;
+  }
+
+  .botshop-buy-btn {
+    margin-left: auto;
+  }
   }
 }

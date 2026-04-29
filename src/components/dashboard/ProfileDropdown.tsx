@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
 import { DashboardText, LanguageCode } from "@/lib/dashboardText";
+import { UserBalance } from "@/lib/types";
 
 type DashboardMode = "user" | "admin";
 type DashboardTab = "overview" | "inventory" | "market" | "botShop" | "craft" | "profile" | "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems";
@@ -22,6 +23,7 @@ type ProfileDropdownProps = {
   onLanguageChange: (language: LanguageCode) => void;
   onLogout: () => void;
   isLoggingOut: boolean;
+  balance: UserBalance | null;
 };
 
 export function ProfileDropdown({
@@ -42,6 +44,7 @@ export function ProfileDropdown({
   onLanguageChange,
   onLogout,
   isLoggingOut,
+  balance,
 }: ProfileDropdownProps) {
   return (
     <div className="profile-menu-container" ref={profileMenuRef}>
@@ -63,6 +66,14 @@ export function ProfileDropdown({
         <div className="profile-dropdown">
           <p className="dropdown-name">{displayName}</p>
           <p className="dropdown-id">{t.discordId}: {discordId}</p>
+
+          {balance !== null ? (
+            <div className="dropdown-balance-block">
+              <p className="language-title">{t.balance}</p>
+              <p className="dropdown-balance-row"><span>{t.odm}:</span><span>{balance.odm}</span></p>
+              <p className="dropdown-balance-row"><span>{t.ldm}:</span><span>{balance.ldm}</span></p>
+            </div>
+          ) : null}
 
           <button className="dropdown-action" onClick={onProfileTabOpen}>
             {t.profile}

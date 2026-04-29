@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { DashboardText } from "@/lib/dashboardText";
+import { UserBalance } from "@/lib/types";
 
 type BotUiStatus = "online" | "offline" | "development";
 type DashboardTab = "overview" | "inventory" | "market" | "botShop" | "craft" | "profile" | "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems" | "adminBotShop";
@@ -14,6 +15,7 @@ type AppHeaderProps = {
   filteredTabs: Array<{ id: DashboardTab; label: string }>;
   onTabChange: (tab: DashboardTab) => void;
   profileDropdown: ReactNode;
+  balance: UserBalance | null;
 };
 
 export function AppHeader({
@@ -26,6 +28,7 @@ export function AppHeader({
   filteredTabs,
   onTabChange,
   profileDropdown,
+  balance,
 }: AppHeaderProps) {
   return (
     <header className="dashboard-topbar">
@@ -79,6 +82,13 @@ export function AppHeader({
         </div>
 
         {profileDropdown}
+
+            {balance !== null ? (
+              <div className="balance-pill" title={`${t.odm}: ${balance.odm} | ${t.ldm}: ${balance.ldm}`}>
+                <span className="balance-pill-label">{t.odm}:</span>
+                <span className="balance-pill-value">{balance.odm}</span>
+              </div>
+            ) : null}
       </div>
 
       <div className="topbar-divider" />

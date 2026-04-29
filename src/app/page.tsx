@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMe, logout } from "@/lib/api";
-import { AdminStats, ApiMeResponse, BotShopListing, CraftRecipe, InventoryItem, MarketListing } from "@/lib/types";
+import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMe, getMyBalance, logout } from "@/lib/api";
+import { AdminStats, ApiMeResponse, BotShopListing, CraftRecipe, InventoryItem, MarketListing, UserBalance } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
 import { AppHeader } from "@/components/dashboard/AppHeader";
 import { ProfileDropdown } from "@/components/dashboard/ProfileDropdown";
@@ -60,6 +60,13 @@ export default function HomePage() {
   const [botShopLoaded, setBotShopLoaded] = useState(false);
   const [botShopLoading, setBotShopLoading] = useState(false);
   const [botShopError, setBotShopError] = useState<string | null>(null);
+  const [balance, setBalance] = useState<UserBalance | null>(null);
+  const [balanceLoaded, setBalanceLoaded] = useState(false);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
+  const [buyingListingId, setBuyingListingId] = useState<number | null>(null);
+  const [buyFeedback, setBuyFeedback] = useState<Record<number, string>>({});
+  const [buyErrors, setBuyErrors] = useState<Record<number, string>>({});
   const [craftRecipes, setCraftRecipes] = useState<CraftRecipe[]>([]);
   const [craftLoaded, setCraftLoaded] = useState(false);
   const [craftLoading, setCraftLoading] = useState(false);
@@ -202,6 +209,13 @@ export default function HomePage() {
     setBotShopLoaded(false);
     setBotShopLoading(false);
     setBotShopError(null);
+    setBalance(null);
+    setBalanceLoaded(false);
+    setBalanceLoading(false);
+    setBalanceError(null);
+    setBuyingListingId(null);
+    setBuyFeedback({});
+    setBuyErrors({});
     setCraftRecipes([]);
     setCraftLoaded(false);
     setCraftLoading(false);
@@ -324,6 +338,56 @@ export default function HomePage() {
     setBotShopError(response.message || response.error || t.botShopError);
   }, [botShopLoading, t.botShopError]);
 
+  const loadBalance = useCallback(async (): Promise<void> => {
+    if (balanceLoading) {
+      return;
+    }
+
+    setBalanceLoading(true);
+    setBalanceError(null);
+
+    const response = await getMyBalance();
+    if (response.ok && response.balance) {
+      setBalance(response.balance);
+      setBalanceLoaded(true);
+      setBalanceLoading(false);
+      return;
+    }
+
+    setBalance(null);
+    setBalanceLoaded(true);
+    setBalanceLoading(false);
+    setBalanceError(response.message || response.error || t.balanceLoadFailed);
+  }, [balanceLoading, t.balanceLoadFailed]);
+
+  const handleBuyBotShopListing = useCallback(async (listingId: number, amount: number): Promise<void> => {
+    if (!Number.isInteger(amount) || amount <= 0) {
+      setBuyErrors(prev => ({ ...prev, [listingId]: "Amount must be a positive integer." }));
+      return;
+    }
+
+    setBuyingListingId(listingId);
+    setBuyFeedback(prev => ({ ...prev, [listingId]: "" }));
+    setBuyErrors(prev => ({ ...prev, [listingId]: "" }));
+
+    const response = await buyBotShopListing(listingId, amount);
+    if (!response.ok) {
+      setBuyErrors(prev => ({ ...prev, [listingId]: response.message || t.purchaseFailed }));
+      setBuyingListingId(null);
+      return;
+    }
+
+    setBuyFeedback(prev => ({ ...prev, [listingId]: t.purchaseSuccess }));
+    setBuyingListingId(null);
+
+    await loadBalance();
+    if (inventoryLoaded) {
+      await loadInventory();
+    } else {
+      setInventoryLoaded(false);
+    }
+  }, [inventoryLoaded, loadBalance, loadInventory, t.purchaseFailed, t.purchaseSuccess]);
+
   const loadCraftRecipes = useCallback(async (): Promise<void> => {
     if (craftLoading) {
       return;
@@ -374,6 +438,12 @@ export default function HomePage() {
       void loadBotShop();
     }
   }, [authState, activeTab, botShopLoaded, botShopLoading, loadBotShop]);
+
+  useEffect(() => {
+    if (authState === "user" && !balanceLoaded && !balanceLoading) {
+      void loadBalance();
+    }
+  }, [authState, balanceLoaded, balanceLoading, loadBalance]);
 
   useEffect(() => {
     if (authState === "user" && activeTab === "craft" && !craftLoaded && !craftLoading) {
@@ -458,6 +528,7 @@ export default function HomePage() {
               onSearchQueryChange={setSearchQuery}
               filteredTabs={filteredTabs}
               onTabChange={handleTabChange}
+                            balance={balance}
               profileDropdown={(
                 <ProfileDropdown
                   profileMenuRef={profileMenuRef}
@@ -482,6 +553,7 @@ export default function HomePage() {
                     void handleLogout();
                   }}
                   isLoggingOut={isLoggingOut}
+                                  balance={balance}
                 />
               )}
             />
@@ -567,6 +639,11 @@ export default function HomePage() {
                 botShopListings={botShopListings}
                 botShopLoading={botShopLoading}
                 botShopError={botShopError}
+                balance={balance}
+                buyingListingId={buyingListingId}
+                buyFeedback={buyFeedback}
+                buyErrors={buyErrors}
+                onBuyListing={handleBuyBotShopListing}
                 onRefresh={() => {
                   setBotShopLoaded(false);
                   void loadBotShop();
@@ -625,6 +702,10 @@ export default function HomePage() {
                 <p className="display-name">{t.profileSection}</p>
                 <p className="user-id">{displayName}</p>
                 <p className="user-id">{t.discordId}: {user.discordId}</p>
+                {balance !== null ? (
+                  <p className="user-id">{t.balance}: {t.odm} {balance.odm} / {t.ldm} {balance.ldm}</p>
+                ) : null}
+                {balanceError ? <p className="state-text state-error">{balanceError}</p> : null}
                 {roles.length > 0 ? (
                   <div className="badges">
                     {roles.map(role => (
