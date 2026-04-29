@@ -1,6 +1,9 @@
 import {
+  AdminBotShopInput,
   AdminItemInput,
   AdminStatsResponse,
+  ApiAdminBotShopMutationResponse,
+  ApiAdminBotShopResponse,
   ApiAdminItemMutationResponse,
   ApiAdminItemsResponse,
   ApiAdminRaritiesResponse,
@@ -461,6 +464,109 @@ export async function searchAdminItemTemplates(query: string): Promise<ApiAdminS
         ok: false,
         error: data?.error || "ADMIN_ITEM_TEMPLATES_SEARCH_FAILED",
         message: data?.message || "Failed to search item templates.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getAdminBotShop(): Promise<ApiAdminBotShopResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/botshop`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminBotShopResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_BOTSHOP_LOAD_FAILED",
+        message: data?.message || "Failed to load admin bot shop.",
+      };
+    }
+
+    if (!data || typeof data !== "object") {
+      return {
+        ok: false,
+        error: "INVALID_RESPONSE",
+        message: "Invalid API response.",
+      };
+    }
+
+    return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function upsertAdminBotShopListing(input: AdminBotShopInput): Promise<ApiAdminBotShopMutationResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/botshop`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminBotShopMutationResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_BOTSHOP_UPSERT_FAILED",
+        message: data?.message || "Failed to save bot shop listing.",
+      };
+    }
+
+    if (!data || typeof data !== "object") {
+      return {
+        ok: false,
+        error: "INVALID_RESPONSE",
+        message: "Invalid API response.",
+      };
+    }
+
+    return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function deleteAdminBotShopListing(listingId: number): Promise<ApiBaseResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/botshop/${listingId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiBaseResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_BOTSHOP_DELETE_FAILED",
+        message: data?.message || "Failed to delete bot shop listing.",
       };
     }
 

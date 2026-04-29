@@ -1210,6 +1210,19 @@ body {
   gap: 10px;
 }
 
+.admin-botshop-selected-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 5px 10px;
+  border: 1px solid rgba(88, 101, 242, 0.45);
+  border-radius: 999px;
+  background: rgba(88, 101, 242, 0.15);
+  color: #dce6ff;
+  font-size: 12px;
+}
+
 .pagination-status {
   color: #aab7d6;
   font-size: 12px;

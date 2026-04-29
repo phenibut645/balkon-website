@@ -15,11 +15,12 @@ import { AdminDashboardPanel } from "@/components/dashboard/AdminDashboardPanel"
 import { AdminLogsPanel } from "@/components/dashboard/AdminLogsPanel";
 import { AdminObsPanel } from "@/components/dashboard/AdminObsPanel";
 import { AdminItemsPanel } from "@/components/dashboard/AdminItemsPanel";
+import { AdminBotShopPanel } from "@/components/dashboard/AdminBotShopPanel";
 import { PlaceholderPanel } from "@/components/dashboard/PlaceholderPanel";
 
 type AuthState = "loading" | "guest" | "user";
 type UserTab = "overview" | "inventory" | "market" | "botShop" | "craft" | "profile";
-type AdminTab = "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems";
+type AdminTab = "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems" | "adminBotShop";
 type DashboardTab = UserTab | AdminTab;
 type DashboardMode = "user" | "admin";
 type BotUiStatus = "online" | "offline" | "development";
@@ -94,6 +95,7 @@ export default function HomePage() {
     { id: "adminLogs" as const, label: t.adminTabLogs },
     { id: "adminObs" as const, label: t.adminTabObs },
     { id: "adminItems" as const, label: t.adminTabItems },
+    { id: "adminBotShop" as const, label: t.adminTabBotShop },
   ]), [t]);
 
   const tabItems = useMemo(
@@ -612,6 +614,10 @@ export default function HomePage() {
 
             {activeTab === "adminItems" ? (
               <AdminItemsPanel t={t} />
+            ) : null}
+
+            {activeTab === "adminBotShop" ? (
+              <AdminBotShopPanel t={t} />
             ) : null}
 
             {activeTab === "profile" ? (

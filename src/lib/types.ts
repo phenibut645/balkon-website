@@ -225,3 +225,34 @@ export type AdminSearchOption = {
 export type ApiAdminSearchResponse = ApiBaseResponse & {
   options?: AdminSearchOption[];
 };
+
+export type AdminBotShopListing = {
+  listingId: number;
+  price: number;
+  itemTemplateId: number;
+  name: string;
+  description: string;
+  emoji: string | null;
+  imageUrl: string | null;
+  tradeable: boolean;
+  sellable: boolean;
+  botSellPrice: number | null;
+  itemType: string;
+  rarityName: string;
+  rarityColorHex: string | null;
+};
+
+export type AdminBotShopInput = {
+  itemTemplateId: number;
+  price: number;
+};
+
+export type ApiAdminBotShopResponse = ApiBaseResponse & {
+  listings?: AdminBotShopListing[];
+};
+
+export type ApiAdminBotShopMutationResponse = ApiBaseResponse & {
+  data?: {
+    listingId: number;
+  };
+};
