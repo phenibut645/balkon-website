@@ -111,6 +111,9 @@ export default function HomePage() {
   const [notificationFilterUnreadOnly, setNotificationFilterUnreadOnly] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const notificationsSummaryLoadingRef = useRef(false);
+  const notificationsSummaryLastLoadedAtRef = useRef(0);
+  const notificationsLoadingRef = useRef(false);
 
   const user = meResponse?.me;
   const roles = useMemo(() => user?.roles ?? [], [user?.roles]);
@@ -503,6 +506,9 @@ export default function HomePage() {
     setNotificationPage(1);
     setNotificationTotal(0);
     setNotificationFilterUnreadOnly(false);
+    notificationsSummaryLoadingRef.current = false;
+    notificationsSummaryLastLoadedAtRef.current = 0;
+    notificationsLoadingRef.current = false;
     setMarketSubTab("overview");
     setDashboardMode("user");
     setCanUseAdminMode(false);
@@ -693,53 +699,71 @@ export default function HomePage() {
     );
   }, [profileLoading, t.apiReachFailedHint, t.profileSaveFailed]);
 
-  const loadNotificationsSummary = useCallback(async (): Promise<void> => {
+  const loadNotificationsSummary = useCallback(async (force = false): Promise<void> => {
+    if (notificationsSummaryLoadingRef.current) {
+      return;
+    }
+
+    if (!force && Date.now() - notificationsSummaryLastLoadedAtRef.current < 1500) {
+      return;
+    }
+
+    notificationsSummaryLoadingRef.current = true;
     setNotificationsSummaryLoading(true);
     setNotificationsSummaryError(null);
 
-    const response = await getNotificationsSummary();
-    if (response.ok) {
-      setNotificationsSummary({
-        unreadCount: Number(response.unreadCount ?? 0),
-        latest: Array.isArray(response.latest) ? response.latest : [],
-      });
-      setNotificationsSummaryLoading(false);
-      return;
-    }
+    try {
+      const response = await getNotificationsSummary();
+      notificationsSummaryLastLoadedAtRef.current = Date.now();
 
-    setNotificationsSummary({ unreadCount: 0, latest: [] });
-    setNotificationsSummaryLoading(false);
-    setNotificationsSummaryError(response.message || response.error || t.notificationError);
+      if (response.ok) {
+        setNotificationsSummary({
+          unreadCount: Number(response.unreadCount ?? 0),
+          latest: Array.isArray(response.latest) ? response.latest : [],
+        });
+        return;
+      }
+
+      setNotificationsSummary({ unreadCount: 0, latest: [] });
+      setNotificationsSummaryError(response.message || response.error || t.notificationError);
+    } finally {
+      notificationsSummaryLoadingRef.current = false;
+      setNotificationsSummaryLoading(false);
+    }
   }, [t.notificationError]);
 
   const loadNotifications = useCallback(async (page = notificationPage, unreadOnly = notificationFilterUnreadOnly): Promise<void> => {
-    if (notificationsLoading) {
+    if (notificationsLoadingRef.current) {
       return;
     }
 
+    notificationsLoadingRef.current = true;
     setNotificationsLoading(true);
     setNotificationsError(null);
 
-    const response = await getNotifications({
-      page,
-      pageSize: notificationPageSize,
-      unreadOnly,
-    });
+    try {
+      const response = await getNotifications({
+        page,
+        pageSize: notificationPageSize,
+        unreadOnly,
+      });
 
-    if (response.ok && Array.isArray(response.notifications)) {
-      setNotificationsList(response.notifications);
-      setNotificationPage(response.page || page);
-      setNotificationTotal(response.total || 0);
+      if (response.ok && Array.isArray(response.notifications)) {
+        setNotificationsList(response.notifications);
+        setNotificationPage(response.page || page);
+        setNotificationTotal(response.total || 0);
+        setNotificationsLoaded(true);
+        return;
+      }
+
+      setNotificationsList([]);
       setNotificationsLoaded(true);
+      setNotificationsError(response.message || response.error || t.notificationError);
+    } finally {
+      notificationsLoadingRef.current = false;
       setNotificationsLoading(false);
-      return;
     }
-
-    setNotificationsList([]);
-    setNotificationsLoaded(true);
-    setNotificationsLoading(false);
-    setNotificationsError(response.message || response.error || t.notificationError);
-  }, [notificationFilterUnreadOnly, notificationPage, notificationPageSize, notificationsLoading, t.notificationError]);
+  }, [notificationFilterUnreadOnly, notificationPage, notificationPageSize, t.notificationError]);
 
   const handleMarkNotificationRead = useCallback(async (id: number): Promise<void> => {
     const response = await markNotificationRead(id);
@@ -748,7 +772,7 @@ export default function HomePage() {
       return;
     }
 
-    await loadNotificationsSummary();
+    await loadNotificationsSummary(true);
     if (activeTab === "notifications") {
       await loadNotifications(notificationPage, notificationFilterUnreadOnly);
     }
@@ -761,7 +785,7 @@ export default function HomePage() {
       return;
     }
 
-    await loadNotificationsSummary();
+    await loadNotificationsSummary(true);
     if (activeTab === "notifications") {
       await loadNotifications(notificationPage, notificationFilterUnreadOnly);
     }
@@ -1049,7 +1073,7 @@ export default function HomePage() {
                     setNotificationsLoaded(false);
                   }}
                   onRefresh={() => {
-                    void loadNotificationsSummary();
+                    void loadNotificationsSummary(true);
                   }}
                   onMarkRead={handleMarkNotificationRead}
                   onMarkAllRead={handleMarkAllNotificationsRead}
@@ -1275,7 +1299,7 @@ export default function HomePage() {
               <AdminBroadcastPanel
                 t={t}
                 onSent={() => {
-                  void loadNotificationsSummary();
+                  void loadNotificationsSummary(true);
                 }}
               />
             ) : null}

@@ -56,19 +56,21 @@ export function NotificationBell({
     };
   }, [open]);
 
-  useEffect(() => {
-    if (open) {
-      onRefresh();
-    }
-  }, [open, onRefresh]);
-
   return (
     <div className="notification-bell" ref={rootRef}>
       <button
         type="button"
         className="notification-bell-button"
         aria-label={t.notificationBellAria}
-        onClick={() => setOpen(prev => !prev)}
+        onClick={() => {
+          setOpen(prev => {
+            const next = !prev;
+            if (next) {
+              void onRefresh();
+            }
+            return next;
+          });
+        }}
       >
         <span aria-hidden="true">🔔</span>
         {summary.unreadCount > 0 ? <span className="notification-unread-dot" aria-hidden="true" /> : null}
