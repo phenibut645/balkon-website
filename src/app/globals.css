@@ -633,10 +633,139 @@ body {
   display: block;
 }
 
+.market-chart-wrapper {
+  position: relative;
+}
+
+.market-chart-tooltip {
+  position: absolute;
+  transform: translate(-50%, -108%);
+  min-width: 170px;
+  max-width: 230px;
+  pointer-events: none;
+  z-index: 3;
+  border: 1px solid rgba(245, 200, 75, 0.45);
+  border-radius: 12px;
+  background: rgba(16, 22, 35, 0.9);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 16px rgba(245, 200, 75, 0.24);
+  padding: 9px 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.market-chart-tooltip-title {
+  margin: 0;
+  color: #ffecb6;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.market-chart-tooltip-row {
+  margin: 0;
+  color: #dfe9ff;
+  font-size: 11px;
+}
+
+.market-chart-tooltip-row.muted {
+  color: #f5cf72;
+}
+
+.market-chart-grid {
+  stroke: rgba(136, 149, 178, 0.2);
+  stroke-width: 1;
+}
+
+.market-chart-guide {
+  stroke: rgba(255, 209, 102, 0.24);
+  stroke-width: 1.2;
+}
+
+.market-chart-axis {
+  stroke: rgba(126, 139, 166, 0.4);
+  stroke-width: 1;
+}
+
+.market-chart-axis-label {
+  fill: #aebfdf;
+}
+
+.market-chart-value-label {
+  fill: #9eaecb;
+  font-size: 11px;
+}
+
+.market-chart-line {
+  stroke: #ffd166;
+  stroke-width: 2.6;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: marketLineDraw 0.62s ease forwards;
+}
+
+.market-chart-area {
+  opacity: 0;
+  animation: marketAreaFade 0.48s ease forwards;
+}
+
+.market-chart-point {
+  fill: #ffcc4d;
+  stroke: rgba(255, 230, 150, 0.95);
+  stroke-width: 1.7;
+  cursor: pointer;
+  filter: drop-shadow(0 0 0 rgba(245, 200, 75, 0));
+  transition: r 0.16s ease, filter 0.16s ease;
+  animation: marketPointIn 0.4s ease;
+}
+
+.market-chart-point:focus-visible,
+.market-chart-point.active {
+  filter: drop-shadow(0 0 8px rgba(245, 200, 75, 0.45));
+}
+
+.market-chart-point.active {
+  animation: marketPointPulse 1.2s ease-in-out infinite;
+}
+
 .market-chart-empty {
   margin: 0;
   color: #9eb0d4;
   font-size: 13px;
+}
+
+@keyframes marketLineDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes marketAreaFade {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes marketPointIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes marketPointPulse {
+  0% {
+    filter: drop-shadow(0 0 4px rgba(245, 200, 75, 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 0 11px rgba(245, 200, 75, 0.45));
+  }
+  100% {
+    filter: drop-shadow(0 0 4px rgba(245, 200, 75, 0.2));
+  }
 }
 
 .botshop-scroll {
@@ -2133,5 +2262,13 @@ body {
   .inventory-details-panel {
     transition: none;
     animation: none;
+  }
+
+  .market-chart-line,
+  .market-chart-area,
+  .market-chart-point,
+  .market-chart-point.active {
+    animation: none;
+    transition: none;
   }
 }
