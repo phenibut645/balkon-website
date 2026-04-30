@@ -52,7 +52,7 @@ export async function getMe(): Promise<ApiMeResponse> {
     return {
       ok: false,
       error: "NETWORK_ERROR",
-      message: "Failed to reach API. Is the API server running?",
+      message: "Could not reach API. Check if API server is running and CORS allows PATCH.",
     };
   }
 }
