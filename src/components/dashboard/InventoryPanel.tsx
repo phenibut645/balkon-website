@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DashboardText, formatDashboardDate } from "@/lib/dashboardText";
 import { InventoryItem } from "@/lib/types";
 
@@ -13,13 +14,15 @@ type InventoryPanelProps = {
   inventoryLoading: boolean;
   inventoryError: string | null;
   inventoryEmptyText: string;
-  paginatedInventory: InventoryItem[];
-  inventoryPage: number;
-  totalInventoryPages: number;
-  onPrevPage: () => void;
-  onNextPage: () => void;
+  inventoryItems: InventoryItem[];
   dateLocale: string;
 };
+
+const GRID_GAP = 12;
+const CARD_WIDTH_DEFAULT = 200;
+const CARD_WIDTH_WITH_DETAILS = 180;
+const CARD_HEIGHT_DEFAULT = 222;
+const CARD_HEIGHT_WITH_DETAILS = 214;
 
 export function InventoryPanel({
   t,
@@ -31,13 +34,164 @@ export function InventoryPanel({
   inventoryLoading,
   inventoryError,
   inventoryEmptyText,
-  paginatedInventory,
-  inventoryPage,
-  totalInventoryPages,
-  onPrevPage,
-  onNextPage,
+  inventoryItems,
   dateLocale,
 }: InventoryPanelProps) {
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(1);
+  const gridViewportRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setSelectedItem(null);
+    setCurrentPage(1);
+  }, [inventoryFilter]);
+
+  useEffect(() => {
+    if (!selectedItem) {
+      return;
+    }
+
+    const stillVisible = inventoryItems.some(item => item.inventoryItemId === selectedItem.inventoryItemId);
+    if (!stillVisible) {
+      setSelectedItem(null);
+    }
+  }, [inventoryItems, selectedItem]);
+
+  useEffect(() => {
+    if (inventoryLoading || inventoryError || filteredInventoryLength === 0) {
+      setSelectedItem(null);
+      setCurrentPage(1);
+    }
+  }, [filteredInventoryLength, inventoryError, inventoryLoading]);
+
+  const selectedRarityAccent = useMemo(
+    () => selectedItem?.rarityColorHex || "#52607e",
+    [selectedItem],
+  );
+
+  const instanceLabel = useMemo(() => {
+    const normalizedLocale = dateLocale.toLowerCase();
+    if (normalizedLocale.startsWith("ru")) return "Экз.";
+    if (normalizedLocale.startsWith("et")) return "Eksemplar";
+    return "Instance";
+  }, [dateLocale]);
+
+  const botShortLabel = useMemo(() => {
+    const normalizedLocale = dateLocale.toLowerCase();
+    if (normalizedLocale.startsWith("ru")) return "Боту";
+    if (normalizedLocale.startsWith("et")) return "Botile";
+    return "Bot";
+  }, [dateLocale]);
+
+  const recalculatePageSize = useCallback(() => {
+    const viewport = gridViewportRef.current;
+    if (!viewport) {
+      return;
+    }
+
+    const rect = viewport.getBoundingClientRect();
+    const width = Math.max(0, rect.width);
+    const height = Math.max(0, rect.height);
+
+    const isStackedMobile =
+      typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
+    const hasSelectionSplit = Boolean(selectedItem) && !isStackedMobile;
+    const cardWidth = hasSelectionSplit ? CARD_WIDTH_WITH_DETAILS : CARD_WIDTH_DEFAULT;
+    const cardHeight = hasSelectionSplit ? CARD_HEIGHT_WITH_DETAILS : CARD_HEIGHT_DEFAULT;
+
+    const columns = Math.max(1, Math.floor((width + GRID_GAP) / (cardWidth + GRID_GAP)));
+    const rows = Math.max(1, Math.floor((height + GRID_GAP) / (cardHeight + GRID_GAP)));
+    const nextPageSize = Math.max(1, columns * rows);
+
+    setPageSize(prev => (prev === nextPageSize ? prev : nextPageSize));
+  }, [selectedItem]);
+
+  useEffect(() => {
+    if (inventoryLoading || inventoryError || filteredInventoryLength === 0) {
+      return;
+    }
+
+    const viewport = gridViewportRef.current;
+    if (!viewport) {
+      return;
+    }
+
+    recalculatePageSize();
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => recalculatePageSize());
+      resizeObserver.observe(viewport);
+    }
+
+    const onWindowResize = () => recalculatePageSize();
+    window.addEventListener("resize", onWindowResize);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", onWindowResize);
+    };
+  }, [filteredInventoryLength, inventoryError, inventoryLoading, recalculatePageSize]);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(inventoryItems.length / pageSize)),
+    [inventoryItems.length, pageSize],
+  );
+
+  useEffect(() => {
+    setCurrentPage(prev => {
+      if (prev < 1) return 1;
+      if (prev > totalPages) return totalPages;
+      return prev;
+    });
+  }, [totalPages]);
+
+  useEffect(() => {
+    if (!selectedItem) {
+      return;
+    }
+
+    const selectedIndex = inventoryItems.findIndex(
+      item => item.inventoryItemId === selectedItem.inventoryItemId,
+    );
+
+    if (selectedIndex < 0) {
+      return;
+    }
+
+    const targetPage = Math.floor(selectedIndex / pageSize) + 1;
+    if (targetPage !== currentPage) {
+      setCurrentPage(targetPage);
+    }
+  }, [currentPage, inventoryItems, pageSize, selectedItem]);
+
+  const paginatedInventory = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return inventoryItems.slice(start, start + pageSize);
+  }, [currentPage, inventoryItems, pageSize]);
+
+  const pageStartIndex = (currentPage - 1) * pageSize;
+
+  const handleSelectItem = useCallback(
+    (item: InventoryItem, absoluteIndex: number) => {
+      setSelectedItem(item);
+      const targetPage = Math.floor(absoluteIndex / pageSize) + 1;
+      if (targetPage !== currentPage) {
+        setCurrentPage(targetPage);
+      }
+    },
+    [currentPage, pageSize],
+  );
+
+  const goToPreviousPage = useCallback(() => {
+    setCurrentPage(prev => Math.max(1, prev - 1));
+  }, []);
+
+  const goToNextPage = useCallback(() => {
+    setCurrentPage(prev => Math.min(totalPages, prev + 1));
+  }, [totalPages]);
+
   return (
     <div className="panel panel-inventory">
       <div className="inventory-scroll">
@@ -79,75 +233,179 @@ export function InventoryPanel({
         ) : null}
 
         {!inventoryLoading && !inventoryError && filteredInventoryLength > 0 ? (
-          <div className="inventory-grid">
-            {paginatedInventory.map(item => {
-              const rarityAccent = item.rarityColorHex || "#44506d";
-              return (
-                <article
-                  key={item.inventoryItemId}
-                  className="inventory-card"
-                  style={{ borderColor: `${rarityAccent}66`, boxShadow: `0 0 0 1px ${rarityAccent}22 inset` }}
+          <>
+            <div className={`inventory-main-layout ${selectedItem ? "has-selection" : ""}`}>
+              <div className="inventory-grid-viewport" ref={gridViewportRef}>
+                <div className="inventory-grid-wrap">
+                  <div className="inventory-grid">
+                    {paginatedInventory.map((item, index) => {
+                      const rarityAccent = item.rarityColorHex || "#44506d";
+                      const isSelected = selectedItem?.inventoryItemId === item.inventoryItemId;
+                      const absoluteIndex = pageStartIndex + index;
+
+                      return (
+                        <button
+                          key={item.inventoryItemId}
+                          type="button"
+                          className={`inventory-card compact ${isSelected ? "selected" : ""}`}
+                          style={{
+                            borderColor: `${rarityAccent}66`,
+                          }}
+                          onClick={() => handleSelectItem(item, absoluteIndex)}
+                          aria-pressed={isSelected}
+                        >
+                          <div
+                            className="inventory-media compact"
+                            style={{ background: `linear-gradient(145deg, ${rarityAccent}2d, #1d2437)` }}
+                          >
+                            {item.imageUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={item.imageUrl}
+                                alt={item.name}
+                                className="inventory-image"
+                                onLoad={event => {
+                                  (event.currentTarget as HTMLImageElement).style.display = "block";
+                                }}
+                                onError={event => {
+                                  const target = event.currentTarget;
+                                  target.style.display = "none";
+                                  const fallback = target.parentElement?.querySelector<HTMLElement>(".inventory-emoji-fallback");
+                                  if (fallback) fallback.style.display = "grid";
+                                }}
+                              />
+                            ) : null}
+                            <div className="inventory-emoji-fallback" style={{ display: item.imageUrl ? "none" : "grid" }}>
+                              {item.emoji || "📦"}
+                            </div>
+                            <span className="inventory-tier-badge">{t.tier} {item.tier}</span>
+                            {isSelected ? <span className="inventory-selected-dot" aria-hidden="true" /> : null}
+                          </div>
+
+                          <div className="inventory-content compact">
+                            <h3 className="inventory-title">{item.name}</h3>
+                            <div className="inventory-meta compact">
+                              <span className="meta-badge rarity-badge" style={{ borderColor: `${rarityAccent}66` }}>
+                                {item.rarityName}
+                              </span>
+                              <span className="meta-badge">{item.itemType}</span>
+                              <span className="meta-badge">{instanceLabel} #{item.inventoryItemId}</span>
+                              {item.botSellPrice !== null ? (
+                                <span className="meta-badge price">{botShortLabel}: {item.botSellPrice} ODM</span>
+                              ) : null}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {selectedItem ? (
+                <aside
+                  className="inventory-details-panel enter"
+                  style={{
+                    borderColor: `${selectedRarityAccent}66`,
+                    boxShadow: `0 0 0 1px ${selectedRarityAccent}22 inset`,
+                  }}
                 >
-                  <div className="inventory-media" style={{ background: `linear-gradient(145deg, ${rarityAccent}2d, #1d2437)` }}>
-                    {item.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={item.imageUrl}
-                        alt={item.name}
-                        className="inventory-image"
-                        onError={event => {
-                          const target = event.currentTarget;
-                          target.style.display = "none";
-                          const fallback = target.parentElement?.querySelector<HTMLElement>(".inventory-emoji-fallback");
-                          if (fallback) fallback.style.display = "grid";
-                        }}
-                      />
-                    ) : null}
-                    <div className="inventory-emoji-fallback" style={{ display: item.imageUrl ? "none" : "grid" }}>
-                      {item.emoji || "📦"}
-                    </div>
+                  <div className="inventory-details-header">
+                    <p className="inventory-details-title">{t.itemDetails}</p>
+                    <button
+                      type="button"
+                      className="inventory-details-close"
+                      onClick={() => setSelectedItem(null)}
+                    >
+                      {t.close}
+                    </button>
                   </div>
 
-                  <div className="inventory-content">
-                    <h3 className="inventory-title">{item.name}</h3>
-                    <p className="inventory-description">{item.description}</p>
-
-                    <div className="inventory-meta">
-                      <span className="meta-badge rarity-badge" style={{ borderColor: `${rarityAccent}66` }}>
-                        {item.rarityName}
-                      </span>
-                      <span className="meta-badge">{item.itemType}</span>
-                      <span className="meta-badge">Tier {item.tier}</span>
-                      <span className="meta-badge">ID #{item.inventoryItemId}</span>
-                      <span className={`meta-badge ${item.tradeable ? "ok" : "muted"}`}>
-                        {item.tradeable ? t.tradeableYes : t.tradeableNo}
-                      </span>
-                      <span className={`meta-badge ${item.sellable ? "ok" : "muted"}`}>
-                        {item.sellable ? t.sellableYes : t.sellableNo}
-                      </span>
-                      {item.botSellPrice !== null ? (
-                        <span className="meta-badge price">{t.botSell}: {item.botSellPrice}</span>
+                  <div className="inventory-details-scroll">
+                    <div
+                      className="inventory-details-media"
+                      style={{ background: `linear-gradient(145deg, ${selectedRarityAccent}2e, #1d2437)` }}
+                    >
+                      {selectedItem.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={selectedItem.imageUrl}
+                          alt={selectedItem.name}
+                          className="inventory-details-image"
+                          onLoad={event => {
+                            (event.currentTarget as HTMLImageElement).style.display = "block";
+                          }}
+                          onError={event => {
+                            const target = event.currentTarget;
+                            target.style.display = "none";
+                            const fallback = target.parentElement?.querySelector<HTMLElement>(".inventory-details-emoji");
+                            if (fallback) fallback.style.display = "grid";
+                          }}
+                        />
                       ) : null}
+                      <div className="inventory-details-emoji" style={{ display: selectedItem.imageUrl ? "none" : "grid" }}>
+                        {selectedItem.emoji || "📦"}
+                      </div>
                     </div>
 
-                    <p className="inventory-obtained">{t.obtained}: {formatDashboardDate(item.obtainedAt, dateLocale, t.unknownDate)}</p>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : null}
+                    <div className="inventory-details-body">
+                      <h3 className="inventory-title">{selectedItem.name}</h3>
+                      <p className="inventory-description details">{selectedItem.description}</p>
 
-        {!inventoryLoading && !inventoryError && filteredInventoryLength > 0 ? (
-          <div className="inventory-pagination">
-            <button className="pagination-btn" disabled={inventoryPage <= 1} onClick={onPrevPage}>
-              {t.previous}
-            </button>
-            <span className="pagination-status">{t.page} {inventoryPage} / {totalInventoryPages}</span>
-            <button className="pagination-btn" disabled={inventoryPage >= totalInventoryPages} onClick={onNextPage}>
-              {t.next}
-            </button>
-          </div>
+                      <div className="inventory-meta">
+                        <span className="meta-badge rarity-badge" style={{ borderColor: `${selectedRarityAccent}66` }}>
+                          {t.rarity}: {selectedItem.rarityName}
+                        </span>
+                        <span className="meta-badge">{t.type}: {selectedItem.itemType}</span>
+                        <span className="meta-badge">{t.tier}: {selectedItem.tier}</span>
+                        <span className="meta-badge">{t.itemId}: #{selectedItem.inventoryItemId}</span>
+                        <span className="meta-badge">{t.templateId}: #{selectedItem.itemTemplateId}</span>
+                        <span className={`meta-badge ${selectedItem.tradeable ? "ok" : "muted"}`}>
+                          {selectedItem.tradeable ? t.tradeableYes : t.tradeableNo}
+                        </span>
+                        <span className={`meta-badge ${selectedItem.sellable ? "ok" : "muted"}`}>
+                          {selectedItem.sellable ? t.sellableYes : t.sellableNo}
+                        </span>
+                        {selectedItem.botSellPrice !== null ? (
+                          <span className="meta-badge price">{t.botSellPrice}: {selectedItem.botSellPrice} ODM</span>
+                        ) : null}
+                      </div>
+
+                      <div className="inventory-details-meta">
+                        <p><strong>{t.obtained}:</strong> {formatDashboardDate(selectedItem.obtainedAt, dateLocale, t.unknownDate)}</p>
+                        <p><strong>{t.owner}:</strong> {selectedItem.ownerDiscordId}</p>
+                        {selectedItem.originalOwnerDiscordId ? (
+                          <p><strong>{t.originalOwner}:</strong> {selectedItem.originalOwnerDiscordId}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </aside>
+              ) : null}
+            </div>
+
+            <div className="inventory-pagination">
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={goToPreviousPage}
+                disabled={currentPage <= 1}
+              >
+                {t.previous}
+              </button>
+              <span className="pagination-status">
+                {t.page} {currentPage}/{totalPages}
+              </span>
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={goToNextPage}
+                disabled={currentPage >= totalPages}
+              >
+                {t.next}
+              </button>
+            </div>
+          </>
         ) : null}
       </div>
     </div>

@@ -5,6 +5,13 @@ import { UserBalance } from "@/lib/types";
 type BotUiStatus = "online" | "offline" | "development";
 type DashboardTab = "overview" | "inventory" | "market" | "botShop" | "craft" | "profile" | "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems" | "adminBotShop";
 
+export type HeaderSearchResult = {
+  key: string;
+  tabId: DashboardTab;
+  label: string;
+  breadcrumb: string;
+};
+
 type AppHeaderProps = {
   appVersion: string;
   botStatus: BotUiStatus;
@@ -12,8 +19,8 @@ type AppHeaderProps = {
   t: DashboardText;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
-  filteredTabs: Array<{ id: DashboardTab; label: string }>;
-  onTabChange: (tab: DashboardTab) => void;
+  searchResults: HeaderSearchResult[];
+  onSearchResultSelect: (result: HeaderSearchResult) => void;
   profileDropdown: ReactNode;
   balance: UserBalance | null;
 };
@@ -25,8 +32,8 @@ export function AppHeader({
   t,
   searchQuery,
   onSearchQueryChange,
-  filteredTabs,
-  onTabChange,
+  searchResults,
+  onSearchResultSelect,
   profileDropdown,
   balance,
 }: AppHeaderProps) {
@@ -66,15 +73,16 @@ export function AppHeader({
             placeholder={t.searching}
           />
 
-          {filteredTabs.length > 0 ? (
+          {searchResults.length > 0 ? (
             <div className="search-dropdown">
-              {filteredTabs.map(tab => (
+              {searchResults.map(result => (
                 <button
-                  key={tab.id}
+                  key={result.key}
                   className="search-result"
-                  onClick={() => onTabChange(tab.id)}
+                  onClick={() => onSearchResultSelect(result)}
                 >
-                  {tab.label}
+                  <span className="search-result-title">{result.label}</span>
+                  <span className="search-result-path">{result.breadcrumb}</span>
                 </button>
               ))}
             </div>

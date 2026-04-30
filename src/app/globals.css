@@ -272,10 +272,23 @@ body {
   color: #cfd9f2;
   padding: 9px 10px;
   cursor: pointer;
+  display: grid;
+  gap: 2px;
 }
 
 .search-result:hover {
   background: rgba(72, 86, 119, 0.35);
+}
+
+.search-result-title {
+  font-size: 13px;
+  color: #e7efff;
+  font-weight: 600;
+}
+
+.search-result-path {
+  font-size: 11px;
+  color: #95a9d2;
 }
 
 .profile-menu-container {
@@ -457,6 +470,7 @@ body {
 
 .panel-inventory {
   flex: 1;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
 }
@@ -481,11 +495,10 @@ body {
 
 .inventory-scroll {
   height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 6px;
-  display: grid;
-  align-content: start;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
@@ -525,6 +538,7 @@ body {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .inventory-filters {
@@ -662,8 +676,11 @@ body {
 
 .inventory-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(var(--inventory-card-width), var(--inventory-card-width)));
+  gap: var(--inventory-grid-gap);
+  justify-content: start;
+  align-content: start;
+  overflow: hidden;
 }
 
 .market-grid {
@@ -904,6 +921,7 @@ body {
 
 .inventory-content {
   padding: 10px;
+  min-height: 0;
 }
 
 .market-content {
@@ -917,7 +935,11 @@ body {
 .inventory-title {
   margin: 0;
   font-size: 15px;
+  line-height: 1.15;
   color: #f4f7ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .market-title {
@@ -960,6 +982,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin-top: 8px;
 }
 
 .market-meta {
@@ -1010,7 +1033,288 @@ body {
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
+  flex-shrink: 0;
+  padding-top: 10px;
   padding-bottom: 4px;
+}
+
+.inventory-main-layout {
+  --inventory-card-width: 200px;
+  --inventory-card-height: 222px;
+  --inventory-grid-gap: 12px;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.inventory-main-layout.has-selection {
+  --inventory-card-width: 180px;
+  --inventory-card-height: 214px;
+  grid-template-columns: minmax(0, 1fr) clamp(340px, 32vw, 430px);
+  align-items: stretch;
+}
+
+.inventory-grid-viewport {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding-right: 6px;
+  padding-bottom: 4px;
+}
+
+.inventory-grid-wrap {
+  min-width: 0;
+  min-height: 0;
+  transition: opacity 0.24s ease;
+}
+
+.inventory-card.compact {
+  width: 100%;
+  height: var(--inventory-card-height);
+  text-align: left;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  min-height: var(--inventory-card-height);
+  max-height: var(--inventory-card-height);
+  transition: transform 0.18s ease, box-shadow 0.22s ease, border-color 0.18s ease;
+}
+
+.inventory-card.compact.selected {
+  border-color: rgba(132, 146, 255, 0.9) !important;
+  box-shadow:
+    0 0 0 1px rgba(132, 146, 255, 0.45) inset,
+    0 0 22px rgba(95, 110, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+.inventory-card.compact:focus-visible {
+  outline: 2px solid rgba(145, 168, 245, 0.82);
+  outline-offset: 2px;
+}
+
+.inventory-media.compact {
+  height: 128px;
+  min-height: 128px;
+  max-height: 128px;
+  position: relative;
+  padding: 10px;
+}
+
+.inventory-media.compact .inventory-image {
+  width: auto;
+  height: auto;
+  max-width: 86%;
+  max-height: 108px;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  margin: 0 auto;
+}
+
+.inventory-media.compact .inventory-emoji-fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-size: clamp(42px, 5vw, 64px);
+  line-height: 1;
+}
+
+.inventory-main-layout.has-selection .inventory-media.compact {
+  height: 118px;
+  min-height: 118px;
+  max-height: 118px;
+}
+
+.inventory-main-layout.has-selection .inventory-media.compact .inventory-image {
+  max-height: 96px;
+}
+
+.inventory-content.compact {
+  padding: 10px 11px 11px;
+  min-height: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.inventory-meta.compact {
+  margin-top: 8px;
+}
+
+.inventory-tier-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(115, 136, 176, 0.46);
+  background: rgba(14, 19, 30, 0.82);
+  color: #d4e1fd;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.inventory-selected-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #8ea8ff;
+  box-shadow: 0 0 14px rgba(142, 168, 255, 0.8);
+}
+
+.inventory-details-panel {
+  opacity: 0;
+  transform: translateX(14px);
+  pointer-events: none;
+  border: 1px solid rgba(84, 103, 141, 0.4);
+  border-radius: 16px;
+  background: rgba(18, 25, 40, 0.72);
+  backdrop-filter: blur(12px);
+  padding: 12px;
+  transition: opacity 0.24s ease, transform 0.24s ease;
+  min-width: 0;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.inventory-details-panel.enter {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+  animation: inventoryDetailsIn 0.24s ease;
+}
+
+@keyframes inventoryDetailsIn {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.inventory-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.inventory-details-title {
+  margin: 0;
+  font-size: 15px;
+  color: #edf3ff;
+  font-weight: 700;
+}
+
+.inventory-details-close {
+  border: 1px solid rgba(109, 126, 164, 0.5);
+  border-radius: 8px;
+  background: rgba(24, 33, 51, 0.74);
+  color: #dbe6ff;
+  padding: 6px 9px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.inventory-details-close:hover {
+  background: rgba(41, 56, 85, 0.78);
+}
+
+.inventory-details-media {
+  height: 210px;
+  min-height: 210px;
+  border-radius: 10px;
+  border: 1px solid rgba(92, 109, 146, 0.35);
+  padding: 8px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.inventory-details-image {
+  width: auto;
+  height: auto;
+  max-width: 88%;
+  max-height: 180px;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  margin: 0 auto;
+}
+
+.inventory-details-emoji {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-size: 76px;
+  line-height: 1;
+}
+
+.inventory-details-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.inventory-details-body {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-height: 0;
+}
+
+.inventory-description.details {
+  margin-top: 8px;
+  min-height: auto;
+}
+
+.inventory-details-meta {
+  margin-top: 10px;
+  display: grid;
+  gap: 5px;
+}
+
+.inventory-details-meta p {
+  margin: 0;
+  color: #bac8e7;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.inventory-details-meta strong {
+  color: #dce7ff;
+  font-weight: 700;
+}
+
+.inventory-details-actions {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(79, 96, 133, 0.34);
+}
+
+.inventory-details-empty {
+  display: grid;
+  gap: 8px;
 }
 
 .admin-stats-grid {
@@ -1322,7 +1626,7 @@ body {
   }
 
   .inventory-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
 
   .market-grid {
@@ -1582,6 +1886,24 @@ body {
     justify-self: end;
   }
 
+  .inventory-main-layout.has-selection {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-main-layout,
+  .inventory-main-layout.has-selection {
+    --inventory-card-width: 150px;
+    --inventory-card-height: 214px;
+  }
+
+  .inventory-grid {
+    grid-template-columns: repeat(auto-fill, minmax(var(--inventory-card-width), 1fr));
+  }
+
+  .inventory-details-panel {
+    margin-top: 2px;
+  }
+
   .botshop-buy-row {
     align-items: stretch;
   }
@@ -1595,5 +1917,14 @@ body {
   .botshop-buy-btn {
     order: 2;
     margin-left: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inventory-card,
+  .inventory-card.compact,
+  .inventory-details-panel {
+    transition: none;
+    animation: none;
   }
 }

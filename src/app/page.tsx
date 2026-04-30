@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMe, getMyBalance, logout } from "@/lib/api";
 import { AdminStats, ApiMeResponse, BotShopListing, CraftRecipe, InventoryItem, MarketListing, UserBalance } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
-import { AppHeader } from "@/components/dashboard/AppHeader";
+import { AppHeader, HeaderSearchResult } from "@/components/dashboard/AppHeader";
 import { ProfileDropdown } from "@/components/dashboard/ProfileDropdown";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { InventoryPanel } from "@/components/dashboard/InventoryPanel";
@@ -25,7 +25,6 @@ type DashboardTab = UserTab | AdminTab;
 type DashboardMode = "user" | "admin";
 type BotUiStatus = "online" | "offline" | "development";
 type InventoryFilter = "all" | "materials" | "sellable" | "tradeable";
-const INVENTORY_PAGE_SIZE = 8;
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "v0.1.0";
 const BOT_UI_STATUS: BotUiStatus = (
@@ -71,7 +70,6 @@ export default function HomePage() {
   const [craftLoaded, setCraftLoaded] = useState(false);
   const [craftLoading, setCraftLoading] = useState(false);
   const [craftError, setCraftError] = useState<string | null>(null);
-  const [inventoryPage, setInventoryPage] = useState(1);
   const [inventoryFilter, setInventoryFilter] = useState<InventoryFilter>("all");
   const [canUseAdminMode, setCanUseAdminMode] = useState(false);
   const [adminProbeDone, setAdminProbeDone] = useState(false);
@@ -110,13 +108,6 @@ export default function HomePage() {
     [dashboardMode, adminTabItems, userTabItems],
   );
 
-  const filteredTabs = useMemo(
-    () => searchQuery.trim()
-      ? tabItems.filter(tab => tab.label.toLowerCase().includes(searchQuery.trim().toLowerCase()))
-      : [],
-    [searchQuery, tabItems],
-  );
-
   const statusText = useMemo(() => {
     if (BOT_UI_STATUS === "offline") {
       return t.statusOffline;
@@ -133,6 +124,40 @@ export default function HomePage() {
     { id: "sellable" as const, label: t.inventoryFilterSellable },
     { id: "tradeable" as const, label: t.inventoryFilterTradeable },
   ]), [t]);
+
+  const searchResults = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query.length) {
+      return [] as HeaderSearchResult[];
+    }
+
+    const topLevelResults: HeaderSearchResult[] = tabItems
+      .filter(tab => tab.label.toLowerCase().includes(query))
+      .map(tab => ({
+        key: `tab:${tab.id}`,
+        tabId: tab.id,
+        label: tab.label,
+        breadcrumb: tab.label,
+      }));
+
+    const inventorySubtabResults: HeaderSearchResult[] = dashboardMode === "user"
+      ? inventoryFilterItems
+        .filter(filter => filter.label.toLowerCase().includes(query))
+        .map(filter => ({
+          key: `inventory-filter:${filter.id}`,
+          tabId: "inventory",
+          label: filter.label,
+          breadcrumb: `${t.tabInventory} -> ${filter.label}`,
+        }))
+      : [];
+
+    const byKey = new Map<string, HeaderSearchResult>();
+    [...inventorySubtabResults, ...topLevelResults].forEach(result => {
+      byKey.set(result.key, result);
+    });
+
+    return Array.from(byKey.values());
+  }, [dashboardMode, inventoryFilterItems, searchQuery, t.tabInventory, tabItems]);
 
   const filteredInventory = useMemo(() => {
     if (inventoryFilter === "materials") {
@@ -159,16 +184,6 @@ export default function HomePage() {
     }
     return t.inventoryEmpty;
   }, [inventoryFilter, t]);
-
-  const totalInventoryPages = useMemo(
-    () => Math.max(1, Math.ceil(filteredInventory.length / INVENTORY_PAGE_SIZE)),
-    [filteredInventory.length],
-  );
-
-  const paginatedInventory = useMemo(() => {
-    const start = (inventoryPage - 1) * INVENTORY_PAGE_SIZE;
-    return filteredInventory.slice(start, start + INVENTORY_PAGE_SIZE);
-  }, [filteredInventory, inventoryPage]);
 
   async function refreshMe(): Promise<void> {
     setAuthState("loading");
@@ -220,7 +235,6 @@ export default function HomePage() {
     setCraftLoaded(false);
     setCraftLoading(false);
     setCraftError(null);
-    setInventoryPage(1);
     setDashboardMode("user");
     setCanUseAdminMode(false);
     setAdminProbeDone(false);
@@ -283,7 +297,6 @@ export default function HomePage() {
       setInventory(response.items);
       setInventoryLoaded(true);
       setInventoryLoading(false);
-      setInventoryPage(1);
       return;
     }
 
@@ -291,7 +304,6 @@ export default function HomePage() {
     setInventoryLoaded(true);
     setInventoryLoading(false);
     setInventoryError(response.message || response.error || "Failed to load inventory.");
-    setInventoryPage(1);
   }, [inventoryLoading]);
 
   const loadMarket = useCallback(async (): Promise<void> => {
@@ -410,15 +422,8 @@ export default function HomePage() {
     setCraftError(response.message || response.error || t.craftError);
   }, [craftLoading, t.craftError]);
 
-  useEffect(() => {
-    if (inventoryPage > totalInventoryPages) {
-      setInventoryPage(totalInventoryPages);
-    }
-  }, [inventoryPage, totalInventoryPages]);
-
   function handleInventoryFilterChange(nextFilter: InventoryFilter): void {
     setInventoryFilter(nextFilter);
-    setInventoryPage(1);
   }
 
   useEffect(() => {
@@ -478,6 +483,18 @@ export default function HomePage() {
     setSearchQuery("");
   }
 
+  function handleSearchResultSelect(result: HeaderSearchResult): void {
+    if (result.key.startsWith("inventory-filter:")) {
+      const filterId = result.key.replace("inventory-filter:", "") as InventoryFilter;
+      setInventoryFilter(filterId);
+      setActiveTab("inventory");
+      setSearchQuery("");
+      return;
+    }
+
+    handleTabChange(result.tabId);
+  }
+
   function handleDashboardModeChange(nextMode: DashboardMode): void {
     if (nextMode === "admin" && !canUseAdminMode) {
       return;
@@ -526,9 +543,9 @@ export default function HomePage() {
               t={t}
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
-              filteredTabs={filteredTabs}
-              onTabChange={handleTabChange}
-                            balance={balance}
+              searchResults={searchResults}
+              onSearchResultSelect={handleSearchResultSelect}
+              balance={balance}
               profileDropdown={(
                 <ProfileDropdown
                   profileMenuRef={profileMenuRef}
@@ -553,7 +570,7 @@ export default function HomePage() {
                     void handleLogout();
                   }}
                   isLoggingOut={isLoggingOut}
-                                  balance={balance}
+                  balance={balance}
                 />
               )}
             />
@@ -609,11 +626,7 @@ export default function HomePage() {
                 inventoryLoading={inventoryLoading}
                 inventoryError={inventoryError}
                 inventoryEmptyText={inventoryEmptyText}
-                paginatedInventory={paginatedInventory}
-                inventoryPage={inventoryPage}
-                totalInventoryPages={totalInventoryPages}
-                onPrevPage={() => setInventoryPage(prev => Math.max(1, prev - 1))}
-                onNextPage={() => setInventoryPage(prev => Math.min(totalInventoryPages, prev + 1))}
+                inventoryItems={filteredInventory}
                 dateLocale={dateLocale}
               />
             ) : null}
