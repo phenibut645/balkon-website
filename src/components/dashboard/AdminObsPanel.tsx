@@ -36,6 +36,11 @@ function formatActionDate(value: string | null, dateLocale: string, unknownDate:
   return date.toLocaleString(dateLocale);
 }
 
+function formatDuration(durationMs: number): string {
+  const seconds = Math.max(1, Math.round(durationMs / 1000));
+  return `${seconds} sec`;
+}
+
 export function AdminObsPanel({ t, adminStats, dateLocale }: AdminObsPanelProps) {
   const [actions, setActions] = useState<ObsMediaAction[]>([]);
   const [statusFilter, setStatusFilter] = useState<ObsMediaActionStatus | null>(null);
@@ -159,26 +164,30 @@ export function AdminObsPanel({ t, adminStats, dateLocale }: AdminObsPanelProps)
           <div className="obs-action-list">
             {actions.map(action => (
               <article className="admin-log-card obs-action-card" key={action.id}>
-                <div className="admin-log-head">
-                  <p className="display-name">{action.productTitle}</p>
+                <div className="obs-action-card-head">
+                  <div>
+                    <p className="display-name">{action.productTitle}</p>
+                    <p className="market-card-hint">{action.productId} · {action.productKind.toUpperCase()} · {formatDuration(action.durationMs)}</p>
+                  </div>
                   <span className={`obs-action-status ${action.status}`}>{getStatusLabel(t, action.status)}</span>
                 </div>
                 <div className="obs-action-grid">
                   <p className="user-id">{t.actionBuyer}: {action.buyerDisplayName || action.buyerDiscordId}</p>
                   <p className="user-id">{t.actionStreamer}: {action.streamerNickname}</p>
-                  <p className="user-id">{t.actionProduct}: {action.productId} · {action.productKind.toUpperCase()}</p>
+                  <p className="user-id">{t.actionProduct}: {action.productTitle}</p>
                   <p className="user-id">{t.botShopPrice}: {action.priceOdm} {t.odm}</p>
-                  <p className="user-id">{t.commandId}: {action.commandId || "-"}</p>
-                  <p className="user-id">{t.actionStatus}: {getStatusLabel(t, action.status)}</p>
+                  {action.commandId ? <p className="user-id">{t.commandId}: {action.commandId}</p> : null}
                 </div>
-                <div className="botshop-meta">
+                <div className="botshop-meta obs-action-meta">
                   <span className="meta-badge muted">{t.obtained}: {formatActionDate(action.createdAt, dateLocale, t.unknownDate)}</span>
-                  <span className="meta-badge muted">{t.obsActionStatusSent}: {formatActionDate(action.sentAt, dateLocale, t.unknownDate)}</span>
-                  <span className="meta-badge muted">{t.obsActionStatusFailed}: {formatActionDate(action.failedAt, dateLocale, t.unknownDate)}</span>
-                  <span className="meta-badge price">{t.refunded}: {action.refundedOdm} {t.odm} · {formatActionDate(action.refundedAt, dateLocale, t.unknownDate)}</span>
+                  {action.sentAt ? <span className="meta-badge ok">{t.obsActionStatusSent}: {formatActionDate(action.sentAt, dateLocale, t.unknownDate)}</span> : null}
+                  {action.failedAt ? <span className="meta-badge danger">{t.obsActionStatusFailed}: {formatActionDate(action.failedAt, dateLocale, t.unknownDate)}</span> : null}
+                  {action.refundedAt || action.refundedOdm > 0 ? (
+                    <span className="meta-badge price">{t.refunded}: {action.refundedOdm} {t.odm}{action.refundedAt ? ` · ${formatActionDate(action.refundedAt, dateLocale, t.unknownDate)}` : ""}</span>
+                  ) : null}
                 </div>
-                {action.errorMessage ? (
-                  <p className="state-text state-error">{t.errorMessage}: {action.errorCode ? `${action.errorCode}: ` : ""}{action.errorMessage}</p>
+                {(action.status === "failed" || action.status === "refunded") && (action.errorMessage || action.errorCode) ? (
+                  <p className="obs-action-error">{t.errorMessage}: {action.errorCode ? `${action.errorCode}: ` : ""}{action.errorMessage || ""}</p>
                 ) : null}
               </article>
             ))}

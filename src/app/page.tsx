@@ -114,7 +114,7 @@ export default function HomePage() {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState<string | null>(null);
   const [notificationPage, setNotificationPage] = useState(1);
-  const [notificationPageSize] = useState(8);
+  const [notificationPageSize] = useState(6);
   const [notificationTotal, setNotificationTotal] = useState(0);
   const [notificationFilterUnreadOnly, setNotificationFilterUnreadOnly] = useState(false);
   const [obsShopStreamers, setObsShopStreamers] = useState<ObsShopStreamer[]>([]);
