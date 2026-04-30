@@ -2513,6 +2513,126 @@ body {
   box-shadow: 0 0 18px rgba(110, 153, 242, 0.3);
 }
 
+.shop-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.shop-subtab-chip {
+  border: 1px solid rgba(120, 149, 204, 0.42);
+  background: rgba(24, 37, 63, 0.58);
+  color: #d5e4ff;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shop-subtab-chip.active {
+  border-color: rgba(159, 193, 255, 0.65);
+  background: linear-gradient(145deg, rgba(62, 95, 156, 0.72), rgba(35, 56, 92, 0.75));
+  color: #f4f8ff;
+}
+
+.shop-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.shop-overview-card {
+  border: 1px solid rgba(115, 143, 198, 0.38);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(15, 24, 42, 0.72);
+  display: grid;
+  gap: 8px;
+}
+
+.obs-streamer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.obs-streamer-card {
+  border: 1px solid rgba(116, 145, 204, 0.4);
+  border-radius: 14px;
+  background: rgba(15, 23, 39, 0.74);
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.obs-status-pill {
+  border: 1px solid rgba(111, 141, 199, 0.36);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #dce8ff;
+}
+
+.obs-status-pill.online {
+  border-color: rgba(92, 202, 128, 0.65);
+  color: #9ef1bb;
+}
+
+.obs-status-pill.offline {
+  border-color: rgba(235, 142, 106, 0.62);
+  color: #ffc6b0;
+}
+
+.obs-status-pill.unknown {
+  border-color: rgba(145, 160, 192, 0.62);
+  color: #ccd8ee;
+}
+
+.obs-streamer-detail {
+  display: grid;
+  gap: 10px;
+}
+
+.obs-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.obs-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.obs-media-card {
+  border: 1px solid rgba(112, 142, 202, 0.4);
+  border-radius: 14px;
+  background: rgba(14, 21, 37, 0.75);
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.obs-media-preview {
+  height: 130px;
+  border-radius: 10px;
+  border: 1px solid rgba(121, 149, 204, 0.33);
+  background: rgba(16, 25, 42, 0.72);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.obs-media-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .notification-bell {
   position: relative;
 }

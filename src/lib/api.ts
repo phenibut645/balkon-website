@@ -14,6 +14,8 @@ import {
   ApiAdminSearchResponse,
   ApiBaseResponse,
   ApiBotShopResponse,
+  ApiObsShopStreamerDetailsResponse,
+  ApiObsShopStreamersResponse,
   ApiCraftRecipesResponse,
   ApiProfileMeResponse,
   ApiMarketForbesResponse,
@@ -808,6 +810,64 @@ export async function getNotifications(input: { page?: number; pageSize?: number
         ok: false,
         error: data?.error || "NOTIFICATIONS_LOAD_FAILED",
         message: data?.message || "Failed to load notifications.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getObsShopStreamers(): Promise<ApiObsShopStreamersResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/shop/obs/streamers`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiObsShopStreamersResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "SHOP_OBS_STREAMERS_LOAD_FAILED",
+        message: data?.message || "Failed to load OBS shop streamers.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getObsShopStreamerDetails(streamerId: number | string): Promise<ApiObsShopStreamerDetailsResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/shop/obs/streamers/${encodeURIComponent(String(streamerId))}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiObsShopStreamerDetailsResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "SHOP_OBS_STREAMER_DETAILS_FAILED",
+        message: data?.message || "Failed to load OBS streamer details.",
       };
     }
 

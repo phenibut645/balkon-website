@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMarketCapitalization, getMarketForbes, getMe, getMyBalance, getMyProfile, getNotifications, getNotificationsSummary, logout, markAllNotificationsRead, markNotificationRead, updateMyProfile } from "@/lib/api";
+import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMarketCapitalization, getMarketForbes, getMe, getMyBalance, getMyProfile, getNotifications, getNotificationsSummary, getObsShopStreamerDetails, getObsShopStreamers, logout, markAllNotificationsRead, markNotificationRead, updateMyProfile } from "@/lib/api";
 import { DashboardMode, DashboardSearchResult, DashboardTab, normalizeDashboardSearchValue, MarketSubTab } from "@/lib/dashboardSearch";
-import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, NotificationItem, UserBalance, UserPublicProfile } from "@/lib/types";
+import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, NotificationItem, ObsMediaProduct, ObsShopStreamer, ShopSubTab, UserBalance, UserPublicProfile } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
 import { AppHeader } from "@/components/dashboard/AppHeader";
 import { NotificationBell } from "@/components/dashboard/NotificationBell";
@@ -22,10 +22,16 @@ import { AdminBotShopPanel } from "@/components/dashboard/AdminBotShopPanel";
 import { AdminBroadcastPanel } from "@/components/dashboard/AdminBroadcastPanel";
 import { PlaceholderPanel } from "@/components/dashboard/PlaceholderPanel";
 import { ProfileSettingsPanel } from "@/components/dashboard/ProfileSettingsPanel";
+import { useSafePolling } from "@/hooks/useSafePolling";
+import { areJsonEqual } from "@/lib/shallowDataEqual";
 
 type AuthState = "loading" | "guest" | "user";
 type BotUiStatus = "online" | "offline" | "development";
 type InventoryFilter = "all" | "materials" | "sellable" | "tradeable";
+type LoadOptions = {
+  silent?: boolean;
+  force?: boolean;
+};
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "v0.1.0";
 const BOT_UI_STATUS: BotUiStatus = (
@@ -89,6 +95,7 @@ export default function HomePage() {
   const [streamerMode, setStreamerMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [marketSubTab, setMarketSubTab] = useState<MarketSubTab>("overview");
+  const [shopSubTab, setShopSubTab] = useState<ShopSubTab>("overview");
   const [profileData, setProfileData] = useState<UserPublicProfile | null>(null);
   const [profileGuilds, setProfileGuilds] = useState<AvailableGuild[]>([]);
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -109,6 +116,13 @@ export default function HomePage() {
   const [notificationPageSize] = useState(8);
   const [notificationTotal, setNotificationTotal] = useState(0);
   const [notificationFilterUnreadOnly, setNotificationFilterUnreadOnly] = useState(false);
+  const [obsShopStreamers, setObsShopStreamers] = useState<ObsShopStreamer[]>([]);
+  const [obsShopStreamersLoaded, setObsShopStreamersLoaded] = useState(false);
+  const [obsShopStreamersLoading, setObsShopStreamersLoading] = useState(false);
+  const [obsShopStreamersError, setObsShopStreamersError] = useState<string | null>(null);
+  const [obsShopMediaProducts, setObsShopMediaProducts] = useState<ObsMediaProduct[]>([]);
+  const [obsShopStreamerDetailsLoading, setObsShopStreamerDetailsLoading] = useState(false);
+  const [obsShopStreamerDetailsError, setObsShopStreamerDetailsError] = useState<string | null>(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notificationsSummaryLoadingRef = useRef(false);
@@ -298,6 +312,30 @@ export default function HomePage() {
           "osta",
         ],
         destination: { kind: "userTab", tab: "botShop" },
+      },
+      {
+        key: "shop:items",
+        label: `${t.tabBotShop} → ${t.shopItems}`,
+        breadcrumb: `${t.tabBotShop} → ${t.shopItems}`,
+        description: t.botShopSearchDescription,
+        aliases: ["купить", "магазин", "товары", "shop", "items", "buy"],
+        destination: { kind: "shopSubtab", subtab: "items" },
+      },
+      {
+        key: "shop:cases",
+        label: `${t.tabBotShop} → ${t.shopCases}`,
+        breadcrumb: `${t.tabBotShop} → ${t.shopCases}`,
+        description: t.shopCasesSoon,
+        aliases: ["кейсы", "case", "cases"],
+        destination: { kind: "shopSubtab", subtab: "cases" },
+      },
+      {
+        key: "shop:obs",
+        label: `${t.tabBotShop} → ${t.shopObs}`,
+        breadcrumb: `${t.tabBotShop} → ${t.shopObs}`,
+        description: t.obsMediaDescription,
+        aliases: ["obs", "обс", "стример", "стримеры", "твич", "twitch", "media", "медиа", "показать картинку", "гифка"],
+        destination: { kind: "shopSubtab", subtab: "obs" },
       },
       {
         key: "tab:inventory",
@@ -506,10 +544,18 @@ export default function HomePage() {
     setNotificationPage(1);
     setNotificationTotal(0);
     setNotificationFilterUnreadOnly(false);
+    setObsShopStreamers([]);
+    setObsShopStreamersLoaded(false);
+    setObsShopStreamersLoading(false);
+    setObsShopStreamersError(null);
+    setObsShopMediaProducts([]);
+    setObsShopStreamerDetailsLoading(false);
+    setObsShopStreamerDetailsError(null);
     notificationsSummaryLoadingRef.current = false;
     notificationsSummaryLastLoadedAtRef.current = 0;
     notificationsLoadingRef.current = false;
     setMarketSubTab("overview");
+    setShopSubTab("overview");
     setDashboardMode("user");
     setCanUseAdminMode(false);
     setAdminProbeDone(false);
@@ -528,17 +574,20 @@ export default function HomePage() {
 
     const response = await getAdminStats();
     if (response.ok && response.stats) {
+      const nextStats = response.stats;
       setCanUseAdminMode(true);
-      setAdminStats(response.stats);
+      setAdminStats(prev => (areJsonEqual(prev, nextStats) ? prev : nextStats));
       setAdminStatsError(null);
-      setAdminStatsLoading(false);
+      if (!silent) {
+        setAdminStatsLoading(false);
+      }
       return;
     }
 
-    setCanUseAdminMode(false);
-    setAdminStats(null);
-    setAdminStatsLoading(false);
     if (!silent) {
+      setCanUseAdminMode(false);
+      setAdminStats(null);
+      setAdminStatsLoading(false);
       setAdminStatsError(response.message || t.adminStatsError);
     }
   }, [t.adminStatsError]);
@@ -559,114 +608,222 @@ export default function HomePage() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [profileMenuOpen]);
 
-  const loadInventory = useCallback(async (): Promise<void> => {
+  const loadInventory = useCallback(async (options: LoadOptions = {}): Promise<void> => {
+    const silent = options.silent === true;
     if (inventoryLoading) {
       return;
     }
 
-    setInventoryLoading(true);
-    setInventoryError(null);
+    if (!silent) {
+      setInventoryLoading(true);
+      setInventoryError(null);
+    }
 
     const response = await getInventory();
     if (response.ok && Array.isArray(response.items)) {
-      setInventory(response.items);
+      const nextItems = response.items;
+      setInventory(prev => (areJsonEqual(prev, nextItems) ? prev : nextItems));
       setInventoryLoaded(true);
-      setInventoryLoading(false);
+      setInventoryError(null);
+      if (!silent) {
+        setInventoryLoading(false);
+      }
       return;
     }
 
-    setInventory([]);
-    setInventoryLoaded(true);
-    setInventoryLoading(false);
-    setInventoryError(response.message || response.error || "Failed to load inventory.");
+    if (!silent) {
+      setInventory([]);
+      setInventoryLoaded(true);
+      setInventoryLoading(false);
+      setInventoryError(response.message || response.error || "Failed to load inventory.");
+    }
   }, [inventoryLoading]);
 
-  const loadMarket = useCallback(async (): Promise<void> => {
+  const loadMarket = useCallback(async (options: LoadOptions = {}): Promise<void> => {
+    const silent = options.silent === true;
     if (marketLoading) {
       return;
     }
 
-    setMarketLoading(true);
-    setMarketError(null);
+    if (!silent) {
+      setMarketLoading(true);
+      setMarketError(null);
+    }
 
     const response = await getMarket();
     if (response.ok && Array.isArray(response.listings)) {
-      setMarketListings(response.listings);
+      const nextListings = response.listings;
+      setMarketListings(prev => (areJsonEqual(prev, nextListings) ? prev : nextListings));
       setMarketLoaded(true);
-      setMarketLoading(false);
+      setMarketError(null);
+      if (!silent) {
+        setMarketLoading(false);
+      }
       return;
     }
 
-    setMarketListings([]);
-    setMarketLoaded(true);
-    setMarketLoading(false);
-    setMarketError(response.message || response.error || t.marketError);
+    if (!silent) {
+      setMarketListings([]);
+      setMarketLoaded(true);
+      setMarketLoading(false);
+      setMarketError(response.message || response.error || t.marketError);
+    }
   }, [marketLoading, t.marketError]);
 
-  const loadMarketCapitalization = useCallback(async (): Promise<void> => {
+  const loadMarketCapitalization = useCallback(async (options: LoadOptions = {}): Promise<void> => {
+    const silent = options.silent === true;
     if (marketCapitalizationLoading) {
       return;
     }
 
-    setMarketCapitalizationLoading(true);
-    setMarketCapitalizationError(null);
+    if (!silent) {
+      setMarketCapitalizationLoading(true);
+      setMarketCapitalizationError(null);
+    }
 
     const response = await getMarketCapitalization(15);
     if (response.ok && response.capitalization) {
-      setMarketCapitalization(response.capitalization);
+      const nextCapitalization = response.capitalization;
+      setMarketCapitalization(prev => (areJsonEqual(prev, nextCapitalization) ? prev : nextCapitalization));
       setMarketCapitalizationLoaded(true);
-      setMarketCapitalizationLoading(false);
+      setMarketCapitalizationError(null);
+      if (!silent) {
+        setMarketCapitalizationLoading(false);
+      }
       return;
     }
 
-    setMarketCapitalization(null);
-    setMarketCapitalizationLoaded(true);
-    setMarketCapitalizationLoading(false);
-    setMarketCapitalizationError(response.message || response.error || t.capitalizationError);
+    if (!silent) {
+      setMarketCapitalization(null);
+      setMarketCapitalizationLoaded(true);
+      setMarketCapitalizationLoading(false);
+      setMarketCapitalizationError(response.message || response.error || t.capitalizationError);
+    }
   }, [marketCapitalizationLoading, t.capitalizationError]);
 
-  const loadBotShop = useCallback(async (): Promise<void> => {
+  const loadBotShop = useCallback(async (options: LoadOptions = {}): Promise<void> => {
+    const silent = options.silent === true;
     if (botShopLoading) {
       return;
     }
 
-    setBotShopLoading(true);
-    setBotShopError(null);
+    if (!silent) {
+      setBotShopLoading(true);
+      setBotShopError(null);
+    }
 
     const response = await getBotShop();
     if (response.ok && Array.isArray(response.listings)) {
-      setBotShopListings(response.listings);
+      const nextListings = response.listings;
+      setBotShopListings(prev => (areJsonEqual(prev, nextListings) ? prev : nextListings));
       setBotShopLoaded(true);
-      setBotShopLoading(false);
+      setBotShopError(null);
+      if (!silent) {
+        setBotShopLoading(false);
+      }
       return;
     }
 
-    setBotShopListings([]);
-    setBotShopLoaded(true);
-    setBotShopLoading(false);
-    setBotShopError(response.message || response.error || t.botShopError);
+    if (!silent) {
+      setBotShopListings([]);
+      setBotShopLoaded(true);
+      setBotShopLoading(false);
+      setBotShopError(response.message || response.error || t.botShopError);
+    }
   }, [botShopLoading, t.botShopError]);
 
-  const loadMarketForbes = useCallback(async (): Promise<void> => {
+  const loadObsShopStreamers = useCallback(async (options: LoadOptions = {}): Promise<void> => {
+    const silent = options.silent === true;
+    if (obsShopStreamersLoading) {
+      return;
+    }
+
+    if (!silent) {
+      setObsShopStreamersLoading(true);
+      setObsShopStreamersError(null);
+    }
+
+    const response = await getObsShopStreamers();
+    if (response.ok && Array.isArray(response.streamers)) {
+      const nextStreamers = response.streamers;
+      setObsShopStreamers(prev => (areJsonEqual(prev, nextStreamers) ? prev : nextStreamers));
+      setObsShopStreamersLoaded(true);
+      setObsShopStreamersError(null);
+      if (!silent) {
+        setObsShopStreamersLoading(false);
+      }
+      return;
+    }
+
+    if (!silent) {
+      setObsShopStreamersLoading(false);
+      setObsShopStreamersError(response.message || response.error || t.shopObsError);
+    }
+  }, [obsShopStreamersLoading, t.shopObsError]);
+
+  const loadObsShopStreamerDetails = useCallback(async (streamerId: number | string, options: LoadOptions = {}): Promise<void> => {
+    const silent = options.silent === true;
+    if (obsShopStreamerDetailsLoading) {
+      return;
+    }
+
+    if (!silent) {
+      setObsShopStreamerDetailsLoading(true);
+      setObsShopStreamerDetailsError(null);
+    }
+
+    const response = await getObsShopStreamerDetails(streamerId);
+    if (response.ok && response.streamer && Array.isArray(response.mediaProducts)) {
+      const nextStreamer = response.streamer;
+      const nextProducts = response.mediaProducts;
+
+      setObsShopMediaProducts(prev => (areJsonEqual(prev, nextProducts) ? prev : nextProducts));
+      setObsShopStreamers(prev => {
+        const next = prev.map(item => (String(item.streamerId) === String(nextStreamer.streamerId) ? nextStreamer : item));
+        return areJsonEqual(prev, next) ? prev : next;
+      });
+      setObsShopStreamerDetailsError(null);
+      if (!silent) {
+        setObsShopStreamerDetailsLoading(false);
+      }
+      return;
+    }
+
+    if (!silent) {
+      setObsShopStreamerDetailsLoading(false);
+      setObsShopStreamerDetailsError(response.message || response.error || t.shopObsError);
+    }
+  }, [obsShopStreamerDetailsLoading, t.shopObsError]);
+
+  const loadMarketForbes = useCallback(async (options: LoadOptions = {}): Promise<void> => {
+    const silent = options.silent === true;
     if (marketForbesLoading) {
       return;
     }
 
-    setMarketForbesLoading(true);
-    setMarketForbesError(null);
+    if (!silent) {
+      setMarketForbesLoading(true);
+      setMarketForbesError(null);
+    }
 
     const response = await getMarketForbes(10);
     if (response.ok && Array.isArray(response.leaderboard)) {
-      setMarketForbes(response.leaderboard);
+      const nextLeaderboard = response.leaderboard;
+      setMarketForbes(prev => (areJsonEqual(prev, nextLeaderboard) ? prev : nextLeaderboard));
       setMarketForbesLoaded(true);
-      setMarketForbesLoading(false);
+      setMarketForbesError(null);
+      if (!silent) {
+        setMarketForbesLoading(false);
+      }
       return;
     }
 
-    setMarketForbes([]);
-    setMarketForbesLoaded(true);
-    setMarketForbesLoading(false);
-    setMarketForbesError(response.message || response.error || t.marketForbesError);
+    if (!silent) {
+      setMarketForbes([]);
+      setMarketForbesLoaded(true);
+      setMarketForbesLoading(false);
+      setMarketForbesError(response.message || response.error || t.marketForbesError);
+    }
   }, [marketForbesLoading, t.marketForbesError]);
 
   const loadProfile = useCallback(async (): Promise<void> => {
@@ -699,7 +856,9 @@ export default function HomePage() {
     );
   }, [profileLoading, t.apiReachFailedHint, t.profileSaveFailed]);
 
-  const loadNotificationsSummary = useCallback(async (force = false): Promise<void> => {
+  const loadNotificationsSummary = useCallback(async (options: LoadOptions = {}): Promise<void> => {
+    const silent = options.silent === true;
+    const force = options.force === true;
     if (notificationsSummaryLoadingRef.current) {
       return;
     }
@@ -709,37 +868,47 @@ export default function HomePage() {
     }
 
     notificationsSummaryLoadingRef.current = true;
-    setNotificationsSummaryLoading(true);
-    setNotificationsSummaryError(null);
+    if (!silent) {
+      setNotificationsSummaryLoading(true);
+      setNotificationsSummaryError(null);
+    }
 
     try {
       const response = await getNotificationsSummary();
       notificationsSummaryLastLoadedAtRef.current = Date.now();
 
       if (response.ok) {
-        setNotificationsSummary({
+        const nextSummary = {
           unreadCount: Number(response.unreadCount ?? 0),
           latest: Array.isArray(response.latest) ? response.latest : [],
-        });
+        };
+        setNotificationsSummary(prev => (areJsonEqual(prev, nextSummary) ? prev : nextSummary));
+        setNotificationsSummaryError(null);
         return;
       }
 
-      setNotificationsSummary({ unreadCount: 0, latest: [] });
-      setNotificationsSummaryError(response.message || response.error || t.notificationError);
+      if (!silent) {
+        setNotificationsSummaryError(response.message || response.error || t.notificationError);
+      }
     } finally {
       notificationsSummaryLoadingRef.current = false;
-      setNotificationsSummaryLoading(false);
+      if (!silent) {
+        setNotificationsSummaryLoading(false);
+      }
     }
   }, [t.notificationError]);
 
-  const loadNotifications = useCallback(async (page = notificationPage, unreadOnly = notificationFilterUnreadOnly): Promise<void> => {
+  const loadNotifications = useCallback(async (page = notificationPage, unreadOnly = notificationFilterUnreadOnly, options: LoadOptions = {}): Promise<void> => {
+    const silent = options.silent === true;
     if (notificationsLoadingRef.current) {
       return;
     }
 
     notificationsLoadingRef.current = true;
-    setNotificationsLoading(true);
-    setNotificationsError(null);
+    if (!silent) {
+      setNotificationsLoading(true);
+      setNotificationsError(null);
+    }
 
     try {
       const response = await getNotifications({
@@ -749,19 +918,28 @@ export default function HomePage() {
       });
 
       if (response.ok && Array.isArray(response.notifications)) {
-        setNotificationsList(response.notifications);
-        setNotificationPage(response.page || page);
-        setNotificationTotal(response.total || 0);
+        const nextNotifications = response.notifications;
+        const nextPage = response.page || page;
+        const nextTotal = response.total || 0;
+
+        setNotificationsList(prev => (areJsonEqual(prev, nextNotifications) ? prev : nextNotifications));
+        setNotificationPage(prev => (prev === nextPage ? prev : nextPage));
+        setNotificationTotal(prev => (prev === nextTotal ? prev : nextTotal));
         setNotificationsLoaded(true);
+        setNotificationsError(null);
         return;
       }
 
-      setNotificationsList([]);
-      setNotificationsLoaded(true);
-      setNotificationsError(response.message || response.error || t.notificationError);
+      if (!silent) {
+        setNotificationsList([]);
+        setNotificationsLoaded(true);
+        setNotificationsError(response.message || response.error || t.notificationError);
+      }
     } finally {
       notificationsLoadingRef.current = false;
-      setNotificationsLoading(false);
+      if (!silent) {
+        setNotificationsLoading(false);
+      }
     }
   }, [notificationFilterUnreadOnly, notificationPage, notificationPageSize, t.notificationError]);
 
@@ -772,9 +950,9 @@ export default function HomePage() {
       return;
     }
 
-    await loadNotificationsSummary(true);
+    await loadNotificationsSummary({ force: true, silent: true });
     if (activeTab === "notifications") {
-      await loadNotifications(notificationPage, notificationFilterUnreadOnly);
+      await loadNotifications(notificationPage, notificationFilterUnreadOnly, { silent: true });
     }
   }, [activeTab, loadNotifications, loadNotificationsSummary, notificationFilterUnreadOnly, notificationPage, t.notificationError]);
 
@@ -785,9 +963,9 @@ export default function HomePage() {
       return;
     }
 
-    await loadNotificationsSummary(true);
+    await loadNotificationsSummary({ force: true, silent: true });
     if (activeTab === "notifications") {
-      await loadNotifications(notificationPage, notificationFilterUnreadOnly);
+      await loadNotifications(notificationPage, notificationFilterUnreadOnly, { silent: true });
     }
   }, [activeTab, loadNotifications, loadNotificationsSummary, notificationFilterUnreadOnly, notificationPage, t.notificationError]);
 
@@ -819,26 +997,35 @@ export default function HomePage() {
     setProfileSaveLoading(false);
   }, [profileDescriptionDraft, profileGuilds, profileHomeGuildIdDraft, t.apiReachFailedHint, t.profileSaveFailed, t.profileSaved]);
 
-  const loadBalance = useCallback(async (): Promise<void> => {
+  const loadBalance = useCallback(async (options: LoadOptions = {}): Promise<void> => {
+    const silent = options.silent === true;
     if (balanceLoading) {
       return;
     }
 
-    setBalanceLoading(true);
-    setBalanceError(null);
+    if (!silent) {
+      setBalanceLoading(true);
+      setBalanceError(null);
+    }
 
     const response = await getMyBalance();
     if (response.ok && response.balance) {
-      setBalance(response.balance);
+      const nextBalance = response.balance;
+      setBalance(prev => (areJsonEqual(prev, nextBalance) ? prev : nextBalance));
       setBalanceLoaded(true);
-      setBalanceLoading(false);
+      setBalanceError(null);
+      if (!silent) {
+        setBalanceLoading(false);
+      }
       return;
     }
 
-    setBalance(null);
-    setBalanceLoaded(true);
-    setBalanceLoading(false);
-    setBalanceError(response.message || response.error || t.balanceLoadFailed);
+    if (!silent) {
+      setBalance(null);
+      setBalanceLoaded(true);
+      setBalanceLoading(false);
+      setBalanceError(response.message || response.error || t.balanceLoadFailed);
+    }
   }, [balanceLoading, t.balanceLoadFailed]);
 
   const handleBuyBotShopListing = useCallback(async (listingId: number, amount: number): Promise<void> => {
@@ -926,10 +1113,16 @@ export default function HomePage() {
   }, [authState, activeTab, marketForbesLoaded, marketForbesLoading, marketSubTab, loadMarketForbes]);
 
   useEffect(() => {
-    if (authState === "user" && activeTab === "botShop" && !botShopLoaded && !botShopLoading) {
+    if (authState === "user" && activeTab === "botShop" && shopSubTab === "items" && !botShopLoaded && !botShopLoading) {
       void loadBotShop();
     }
-  }, [authState, activeTab, botShopLoaded, botShopLoading, loadBotShop]);
+  }, [authState, activeTab, botShopLoaded, botShopLoading, loadBotShop, shopSubTab]);
+
+  useEffect(() => {
+    if (authState === "user" && activeTab === "botShop" && shopSubTab === "obs" && !obsShopStreamersLoaded && !obsShopStreamersLoading) {
+      void loadObsShopStreamers();
+    }
+  }, [activeTab, authState, loadObsShopStreamers, obsShopStreamersLoaded, obsShopStreamersLoading, shopSubTab]);
 
   useEffect(() => {
     if (authState === "user" && !balanceLoaded && !balanceLoading) {
@@ -979,6 +1172,137 @@ export default function HomePage() {
     }
   }, [canUseAdminMode, dashboardMode]);
 
+  const pollNotificationsSummary = useCallback(async (): Promise<void> => {
+    await loadNotificationsSummary({ silent: true });
+  }, [loadNotificationsSummary]);
+
+  const pollBalance = useCallback(async (): Promise<void> => {
+    await loadBalance({ silent: true });
+  }, [loadBalance]);
+
+  const pollActiveUserTab = useCallback(async (): Promise<void> => {
+    if (dashboardMode !== "user") {
+      return;
+    }
+
+    if (activeTab === "overview") {
+      await loadBalance({ silent: true });
+      return;
+    }
+
+    if (activeTab === "notifications") {
+      await loadNotifications(notificationPage, notificationFilterUnreadOnly, { silent: true });
+      await loadNotificationsSummary({ silent: true });
+      return;
+    }
+
+    if (activeTab === "market") {
+      if (marketSubTab === "overview") {
+        await loadMarketCapitalization({ silent: true });
+        return;
+      }
+
+      if (marketSubTab === "listings") {
+        await loadMarket({ silent: true });
+        return;
+      }
+
+      if (marketSubTab === "forbes") {
+        await loadMarketForbes({ silent: true });
+      }
+      return;
+    }
+
+    if (activeTab === "botShop") {
+      if (shopSubTab === "obs") {
+        await loadObsShopStreamers({ silent: true });
+      } else if (shopSubTab === "items") {
+        await loadBotShop({ silent: true });
+      }
+      return;
+    }
+
+    if (activeTab === "inventory" && inventoryLoaded) {
+      await loadInventory({ silent: true });
+    }
+  }, [
+    activeTab,
+    dashboardMode,
+    inventoryLoaded,
+    loadBalance,
+    loadBotShop,
+    loadInventory,
+    loadMarket,
+    loadMarketCapitalization,
+    loadMarketForbes,
+    loadObsShopStreamers,
+    loadNotifications,
+    loadNotificationsSummary,
+    marketSubTab,
+    notificationFilterUnreadOnly,
+    notificationPage,
+    shopSubTab,
+  ]);
+
+  const pollAdminDashboard = useCallback(async (): Promise<void> => {
+    if (dashboardMode === "admin" && activeTab === "adminDashboard") {
+      await loadAdminStats(true);
+    }
+  }, [activeTab, dashboardMode, loadAdminStats]);
+
+  useSafePolling({
+    enabled: authState === "user" && !isLoggingOut,
+    intervalMs: 30000,
+    minGapMs: 5000,
+    task: pollNotificationsSummary,
+  });
+
+  useSafePolling({
+    enabled: authState === "user" && !isLoggingOut,
+    intervalMs: 60000,
+    minGapMs: 10000,
+    task: pollBalance,
+  });
+
+  useSafePolling({
+    enabled: authState === "user" && !isLoggingOut && dashboardMode === "user",
+    intervalMs: 45000,
+    minGapMs: 10000,
+    task: pollActiveUserTab,
+  });
+
+  useSafePolling({
+    enabled: authState === "user" && !isLoggingOut && dashboardMode === "admin" && activeTab === "adminDashboard",
+    intervalMs: 60000,
+    minGapMs: 10000,
+    task: pollAdminDashboard,
+  });
+
+  useEffect(() => {
+    function handleVisibilityChange(): void {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
+      if (authState !== "user" || isLoggingOut) {
+        return;
+      }
+
+      void loadNotificationsSummary({ force: true, silent: true });
+      void loadBalance({ silent: true });
+      if (dashboardMode === "user") {
+        void pollActiveUserTab();
+      } else if (dashboardMode === "admin" && activeTab === "adminDashboard") {
+        void pollAdminDashboard();
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [activeTab, authState, dashboardMode, isLoggingOut, loadBalance, loadNotificationsSummary, pollActiveUserTab, pollAdminDashboard]);
+
   function handleLogin(): void {
     window.location.href = getDiscordLoginUrl();
   }
@@ -1000,6 +1324,14 @@ export default function HomePage() {
     if (result.destination.kind === "userTab") {
       setDashboardMode("user");
       setActiveTab(result.destination.tab);
+      setSearchQuery("");
+      return;
+    }
+
+    if (result.destination.kind === "shopSubtab") {
+      setDashboardMode("user");
+      setActiveTab("botShop");
+      setShopSubTab(result.destination.subtab);
       setSearchQuery("");
       return;
     }
@@ -1073,7 +1405,7 @@ export default function HomePage() {
                     setNotificationsLoaded(false);
                   }}
                   onRefresh={() => {
-                    void loadNotificationsSummary(true);
+                    void loadNotificationsSummary({ force: true });
                   }}
                   onMarkRead={handleMarkNotificationRead}
                   onMarkAllRead={handleMarkAllNotificationsRead}
@@ -1203,6 +1535,8 @@ export default function HomePage() {
               <BotShopPanel
                 t={t}
                 loadingGifs={LOADING_GIFS}
+                shopSubTab={shopSubTab}
+                onShopSubTabChange={setShopSubTab}
                 botShopListings={botShopListings}
                 botShopLoading={botShopLoading}
                 botShopError={botShopError}
@@ -1211,10 +1545,23 @@ export default function HomePage() {
                 buyFeedback={buyFeedback}
                 buyErrors={buyErrors}
                 onBuyListing={handleBuyBotShopListing}
-                onRefresh={() => {
+                onRefreshItems={() => {
                   setBotShopLoaded(false);
                   void loadBotShop();
                 }}
+                obsStreamers={obsShopStreamers}
+                obsStreamersLoading={obsShopStreamersLoading}
+                obsStreamersError={obsShopStreamersError}
+                onRefreshObsStreamers={() => {
+                  setObsShopStreamersLoaded(false);
+                  void loadObsShopStreamers();
+                }}
+                onLoadObsStreamerDetails={async (streamerId) => {
+                  await loadObsShopStreamerDetails(streamerId);
+                }}
+                obsStreamerDetailsLoading={obsShopStreamerDetailsLoading}
+                obsStreamerDetailsError={obsShopStreamerDetailsError}
+                obsMediaProducts={obsShopMediaProducts}
               />
             ) : null}
 
@@ -1299,7 +1646,7 @@ export default function HomePage() {
               <AdminBroadcastPanel
                 t={t}
                 onSent={() => {
-                  void loadNotificationsSummary(true);
+                  void loadNotificationsSummary({ force: true, silent: true });
                 }}
               />
             ) : null}

@@ -1,3 +1,5 @@
+import { ShopSubTab } from "./types";
+
 export type UserTab = "overview" | "inventory" | "market" | "botShop" | "craft" | "profile" | "notifications";
 export type AdminTab = "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems" | "adminBotShop" | "adminMessage";
 export type DashboardTab = UserTab | AdminTab;
@@ -7,7 +9,8 @@ export type MarketSubTab = "overview" | "listings" | "forbes";
 export type DashboardSearchDestination =
   | { kind: "userTab"; tab: UserTab }
   | { kind: "adminTab"; tab: AdminTab }
-  | { kind: "marketSubtab"; subtab: MarketSubTab };
+  | { kind: "marketSubtab"; subtab: MarketSubTab }
+  | { kind: "shopSubtab"; subtab: ShopSubTab };
 
 export type DashboardSearchResult = {
   key: string;

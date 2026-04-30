@@ -159,11 +159,46 @@ export type BotShopListing = {
   rarityColorHex: string | null;
 };
 
+export type ShopSubTab = "overview" | "items" | "cases" | "obs";
+
+export type ObsShopStreamer = {
+  streamerId: number | string;
+  discordGuildId: string;
+  guildDisplayName: string | null;
+  nickname: string;
+  twitchUrl: string | null;
+  isPrimary: boolean;
+  obsAgentId: string | null;
+  obsAgentOnline: boolean;
+  streamingStatus: "live" | "offline" | "unknown";
+  lastSeenAt: string | null;
+};
+
+export type ObsMediaProduct = {
+  id: string;
+  kind: "image" | "gif";
+  title: string;
+  description: string;
+  priceOdm: number;
+  durationSeconds: number;
+  previewUrl: string | null;
+  enabled: boolean;
+};
+
 export type ApiBotShopResponse = {
   ok: boolean;
   listings?: BotShopListing[];
   error?: string;
   message?: string;
+};
+
+export type ApiObsShopStreamersResponse = ApiBaseResponse & {
+  streamers?: ObsShopStreamer[];
+};
+
+export type ApiObsShopStreamerDetailsResponse = ApiBaseResponse & {
+  streamer?: ObsShopStreamer;
+  mediaProducts?: ObsMediaProduct[];
 };
 
 export type CraftRecipeIngredient = {
