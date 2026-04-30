@@ -13,6 +13,7 @@ import {
   ApiCraftRecipesResponse,
   ApiInventoryResponse,
   ApiMarketResponse,
+  ApiMarketCapitalizationResponse,
   ApiMeResponse,
   ApiEconomyMeResponse,
   ApiBotShopBuyResponse,
@@ -215,6 +216,42 @@ export async function getMarket(): Promise<ApiMarketResponse> {
         ok: false,
         error: data?.error || "MARKET_LOAD_FAILED",
         message: data?.message || "Failed to load market.",
+      };
+    }
+
+    if (!data || typeof data !== "object") {
+      return {
+        ok: false,
+        error: "INVALID_RESPONSE",
+        message: "Invalid API response.",
+      };
+    }
+
+    return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getMarketCapitalization(days = 15): Promise<ApiMarketCapitalizationResponse> {
+  try {
+    const safeDays = Number.isFinite(days) ? Math.min(60, Math.max(2, Math.floor(days))) : 15;
+    const response = await fetch(`${API_BASE_URL}/api/market/capitalization?days=${safeDays}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiMarketCapitalizationResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "MARKET_CAPITALIZATION_LOAD_FAILED",
+        message: data?.message || "Failed to load market capitalization.",
       };
     }
 

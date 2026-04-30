@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DashboardText, formatDashboardDate } from "@/lib/dashboardText";
 import { InventoryItem } from "@/lib/types";
 
@@ -19,10 +19,22 @@ type InventoryPanelProps = {
 };
 
 const GRID_GAP = 12;
-const CARD_WIDTH_DEFAULT = 200;
-const CARD_WIDTH_WITH_DETAILS = 180;
-const CARD_HEIGHT_DEFAULT = 222;
-const CARD_HEIGHT_WITH_DETAILS = 214;
+const CARD_MIN_WIDTH_DEFAULT = 185;
+const CARD_MAX_WIDTH_DEFAULT = 225;
+const CARD_MIN_WIDTH_WITH_DETAILS = 165;
+const CARD_MAX_WIDTH_WITH_DETAILS = 205;
+const CARD_HEIGHT_DEFAULT = 204;
+const CARD_HEIGHT_WITH_DETAILS = 198;
+const GRID_SAFE_HORIZONTAL_PADDING = 4;
+const GRID_SAFE_VERTICAL_PADDING = 10;
+
+type GridMetrics = {
+  columns: number;
+  rows: number;
+  pageSize: number;
+  cardHeight: number;
+  gap: number;
+};
 
 export function InventoryPanel({
   t,
@@ -38,14 +50,26 @@ export function InventoryPanel({
   dateLocale,
 }: InventoryPanelProps) {
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [inventorySearchQuery, setInventorySearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(1);
+  const [gridMetrics, setGridMetrics] = useState<GridMetrics>({
+    columns: 1,
+    rows: 1,
+    pageSize: 1,
+    cardHeight: CARD_HEIGHT_DEFAULT,
+    gap: GRID_GAP,
+  });
   const gridViewportRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setSelectedItem(null);
     setCurrentPage(1);
   }, [inventoryFilter]);
+
+  useEffect(() => {
+    setSelectedItem(null);
+    setCurrentPage(1);
+  }, [inventorySearchQuery]);
 
   useEffect(() => {
     if (!selectedItem) {
@@ -84,6 +108,21 @@ export function InventoryPanel({
     return "Bot";
   }, [dateLocale]);
 
+  const normalizedSearchQuery = useMemo(
+    () => inventorySearchQuery.trim().toLowerCase(),
+    [inventorySearchQuery],
+  );
+
+  const searchedInventoryItems = useMemo(() => {
+    if (!normalizedSearchQuery) {
+      return inventoryItems;
+    }
+
+    return inventoryItems.filter(item => item.name.toLowerCase().includes(normalizedSearchQuery));
+  }, [inventoryItems, normalizedSearchQuery]);
+
+  const visibleInventoryCount = searchedInventoryItems.length;
+
   const recalculatePageSize = useCallback(() => {
     const viewport = gridViewportRef.current;
     if (!viewport) {
@@ -91,20 +130,52 @@ export function InventoryPanel({
     }
 
     const rect = viewport.getBoundingClientRect();
-    const width = Math.max(0, rect.width);
-    const height = Math.max(0, rect.height);
+    const availableWidth = Math.max(0, rect.width - GRID_SAFE_HORIZONTAL_PADDING);
+    const availableHeight = Math.max(0, rect.height - GRID_SAFE_VERTICAL_PADDING);
 
     const isStackedMobile =
       typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
     const hasSelectionSplit = Boolean(selectedItem) && !isStackedMobile;
-    const cardWidth = hasSelectionSplit ? CARD_WIDTH_WITH_DETAILS : CARD_WIDTH_DEFAULT;
+    const minCardWidth = hasSelectionSplit ? CARD_MIN_WIDTH_WITH_DETAILS : CARD_MIN_WIDTH_DEFAULT;
+    const maxCardWidth = hasSelectionSplit ? CARD_MAX_WIDTH_WITH_DETAILS : CARD_MAX_WIDTH_DEFAULT;
     const cardHeight = hasSelectionSplit ? CARD_HEIGHT_WITH_DETAILS : CARD_HEIGHT_DEFAULT;
 
-    const columns = Math.max(1, Math.floor((width + GRID_GAP) / (cardWidth + GRID_GAP)));
-    const rows = Math.max(1, Math.floor((height + GRID_GAP) / (cardHeight + GRID_GAP)));
-    const nextPageSize = Math.max(1, columns * rows);
+    const cardWidthForColumns = (columns: number) => {
+      return Math.floor((availableWidth - GRID_GAP * (columns - 1)) / columns);
+    };
 
-    setPageSize(prev => (prev === nextPageSize ? prev : nextPageSize));
+    let columns = Math.max(1, Math.floor((availableWidth + GRID_GAP) / (minCardWidth + GRID_GAP)));
+
+    while (cardWidthForColumns(columns) > maxCardWidth) {
+      const candidate = columns + 1;
+      if (cardWidthForColumns(candidate) < minCardWidth) {
+        break;
+      }
+      columns = candidate;
+    }
+
+    const rows = Math.max(1, Math.floor((availableHeight + GRID_GAP) / (cardHeight + GRID_GAP)));
+    const pageSize = Math.max(1, columns * rows);
+
+    setGridMetrics(prev => {
+      if (
+        prev.columns === columns
+        && prev.rows === rows
+        && prev.pageSize === pageSize
+        && prev.cardHeight === cardHeight
+        && prev.gap === GRID_GAP
+      ) {
+        return prev;
+      }
+
+      return {
+        columns,
+        rows,
+        pageSize,
+        cardHeight,
+        gap: GRID_GAP,
+      };
+    });
   }, [selectedItem]);
 
   useEffect(() => {
@@ -135,8 +206,8 @@ export function InventoryPanel({
   }, [filteredInventoryLength, inventoryError, inventoryLoading, recalculatePageSize]);
 
   const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(inventoryItems.length / pageSize)),
-    [inventoryItems.length, pageSize],
+    () => Math.max(1, Math.ceil(searchedInventoryItems.length / gridMetrics.pageSize)),
+    [searchedInventoryItems.length, gridMetrics.pageSize],
   );
 
   useEffect(() => {
@@ -147,42 +218,26 @@ export function InventoryPanel({
     });
   }, [totalPages]);
 
-  useEffect(() => {
-    if (!selectedItem) {
-      return;
-    }
-
-    const selectedIndex = inventoryItems.findIndex(
-      item => item.inventoryItemId === selectedItem.inventoryItemId,
-    );
-
-    if (selectedIndex < 0) {
-      return;
-    }
-
-    const targetPage = Math.floor(selectedIndex / pageSize) + 1;
-    if (targetPage !== currentPage) {
-      setCurrentPage(targetPage);
-    }
-  }, [currentPage, inventoryItems, pageSize, selectedItem]);
-
   const paginatedInventory = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return inventoryItems.slice(start, start + pageSize);
-  }, [currentPage, inventoryItems, pageSize]);
+    const start = (currentPage - 1) * gridMetrics.pageSize;
+    return searchedInventoryItems.slice(start, start + gridMetrics.pageSize);
+  }, [currentPage, searchedInventoryItems, gridMetrics.pageSize]);
 
-  const pageStartIndex = (currentPage - 1) * pageSize;
+  const inventoryLayoutStyle = useMemo(() => {
+    return {
+      "--inventory-grid-columns": String(gridMetrics.columns),
+      "--inventory-card-height": `${gridMetrics.cardHeight}px`,
+      "--inventory-grid-gap": `${gridMetrics.gap}px`,
+    } as CSSProperties;
+  }, [gridMetrics.cardHeight, gridMetrics.columns, gridMetrics.gap]);
 
-  const handleSelectItem = useCallback(
-    (item: InventoryItem, absoluteIndex: number) => {
-      setSelectedItem(item);
-      const targetPage = Math.floor(absoluteIndex / pageSize) + 1;
-      if (targetPage !== currentPage) {
-        setCurrentPage(targetPage);
-      }
-    },
-    [currentPage, pageSize],
-  );
+  const handleSelectItem = useCallback((item: InventoryItem) => {
+    setSelectedItem(item);
+  }, []);
+
+  const handleClearSearch = useCallback(() => {
+    setInventorySearchQuery("");
+  }, []);
 
   const goToPreviousPage = useCallback(() => {
     setCurrentPage(prev => Math.max(1, prev - 1));
@@ -196,20 +251,48 @@ export function InventoryPanel({
     <div className="panel panel-inventory">
       <div className="inventory-scroll">
         <div className="inventory-toolbar">
-          <div className="inventory-filters" role="tablist" aria-label={t.inventoryFilterLabel}>
-            {inventoryFilterItems.map(filter => (
-              <button
-                key={filter.id}
-                className={`inventory-filter-chip ${inventoryFilter === filter.id ? "active" : ""}`}
-                onClick={() => onFilterChange(filter.id)}
-                role="tab"
-                aria-selected={inventoryFilter === filter.id}
-              >
-                {filter.label}
-              </button>
-            ))}
+          <div className="inventory-toolbar-main">
+            <div className="inventory-filters" role="tablist" aria-label={t.inventoryFilterLabel}>
+              {inventoryFilterItems.map(filter => (
+                <button
+                  key={filter.id}
+                  className={`inventory-filter-chip ${inventoryFilter === filter.id ? "active" : ""}`}
+                  onClick={() => onFilterChange(filter.id)}
+                  role="tab"
+                  aria-selected={inventoryFilter === filter.id}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="inventory-search-wrap">
+              <input
+                type="text"
+                className="inventory-search-input"
+                placeholder={t.inventorySearchPlaceholder}
+                value={inventorySearchQuery}
+                onChange={event => setInventorySearchQuery(event.target.value)}
+                onKeyDown={event => {
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    handleClearSearch();
+                  }
+                }}
+              />
+              {inventorySearchQuery ? (
+                <button
+                  type="button"
+                  className="inventory-search-clear"
+                  onClick={handleClearSearch}
+                  aria-label={t.inventorySearchClearAria}
+                >
+                  ×
+                </button>
+              ) : null}
+            </div>
           </div>
-          <p className="inventory-counter">{filteredInventoryLength} {t.itemsWord}</p>
+          <p className="inventory-counter">{visibleInventoryCount} {t.itemsWord}</p>
         </div>
 
         {inventoryLoading ? (
@@ -228,20 +311,24 @@ export function InventoryPanel({
           <p className="state-text state-error">{inventoryError}</p>
         ) : null}
 
-        {!inventoryLoading && !inventoryError && filteredInventoryLength === 0 ? (
-          <p className="state-text state-empty">{inventoryEmptyText}</p>
+        {!inventoryLoading && !inventoryError && visibleInventoryCount === 0 ? (
+          <p className="state-text state-empty">
+            {normalizedSearchQuery ? t.inventorySearchNoResults : inventoryEmptyText}
+          </p>
         ) : null}
 
-        {!inventoryLoading && !inventoryError && filteredInventoryLength > 0 ? (
+        {!inventoryLoading && !inventoryError && visibleInventoryCount > 0 ? (
           <>
-            <div className={`inventory-main-layout ${selectedItem ? "has-selection" : ""}`}>
+            <div
+              className={`inventory-main-layout ${selectedItem ? "has-selection" : ""}`}
+              style={inventoryLayoutStyle}
+            >
               <div className="inventory-grid-viewport" ref={gridViewportRef}>
                 <div className="inventory-grid-wrap">
                   <div className="inventory-grid">
-                    {paginatedInventory.map((item, index) => {
+                    {paginatedInventory.map(item => {
                       const rarityAccent = item.rarityColorHex || "#44506d";
                       const isSelected = selectedItem?.inventoryItemId === item.inventoryItemId;
-                      const absoluteIndex = pageStartIndex + index;
 
                       return (
                         <button
@@ -251,7 +338,7 @@ export function InventoryPanel({
                           style={{
                             borderColor: `${rarityAccent}66`,
                           }}
-                          onClick={() => handleSelectItem(item, absoluteIndex)}
+                          onClick={() => handleSelectItem(item)}
                           aria-pressed={isSelected}
                         >
                           <div

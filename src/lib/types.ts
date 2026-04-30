@@ -67,6 +67,37 @@ export type ApiMarketResponse = {
   message?: string;
 };
 
+export type MarketCapitalizationPoint = {
+  date: string;
+  totalOdm: number;
+  totalLdm: number;
+  membersCount: number;
+};
+
+export type MarketCapitalizationChange = {
+  previousTotalOdm: number | null;
+  absolute: number | null;
+  percent: number | null;
+  direction: "up" | "down" | "flat" | "unknown";
+};
+
+export type MarketCapitalizationData = {
+  points: MarketCapitalizationPoint[];
+  current: {
+    totalOdm: number;
+    totalLdm: number;
+    membersCount: number;
+  };
+  change: MarketCapitalizationChange;
+};
+
+export type ApiMarketCapitalizationResponse = {
+  ok: boolean;
+  capitalization?: MarketCapitalizationData;
+  error?: string;
+  message?: string;
+};
+
 export type BotShopListing = {
   listingId: number;
   price: number;

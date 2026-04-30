@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMe, getMyBalance, logout } from "@/lib/api";
-import { AdminStats, ApiMeResponse, BotShopListing, CraftRecipe, InventoryItem, MarketListing, UserBalance } from "@/lib/types";
+import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMarketCapitalization, getMe, getMyBalance, logout } from "@/lib/api";
+import { AdminStats, ApiMeResponse, BotShopListing, CraftRecipe, InventoryItem, MarketCapitalizationData, MarketListing, UserBalance } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
 import { AppHeader, HeaderSearchResult } from "@/components/dashboard/AppHeader";
 import { ProfileDropdown } from "@/components/dashboard/ProfileDropdown";
@@ -55,6 +55,10 @@ export default function HomePage() {
   const [marketLoaded, setMarketLoaded] = useState(false);
   const [marketLoading, setMarketLoading] = useState(false);
   const [marketError, setMarketError] = useState<string | null>(null);
+  const [marketCapitalization, setMarketCapitalization] = useState<MarketCapitalizationData | null>(null);
+  const [marketCapitalizationLoaded, setMarketCapitalizationLoaded] = useState(false);
+  const [marketCapitalizationLoading, setMarketCapitalizationLoading] = useState(false);
+  const [marketCapitalizationError, setMarketCapitalizationError] = useState<string | null>(null);
   const [botShopListings, setBotShopListings] = useState<BotShopListing[]>([]);
   const [botShopLoaded, setBotShopLoaded] = useState(false);
   const [botShopLoading, setBotShopLoading] = useState(false);
@@ -220,6 +224,10 @@ export default function HomePage() {
     setMarketLoaded(false);
     setMarketLoading(false);
     setMarketError(null);
+    setMarketCapitalization(null);
+    setMarketCapitalizationLoaded(false);
+    setMarketCapitalizationLoading(false);
+    setMarketCapitalizationError(null);
     setBotShopListings([]);
     setBotShopLoaded(false);
     setBotShopLoading(false);
@@ -327,6 +335,28 @@ export default function HomePage() {
     setMarketLoading(false);
     setMarketError(response.message || response.error || t.marketError);
   }, [marketLoading, t.marketError]);
+
+  const loadMarketCapitalization = useCallback(async (): Promise<void> => {
+    if (marketCapitalizationLoading) {
+      return;
+    }
+
+    setMarketCapitalizationLoading(true);
+    setMarketCapitalizationError(null);
+
+    const response = await getMarketCapitalization(15);
+    if (response.ok && response.capitalization) {
+      setMarketCapitalization(response.capitalization);
+      setMarketCapitalizationLoaded(true);
+      setMarketCapitalizationLoading(false);
+      return;
+    }
+
+    setMarketCapitalization(null);
+    setMarketCapitalizationLoaded(true);
+    setMarketCapitalizationLoading(false);
+    setMarketCapitalizationError(response.message || response.error || t.capitalizationError);
+  }, [marketCapitalizationLoading, t.capitalizationError]);
 
   const loadBotShop = useCallback(async (): Promise<void> => {
     if (botShopLoading) {
@@ -437,6 +467,12 @@ export default function HomePage() {
       void loadMarket();
     }
   }, [authState, activeTab, marketLoaded, marketLoading, loadMarket]);
+
+  useEffect(() => {
+    if (authState === "user" && activeTab === "market" && !marketCapitalizationLoaded && !marketCapitalizationLoading) {
+      void loadMarketCapitalization();
+    }
+  }, [authState, activeTab, marketCapitalizationLoaded, marketCapitalizationLoading, loadMarketCapitalization]);
 
   useEffect(() => {
     if (authState === "user" && activeTab === "botShop" && !botShopLoaded && !botShopLoading) {
@@ -634,13 +670,21 @@ export default function HomePage() {
             {activeTab === "market" ? (
               <MarketPanel
                 t={t}
+                dateLocale={dateLocale}
                 loadingGifs={LOADING_GIFS}
                 marketListings={marketListings}
                 marketLoading={marketLoading}
                 marketError={marketError}
-                onRefresh={() => {
+                marketCapitalization={marketCapitalization}
+                marketCapitalizationLoading={marketCapitalizationLoading}
+                marketCapitalizationError={marketCapitalizationError}
+                onRefreshListings={() => {
                   setMarketLoaded(false);
                   void loadMarket();
+                }}
+                onRefreshCapitalization={() => {
+                  setMarketCapitalizationLoaded(false);
+                  void loadMarketCapitalization();
                 }}
               />
             ) : null}
