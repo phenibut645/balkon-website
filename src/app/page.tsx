@@ -20,6 +20,7 @@ import { AdminObsPanel } from "@/components/dashboard/AdminObsPanel";
 import { AdminItemsPanel } from "@/components/dashboard/AdminItemsPanel";
 import { AdminBotShopPanel } from "@/components/dashboard/AdminBotShopPanel";
 import { AdminBroadcastPanel } from "@/components/dashboard/AdminBroadcastPanel";
+import { AdminEconomyPanel } from "@/components/dashboard/AdminEconomyPanel";
 import { PlaceholderPanel } from "@/components/dashboard/PlaceholderPanel";
 import { ProfileSettingsPanel } from "@/components/dashboard/ProfileSettingsPanel";
 import { useSafePolling } from "@/hooks/useSafePolling";
@@ -152,6 +153,7 @@ export default function HomePage() {
     { id: "adminLogs" as const, label: t.adminTabLogs },
     { id: "adminObs" as const, label: t.adminTabObs },
     { id: "adminItems" as const, label: t.adminTabItems },
+      { id: "adminEconomy" as const, label: t.adminEconomy },
     { id: "adminBotShop" as const, label: t.adminTabBotShop },
     { id: "adminMessage" as const, label: t.adminBroadcast },
   ]), [t]);
@@ -398,6 +400,7 @@ export default function HomePage() {
       { key: "tab:adminObs", label: t.adminTabObs, breadcrumb: t.adminTabObs, aliases: ["obs", "scene", "сцены"], destination: { kind: "adminTab", tab: "adminObs" } },
       { key: "tab:adminItems", label: t.adminTabItems, breadcrumb: t.adminTabItems, aliases: ["items", "предметы", "esemed"], destination: { kind: "adminTab", tab: "adminItems" } },
       { key: "tab:adminBotShop", label: t.adminTabBotShop, breadcrumb: t.adminTabBotShop, aliases: ["shop", "магазин", "pood"], destination: { kind: "adminTab", tab: "adminBotShop" } },
+      { key: "tab:adminEconomy", label: t.adminEconomy, breadcrumb: t.adminEconomy, aliases: ["валюта", "выдать валюту", "деньги", "odm", "ldm", "баланс", "currency", "balance", "give money", "valuuta", "raha"], destination: { kind: "adminTab", tab: "adminEconomy" } },
       { key: "tab:adminMessage", label: t.adminBroadcast, breadcrumb: t.adminBroadcast, aliases: ["создать сообщение", "рассылка", "broadcast", "announcement"], destination: { kind: "adminTab", tab: "adminMessage" } },
     ];
 
@@ -1675,6 +1678,23 @@ export default function HomePage() {
 
             {activeTab === "adminBotShop" ? (
               <AdminBotShopPanel t={t} />
+            ) : null}
+
+            {activeTab === "adminEconomy" ? (
+              <AdminEconomyPanel
+                t={t}
+                onAdjusted={async (result) => {
+                  if (user?.discordId === result.targetDiscordId) {
+                    await loadBalance();
+                  }
+
+                  if (canUseAdminMode) {
+                    await loadAdminStats(true);
+                  }
+
+                  await loadNotificationsSummary({ force: true, silent: true });
+                }}
+              />
             ) : null}
 
             {activeTab === "adminMessage" ? (

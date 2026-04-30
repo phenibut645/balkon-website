@@ -5,6 +5,7 @@ import {
   ApiAdminBotShopMutationResponse,
   ApiAdminBotShopResponse,
   ApiAdminBroadcastNotificationResponse,
+  ApiAdminEconomyAdjustResponse,
   ApiAdminItemMutationResponse,
   ApiAdminItemsResponse,
   ApiAdminRaritiesResponse,
@@ -26,6 +27,7 @@ import {
   ApiMeResponse,
   ApiEconomyMeResponse,
   ApiBotShopBuyResponse,
+  AdminEconomyAdjustInput,
   AdminBroadcastNotificationInput,
   UpdateUserProfileInput,
 } from "./types";
@@ -204,6 +206,37 @@ export async function getAdminStats(): Promise<AdminStatsResponse> {
     }
 
     return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function adminAdjustEconomy(input: AdminEconomyAdjustInput): Promise<ApiAdminEconomyAdjustResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/economy/adjust`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminEconomyAdjustResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "BALANCE_ADJUST_FAILED",
+        message: data?.message || "Failed to adjust balance.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
   } catch {
     return {
       ok: false,

@@ -388,6 +388,27 @@ export type ApiAdminBotShopMutationResponse = ApiBaseResponse & {
   };
 };
 
+export type AdminEconomyCurrency = "ODM" | "LDM";
+
+export type AdminEconomyAdjustInput = {
+  targetDiscordId: string;
+  currency: AdminEconomyCurrency;
+  amount: number;
+  reason: string;
+};
+
+export type AdminEconomyAdjustResult = {
+  targetDiscordId: string;
+  currency: AdminEconomyCurrency;
+  amount: number;
+  balanceAfter: number;
+  reason: string;
+};
+
+export type ApiAdminEconomyAdjustResponse = ApiBaseResponse & {
+  data?: AdminEconomyAdjustResult;
+};
+
 export type UserBalance = {
   odm: number;
   ldm: number;

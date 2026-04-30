@@ -1764,6 +1764,50 @@ body {
   flex-wrap: wrap;
 }
 
+.admin-economy-panel {
+  height: 100%;
+}
+
+.admin-economy-audit {
+  color: #ffd88f;
+}
+
+.admin-economy-amount.positive {
+  border-color: rgba(90, 177, 123, 0.58);
+  box-shadow: 0 0 0 1px rgba(90, 177, 123, 0.12) inset;
+}
+
+.admin-economy-amount.negative {
+  border-color: rgba(202, 102, 102, 0.58);
+  box-shadow: 0 0 0 1px rgba(202, 102, 102, 0.12) inset;
+}
+
+.admin-economy-hint-positive {
+  color: #8be0a9;
+}
+
+.admin-economy-hint-negative {
+  color: #ffb0b0;
+}
+
+.admin-economy-presets {
+  gap: 8px;
+}
+
+.inventory-filter-chip.admin-economy-preset-positive {
+  border-color: rgba(90, 177, 123, 0.48);
+  color: #c5f3d5;
+}
+
+.inventory-filter-chip.admin-economy-preset-negative {
+  border-color: rgba(202, 102, 102, 0.48);
+  color: #ffd0d0;
+}
+
+.admin-economy-result-card {
+  align-content: start;
+}
+
 .admin-danger-btn {
   border-color: rgba(185, 88, 99, 0.45);
   color: #ffd0d4;
