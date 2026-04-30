@@ -1,7 +1,9 @@
 "use client";
 
 import { DashboardText } from "@/lib/dashboardText";
-import { AvailableGuild, NotificationItem, UserBalance, UserPublicProfile } from "@/lib/types";
+import { AvailableGuild, NotificationItem, ObsMediaActionStatus, OverviewLatestNotification, OverviewSummary, UserBalance, UserPublicProfile } from "@/lib/types";
+
+type ActivityNotification = NotificationItem | OverviewLatestNotification;
 
 type OverviewPanelProps = {
   t: DashboardText;
@@ -12,6 +14,10 @@ type OverviewPanelProps = {
   avatarUrl: string | null;
   avatarFailed: boolean;
   onAvatarError: () => void;
+  overviewSummary: OverviewSummary | null;
+  overviewLoading: boolean;
+  overviewError: string | null;
+  onRefreshOverview: () => void;
   balance: UserBalance | null;
   balanceLoaded: boolean;
   inventoryLoaded: boolean;
@@ -42,7 +48,7 @@ function formatNotificationDate(value: string, dateLocale: string, unknownDate: 
   });
 }
 
-function localizeNotificationTitle(t: DashboardText, item: NotificationItem): string {
+function localizeNotificationTitle(t: DashboardText, item: ActivityNotification): string {
   if (item.type === "obs_media" || item.title === "OBS effect sent") {
     return t.obsNotificationTitle;
   }
@@ -67,6 +73,19 @@ function getHomeGuildLabel(profile: UserPublicProfile | null, availableGuilds: A
   return fallback;
 }
 
+function getObsStatusLabel(t: DashboardText, status: ObsMediaActionStatus): string {
+  if (status === "pending") {
+    return t.obsActionStatusPending;
+  }
+  if (status === "sent") {
+    return t.obsActionStatusSent;
+  }
+  if (status === "failed") {
+    return t.obsActionStatusFailed;
+  }
+  return t.obsActionStatusRefunded;
+}
+
 export function OverviewPanel({
   t,
   dateLocale,
@@ -76,6 +95,10 @@ export function OverviewPanel({
   avatarUrl,
   avatarFailed,
   onAvatarError,
+  overviewSummary,
+  overviewLoading,
+  overviewError,
+  onRefreshOverview,
   balance,
   balanceLoaded,
   inventoryLoaded,
@@ -91,7 +114,15 @@ export function OverviewPanel({
   onOpenNotifications,
   onOpenProfile,
 }: OverviewPanelProps) {
-  const homeGuildLabel = getHomeGuildLabel(profile, availableGuilds, t.noHomeGuild);
+  const effectiveBalance = overviewSummary?.balance ?? balance;
+  const effectiveInventoryLoaded = overviewSummary !== null || inventoryLoaded;
+  const effectiveInventoryCount = overviewSummary?.inventoryCount ?? inventoryCount;
+  const effectiveUnreadNotifications = overviewSummary?.unreadNotificationsCount ?? unreadNotifications;
+  const effectiveLatestNotifications: ActivityNotification[] = overviewSummary?.latestNotifications ?? latestNotifications;
+  const homeGuildLabel = overviewSummary?.homeGuild?.name ?? getHomeGuildLabel(profile, availableGuilds, t.noHomeGuild);
+  const latestObsAction = overviewSummary?.obsActions.latest ?? null;
+  const obsActionsTotal = overviewSummary?.obsActions.total ?? 0;
+  const showInitialLoading = overviewLoading && !overviewSummary;
 
   return (
     <div className="panel panel-overview overview-dashboard">
@@ -128,6 +159,11 @@ export function OverviewPanel({
             )}
           </div>
         </div>
+        <div className="overview-hero-actions">
+          {showInitialLoading ? <span className="meta-badge muted">{t.checking}</span> : null}
+          {overviewError ? <span className="meta-badge danger">{overviewError}</span> : null}
+          <button className="overview-inline-action ghost" type="button" onClick={onRefreshOverview}>{t.notificationRefresh}</button>
+        </div>
       </section>
 
       <section className="overview-card-grid" aria-label={t.tabOverview}>
@@ -136,8 +172,8 @@ export function OverviewPanel({
             <span className="overview-card-icon" aria-hidden="true">💰</span>
             <span className="overview-card-title">{t.balance}</span>
           </div>
-          <p className="overview-card-value">{balance ? `${balance.odm.toLocaleString()} ${t.odm}` : "..."}</p>
-          <p className="overview-card-hint">{balance ? `${balance.ldm.toLocaleString()} ${t.ldm}` : balanceLoaded ? t.balanceLoadFailed : t.checking}</p>
+          <p className="overview-card-value">{effectiveBalance ? `${effectiveBalance.odm.toLocaleString()} ${t.odm}` : "..."}</p>
+          <p className="overview-card-hint">{effectiveBalance ? `${effectiveBalance.ldm.toLocaleString()} ${t.ldm}` : balanceLoaded ? t.balanceLoadFailed : t.checking}</p>
         </article>
 
         <article className="overview-card">
@@ -145,9 +181,9 @@ export function OverviewPanel({
             <span className="overview-card-icon" aria-hidden="true">🎒</span>
             <span className="overview-card-title">{t.tabInventory}</span>
           </div>
-          <p className="overview-card-value">{inventoryLoaded ? inventoryCount.toLocaleString() : t.overviewNotLoaded}</p>
+          <p className="overview-card-value">{effectiveInventoryLoaded ? effectiveInventoryCount.toLocaleString() : t.overviewNotLoaded}</p>
           <button className="overview-inline-action" type="button" onClick={onOpenInventory}>
-            {inventoryLoaded ? t.tabInventory : t.overviewOpenInventory}
+            {effectiveInventoryLoaded ? t.tabInventory : t.overviewOpenInventory}
           </button>
         </article>
 
@@ -156,9 +192,9 @@ export function OverviewPanel({
             <span className="overview-card-icon" aria-hidden="true">🔔</span>
             <span className="overview-card-title">{t.tabNotifications}</span>
           </div>
-          <p className="overview-card-value">{unreadNotifications.toLocaleString()}</p>
+          <p className="overview-card-value">{effectiveUnreadNotifications.toLocaleString()}</p>
           <button className="overview-inline-action" type="button" onClick={onOpenNotifications}>
-            {unreadNotifications > 0 ? t.notificationUnread : t.allNotifications}
+            {effectiveUnreadNotifications > 0 ? t.notificationUnread : t.allNotifications}
           </button>
         </article>
 
@@ -167,7 +203,12 @@ export function OverviewPanel({
             <span className="overview-card-icon" aria-hidden="true">🎥</span>
             <span className="overview-card-title">{t.navObs}</span>
           </div>
-          <p className="overview-card-value">{t.shopObs}</p>
+          <p className="overview-card-value">{obsActionsTotal.toLocaleString()}</p>
+          <p className="overview-card-hint">
+            {latestObsAction
+              ? `${latestObsAction.productTitle} · ${latestObsAction.streamerNickname} · ${getObsStatusLabel(t, latestObsAction.status)}`
+              : t.obsMediaHistoryEmpty}
+          </p>
           <div className="overview-card-actions">
             <button className="overview-inline-action" type="button" onClick={onOpenObsShop}>{t.obsShop}</button>
             <button className="overview-inline-action ghost" type="button" onClick={onOpenObsHistory}>{t.obsHistory}</button>
@@ -203,9 +244,9 @@ export function OverviewPanel({
             <h3>{t.recentActivity}</h3>
             <button className="overview-inline-action ghost" type="button" onClick={onOpenNotifications}>{t.viewAll}</button>
           </div>
-          {latestNotifications.length > 0 ? (
+          {effectiveLatestNotifications.length > 0 ? (
             <div className="overview-activity-list">
-              {latestNotifications.slice(0, 3).map(item => (
+              {effectiveLatestNotifications.slice(0, 3).map(item => (
                 <article key={`overview-notification-${item.id}`} className={`overview-activity-item severity-${item.severity}`}>
                   <div>
                     <p className="overview-activity-title">{localizeNotificationTitle(t, item)}</p>

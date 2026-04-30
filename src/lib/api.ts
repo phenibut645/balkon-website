@@ -12,6 +12,7 @@ import {
   ApiNotificationMutationResponse,
   ApiNotificationsResponse,
   ApiNotificationsSummaryResponse,
+  ApiOverviewMeResponse,
   ApiAdminSearchResponse,
   ApiBaseResponse,
   ApiBotShopResponse,
@@ -83,6 +84,35 @@ export async function getMyBalance(): Promise<ApiEconomyMeResponse> {
         ok: false,
         error: data?.error || "ECONOMY_LOAD_FAILED",
         message: data?.message || "Failed to load balance.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API. Is the API server running?",
+    };
+  }
+}
+
+export async function getOverviewMe(): Promise<ApiOverviewMeResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/overview/me`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiOverviewMeResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "OVERVIEW_LOAD_FAILED",
+        message: data?.message || "Failed to load overview.",
       };
     }
 

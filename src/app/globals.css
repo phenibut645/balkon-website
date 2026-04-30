@@ -654,10 +654,22 @@ body {
 
 .overview-hero {
   padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .overview-user-row {
   margin: 0;
+}
+
+.overview-hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .overview-eyebrow {
@@ -2689,6 +2701,15 @@ body {
   .overview-split,
   .overview-quick-actions {
     grid-template-columns: 1fr;
+  }
+
+  .overview-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .overview-hero-actions {
+    justify-content: flex-start;
   }
 
   .overview-card-wide {

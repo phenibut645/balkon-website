@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMarketCapitalization, getMarketForbes, getMe, getMyBalance, getMyProfile, getNotifications, getNotificationsSummary, getObsShopStreamerDetails, getObsShopStreamers, logout, markAllNotificationsRead, markNotificationRead, purchaseObsMedia, updateMyProfile } from "@/lib/api";
+import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMarketCapitalization, getMarketForbes, getMe, getMyBalance, getMyProfile, getNotifications, getNotificationsSummary, getObsShopStreamerDetails, getObsShopStreamers, getOverviewMe, logout, markAllNotificationsRead, markNotificationRead, purchaseObsMedia, updateMyProfile } from "@/lib/api";
 import { AdminTab, DashboardMode, DashboardSearchResult, DashboardTab, normalizeDashboardSearchValue, MarketSubTab, UserTab } from "@/lib/dashboardSearch";
-import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, NotificationItem, ObsMediaProduct, ObsShopStreamer, ShopSubTab, UserBalance, UserPublicProfile } from "@/lib/types";
+import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, NotificationItem, ObsMediaProduct, ObsShopStreamer, OverviewSummary, ShopSubTab, UserBalance, UserPublicProfile } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
 import { AppHeader } from "@/components/dashboard/AppHeader";
 import { NotificationBell } from "@/components/dashboard/NotificationBell";
@@ -110,6 +110,10 @@ export default function HomePage() {
   const [notificationsSummary, setNotificationsSummary] = useState<{ unreadCount: number; latest: NotificationItem[] }>({ unreadCount: 0, latest: [] });
   const [notificationsSummaryLoading, setNotificationsSummaryLoading] = useState(false);
   const [notificationsSummaryError, setNotificationsSummaryError] = useState<string | null>(null);
+  const [overviewSummary, setOverviewSummary] = useState<OverviewSummary | null>(null);
+  const [overviewLoaded, setOverviewLoaded] = useState(false);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [overviewError, setOverviewError] = useState<string | null>(null);
   const [notificationsList, setNotificationsList] = useState<NotificationItem[]>([]);
   const [notificationsLoaded, setNotificationsLoaded] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
@@ -132,6 +136,7 @@ export default function HomePage() {
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notificationsSummaryLoadingRef = useRef(false);
   const notificationsSummaryLastLoadedAtRef = useRef(0);
+  const overviewLoadingRef = useRef(false);
   const notificationsLoadingRef = useRef(false);
 
   const user = meResponse?.me;
@@ -518,6 +523,10 @@ export default function HomePage() {
     setNotificationsSummary({ unreadCount: 0, latest: [] });
     setNotificationsSummaryLoading(false);
     setNotificationsSummaryError(null);
+    setOverviewSummary(null);
+    setOverviewLoaded(false);
+    setOverviewLoading(false);
+    setOverviewError(null);
     setNotificationsList([]);
     setNotificationsLoaded(false);
     setNotificationsLoading(false);
@@ -537,6 +546,7 @@ export default function HomePage() {
     setObsBuyErrors({});
     notificationsSummaryLoadingRef.current = false;
     notificationsSummaryLastLoadedAtRef.current = 0;
+    overviewLoadingRef.current = false;
     notificationsLoadingRef.current = false;
     setMarketSubTab("overview");
     setShopSubTab("overview");
@@ -882,6 +892,66 @@ export default function HomePage() {
     }
   }, [t.notificationError]);
 
+  const loadOverviewSummary = useCallback(async (options: LoadOptions = {}): Promise<void> => {
+    const silent = options.silent === true;
+    if (overviewLoadingRef.current) {
+      return;
+    }
+
+    overviewLoadingRef.current = true;
+    if (!silent) {
+      setOverviewLoading(true);
+      setOverviewError(null);
+    }
+
+    try {
+      const response = await getOverviewMe();
+      if (response.ok && response.data) {
+        const nextSummary = response.data;
+        setOverviewSummary(prev => (areJsonEqual(prev, nextSummary) ? prev : nextSummary));
+        setOverviewLoaded(true);
+        setOverviewError(null);
+        setBalance(prev => (areJsonEqual(prev, nextSummary.balance) ? prev : nextSummary.balance));
+        setBalanceLoaded(true);
+        setBalanceError(null);
+        setNotificationsSummary(prev => {
+          const nextNotificationsSummary = {
+            unreadCount: nextSummary.unreadNotificationsCount,
+            latest: nextSummary.latestNotifications.map(item => ({
+              id: item.id,
+              title: item.title,
+              body: item.body,
+              type: item.type || "system",
+              severity: item.severity,
+              imageUrl: null,
+              linkUrl: null,
+              readAt: item.readAt,
+              createdAt: item.createdAt,
+            })),
+          };
+
+          return areJsonEqual(prev, nextNotificationsSummary) ? prev : nextNotificationsSummary;
+        });
+        return;
+      }
+
+      if (!silent) {
+        setOverviewError(response.message || response.error || t.overviewLoadFailed);
+        setOverviewLoaded(true);
+      }
+    } catch {
+      if (!silent) {
+        setOverviewError(t.overviewLoadFailed);
+        setOverviewLoaded(true);
+      }
+    } finally {
+      overviewLoadingRef.current = false;
+      if (!silent) {
+        setOverviewLoading(false);
+      }
+    }
+  }, [t.overviewLoadFailed]);
+
   const loadNotifications = useCallback(async (page = notificationPage, unreadOnly = notificationFilterUnreadOnly, options: LoadOptions = {}): Promise<void> => {
     const silent = options.silent === true;
     if (notificationsLoadingRef.current) {
@@ -1092,6 +1162,19 @@ export default function HomePage() {
   }
 
   useEffect(() => {
+    if (
+      authState === "user"
+      && dashboardMode === "user"
+      && activeTab === "overview"
+      && !overviewLoaded
+      && !overviewLoading
+      && !overviewError
+    ) {
+      void loadOverviewSummary();
+    }
+  }, [activeTab, authState, dashboardMode, loadOverviewSummary, overviewError, overviewLoaded, overviewLoading]);
+
+  useEffect(() => {
     if (authState === "user" && activeTab === "inventory" && !inventoryLoaded && !inventoryLoading) {
       void loadInventory();
     }
@@ -1195,7 +1278,7 @@ export default function HomePage() {
     }
 
     if (activeTab === "overview") {
-      await loadBalance({ silent: true });
+      await loadOverviewSummary({ silent: true, force: true });
       return;
     }
 
@@ -1238,13 +1321,13 @@ export default function HomePage() {
     activeTab,
     dashboardMode,
     inventoryLoaded,
-    loadBalance,
     loadBotShop,
     loadInventory,
     loadMarket,
     loadMarketCapitalization,
     loadMarketForbes,
     loadObsShopStreamers,
+    loadOverviewSummary,
     loadNotifications,
     loadNotificationsSummary,
     marketSubTab,
@@ -1497,6 +1580,12 @@ export default function HomePage() {
                 avatarUrl={avatarUrl}
                 avatarFailed={avatarFailed}
                 onAvatarError={() => setAvatarFailed(true)}
+                overviewSummary={overviewSummary}
+                overviewLoading={overviewLoading}
+                overviewError={overviewError}
+                onRefreshOverview={() => {
+                  void loadOverviewSummary({ force: true });
+                }}
                 balance={balance}
                 balanceLoaded={balanceLoaded}
                 inventoryLoaded={inventoryLoaded}

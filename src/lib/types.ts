@@ -485,6 +485,46 @@ export type ApiNotificationsSummaryResponse = ApiBaseResponse & {
   latest?: NotificationItem[];
 };
 
+export type OverviewLatestNotification = {
+  id: number;
+  title: string;
+  body: string;
+  type: string | null;
+  severity: NotificationSeverity;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type OverviewLatestObsAction = {
+  id: number;
+  productTitle: string;
+  productKind: "image" | "gif";
+  streamerNickname: string;
+  status: ObsMediaActionStatus;
+  priceOdm: number;
+  createdAt: string;
+};
+
+export type OverviewSummary = {
+  balance: UserBalance;
+  inventoryCount: number;
+  unreadNotificationsCount: number;
+  latestNotifications: OverviewLatestNotification[];
+  homeGuild: {
+    guildId: string;
+    name: string;
+    iconUrl: string | null;
+  } | null;
+  obsActions: {
+    total: number;
+    latest: OverviewLatestObsAction | null;
+  };
+};
+
+export type ApiOverviewMeResponse = ApiBaseResponse & {
+  data?: OverviewSummary;
+};
+
 export type ApiNotificationMutationResponse = ApiBaseResponse & {
   updated?: number;
 };
