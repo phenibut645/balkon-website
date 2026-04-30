@@ -190,6 +190,14 @@ export type ObsMediaProduct = {
   enabled: boolean;
 };
 
+export type ObsMediaPurchaseData = {
+  streamerId: number;
+  productId: string;
+  priceOdm: number;
+  balanceAfter: number;
+  commandId?: string;
+};
+
 export type ApiBotShopResponse = {
   ok: boolean;
   listings?: BotShopListing[];
@@ -204,6 +212,10 @@ export type ApiObsShopStreamersResponse = ApiBaseResponse & {
 export type ApiObsShopStreamerDetailsResponse = ApiBaseResponse & {
   streamer?: ObsShopStreamer;
   mediaProducts?: ObsMediaProduct[];
+};
+
+export type ApiObsMediaPurchaseResponse = ApiBaseResponse & {
+  data?: ObsMediaPurchaseData;
 };
 
 export type CraftRecipeIngredient = {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMarketCapitalization, getMarketForbes, getMe, getMyBalance, getMyProfile, getNotifications, getNotificationsSummary, getObsShopStreamerDetails, getObsShopStreamers, logout, markAllNotificationsRead, markNotificationRead, updateMyProfile } from "@/lib/api";
+import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMarketCapitalization, getMarketForbes, getMe, getMyBalance, getMyProfile, getNotifications, getNotificationsSummary, getObsShopStreamerDetails, getObsShopStreamers, logout, markAllNotificationsRead, markNotificationRead, purchaseObsMedia, updateMyProfile } from "@/lib/api";
 import { DashboardMode, DashboardSearchResult, DashboardTab, normalizeDashboardSearchValue, MarketSubTab } from "@/lib/dashboardSearch";
 import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, NotificationItem, ObsMediaProduct, ObsShopStreamer, ShopSubTab, UserBalance, UserPublicProfile } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
@@ -123,6 +123,9 @@ export default function HomePage() {
   const [obsShopMediaProducts, setObsShopMediaProducts] = useState<ObsMediaProduct[]>([]);
   const [obsShopStreamerDetailsLoading, setObsShopStreamerDetailsLoading] = useState(false);
   const [obsShopStreamerDetailsError, setObsShopStreamerDetailsError] = useState<string | null>(null);
+  const [buyingObsProductId, setBuyingObsProductId] = useState<string | null>(null);
+  const [obsBuyFeedback, setObsBuyFeedback] = useState<Record<string, string>>({});
+  const [obsBuyErrors, setObsBuyErrors] = useState<Record<string, string>>({});
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notificationsSummaryLoadingRef = useRef(false);
@@ -551,6 +554,9 @@ export default function HomePage() {
     setObsShopMediaProducts([]);
     setObsShopStreamerDetailsLoading(false);
     setObsShopStreamerDetailsError(null);
+    setBuyingObsProductId(null);
+    setObsBuyFeedback({});
+    setObsBuyErrors({});
     notificationsSummaryLoadingRef.current = false;
     notificationsSummaryLastLoadedAtRef.current = 0;
     notificationsLoadingRef.current = false;
@@ -1055,6 +1061,31 @@ export default function HomePage() {
       setInventoryLoaded(false);
     }
   }, [inventoryLoaded, loadBalance, loadInventory, t.purchaseFailed, t.purchaseSuccess]);
+
+  const handleBuyObsMediaProduct = useCallback(async (streamerId: number | string, productId: string): Promise<void> => {
+    const product = obsShopMediaProducts.find(item => item.id === productId);
+    if (!product) {
+      setObsBuyErrors(prev => ({ ...prev, [productId]: t.obsMediaPurchaseFailed }));
+      return;
+    }
+
+    setBuyingObsProductId(productId);
+    setObsBuyFeedback(prev => ({ ...prev, [productId]: "" }));
+    setObsBuyErrors(prev => ({ ...prev, [productId]: "" }));
+
+    const response = await purchaseObsMedia(streamerId, productId);
+    if (!response.ok) {
+      setObsBuyErrors(prev => ({ ...prev, [productId]: response.message || t.obsMediaPurchaseFailed }));
+      setBuyingObsProductId(null);
+      return;
+    }
+
+    setObsBuyFeedback(prev => ({ ...prev, [productId]: t.obsMediaPurchaseSuccess }));
+    setBuyingObsProductId(null);
+
+    await loadBalance();
+    await loadNotificationsSummary({ force: true, silent: true });
+  }, [loadBalance, loadNotificationsSummary, obsShopMediaProducts, t.obsMediaPurchaseFailed, t.obsMediaPurchaseSuccess]);
 
   const loadCraftRecipes = useCallback(async (): Promise<void> => {
     if (craftLoading) {
@@ -1562,6 +1593,10 @@ export default function HomePage() {
                 obsStreamerDetailsLoading={obsShopStreamerDetailsLoading}
                 obsStreamerDetailsError={obsShopStreamerDetailsError}
                 obsMediaProducts={obsShopMediaProducts}
+                buyingObsProductId={buyingObsProductId}
+                obsBuyFeedback={obsBuyFeedback}
+                obsBuyErrors={obsBuyErrors}
+                onBuyObsMediaProduct={handleBuyObsMediaProduct}
               />
             ) : null}
 

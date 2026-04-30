@@ -31,6 +31,10 @@ type BotShopPanelProps = {
   obsStreamerDetailsLoading: boolean;
   obsStreamerDetailsError: string | null;
   obsMediaProducts: ObsMediaProduct[];
+  buyingObsProductId: string | null;
+  obsBuyFeedback: Record<string, string>;
+  obsBuyErrors: Record<string, string>;
+  onBuyObsMediaProduct: (streamerId: number | string, productId: string) => Promise<void>;
 };
 
 export function BotShopPanel({
@@ -55,6 +59,10 @@ export function BotShopPanel({
   obsStreamerDetailsLoading,
   obsStreamerDetailsError,
   obsMediaProducts,
+  buyingObsProductId,
+  obsBuyFeedback,
+  obsBuyErrors,
+  onBuyObsMediaProduct,
 }: BotShopPanelProps) {
   const [selectedStreamerId, setSelectedStreamerId] = useState<string | null>(null);
 
@@ -107,10 +115,17 @@ export function BotShopPanel({
               t={t}
               streamer={selectedStreamer}
               mediaProducts={obsMediaProducts}
+              balance={balance}
               loading={obsStreamerDetailsLoading}
               error={obsStreamerDetailsError}
               onBack={() => {
                 setSelectedStreamerId(null);
+              }}
+              buyingProductId={buyingObsProductId}
+              feedbackByProductId={obsBuyFeedback}
+              errorByProductId={obsBuyErrors}
+              onBuyMediaProduct={async (productId) => {
+                await onBuyObsMediaProduct(selectedStreamer.streamerId, productId);
               }}
             />
           ) : (

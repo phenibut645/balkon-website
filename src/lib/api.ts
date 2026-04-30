@@ -14,6 +14,7 @@ import {
   ApiAdminSearchResponse,
   ApiBaseResponse,
   ApiBotShopResponse,
+  ApiObsMediaPurchaseResponse,
   ApiObsShopStreamerDetailsResponse,
   ApiObsShopStreamersResponse,
   ApiCraftRecipesResponse,
@@ -868,6 +869,37 @@ export async function getObsShopStreamerDetails(streamerId: number | string): Pr
         ok: false,
         error: data?.error || "SHOP_OBS_STREAMER_DETAILS_FAILED",
         message: data?.message || "Failed to load OBS streamer details.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function purchaseObsMedia(streamerId: number | string, productId: string): Promise<ApiObsMediaPurchaseResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/shop/obs/streamers/${encodeURIComponent(String(streamerId))}/media/${encodeURIComponent(productId)}/purchase`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: 1 }),
+    });
+
+    const data = await response.json().catch(() => null) as ApiObsMediaPurchaseResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "OBS_MEDIA_PURCHASE_FAILED",
+        message: data?.message || "Failed to purchase OBS media effect.",
       };
     }
 

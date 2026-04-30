@@ -1,14 +1,19 @@
 import { DashboardText } from "@/lib/dashboardText";
-import { ObsMediaProduct, ObsShopStreamer } from "@/lib/types";
+import { ObsMediaProduct, ObsShopStreamer, UserBalance } from "@/lib/types";
 import { BotShopObsMediaPanel } from "./BotShopObsMediaPanel";
 
 type BotShopObsStreamerPanelProps = {
   t: DashboardText;
   streamer: ObsShopStreamer;
   mediaProducts: ObsMediaProduct[];
+  balance: UserBalance | null;
   loading: boolean;
   error: string | null;
   onBack: () => void;
+  buyingProductId: string | null;
+  feedbackByProductId: Record<string, string>;
+  errorByProductId: Record<string, string>;
+  onBuyMediaProduct: (productId: string) => Promise<void>;
 };
 
 function getAgentStatusLabel(t: DashboardText, streamer: ObsShopStreamer): string {
@@ -47,9 +52,14 @@ export function BotShopObsStreamerPanel({
   t,
   streamer,
   mediaProducts,
+  balance,
   loading,
   error,
   onBack,
+  buyingProductId,
+  feedbackByProductId,
+  errorByProductId,
+  onBuyMediaProduct,
 }: BotShopObsStreamerPanelProps) {
   return (
     <div className="obs-streamer-detail">
@@ -76,7 +86,16 @@ export function BotShopObsStreamerPanel({
           <div className="shop-subtabs" role="tablist" aria-label={t.media}>
             <button type="button" className="shop-subtab-chip active">{t.media}</button>
           </div>
-          <BotShopObsMediaPanel t={t} products={mediaProducts} />
+          <BotShopObsMediaPanel
+            t={t}
+            products={mediaProducts}
+            streamer={streamer}
+            balance={balance}
+            buyingProductId={buyingProductId}
+            feedbackByProductId={feedbackByProductId}
+            errorByProductId={errorByProductId}
+            onBuy={onBuyMediaProduct}
+          />
         </>
       ) : null}
     </div>
