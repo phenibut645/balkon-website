@@ -11,6 +11,7 @@ import { BotShopObsStreamerPanel } from "./BotShopObsStreamerPanel";
 
 type BotShopPanelProps = {
   t: DashboardText;
+  dateLocale: string;
   loadingGifs: string[];
   shopSubTab: ShopSubTab;
   onShopSubTabChange: (next: ShopSubTab) => void;
@@ -39,6 +40,7 @@ type BotShopPanelProps = {
 
 export function BotShopPanel({
   t,
+  dateLocale,
   loadingGifs,
   shopSubTab,
   onShopSubTabChange,
@@ -116,6 +118,7 @@ export function BotShopPanel({
               streamer={selectedStreamer}
               mediaProducts={obsMediaProducts}
               balance={balance}
+              dateLocale={dateLocale}
               loading={obsStreamerDetailsLoading}
               error={obsStreamerDetailsError}
               onBack={() => {

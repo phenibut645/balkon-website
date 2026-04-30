@@ -16,6 +16,7 @@ import {
   ApiBaseResponse,
   ApiBotShopResponse,
   ApiObsMediaPurchaseResponse,
+  ApiObsMediaActionsResponse,
   ApiObsShopStreamerDetailsResponse,
   ApiObsShopStreamersResponse,
   ApiCraftRecipesResponse,
@@ -29,6 +30,7 @@ import {
   ApiBotShopBuyResponse,
   AdminEconomyAdjustInput,
   AdminBroadcastNotificationInput,
+  ObsMediaActionStatus,
   UpdateUserProfileInput,
 } from "./types";
 
@@ -933,6 +935,86 @@ export async function purchaseObsMedia(streamerId: number | string, productId: s
         ok: false,
         error: data?.error || "OBS_MEDIA_PURCHASE_FAILED",
         message: data?.message || "Failed to purchase OBS media effect.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getMyObsMediaActions(input: { page?: number; pageSize?: number }): Promise<ApiObsMediaActionsResponse> {
+  try {
+    const page = Number.isFinite(input.page) ? Math.max(1, Math.floor(input.page!)) : 1;
+    const pageSize = Number.isFinite(input.pageSize) ? Math.min(50, Math.max(1, Math.floor(input.pageSize!))) : 10;
+    const query = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+    });
+
+    const response = await fetch(`${API_BASE_URL}/api/shop/obs/media/actions?${query.toString()}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiObsMediaActionsResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "OBS_MEDIA_ACTIONS_LOAD_FAILED",
+        message: data?.message || "Failed to load OBS media history.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getAdminObsMediaActions(input: {
+  page?: number;
+  pageSize?: number;
+  status?: ObsMediaActionStatus | null;
+}): Promise<ApiObsMediaActionsResponse> {
+  try {
+    const page = Number.isFinite(input.page) ? Math.max(1, Math.floor(input.page!)) : 1;
+    const pageSize = Number.isFinite(input.pageSize) ? Math.min(50, Math.max(1, Math.floor(input.pageSize!))) : 20;
+    const query = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+    });
+
+    if (input.status) {
+      query.set("status", input.status);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/admin/obs/media/actions?${query.toString()}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiObsMediaActionsResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_OBS_MEDIA_ACTIONS_LOAD_FAILED",
+        message: data?.message || "Failed to load OBS media action diagnostics.",
       };
     }
 

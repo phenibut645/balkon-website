@@ -1568,6 +1568,7 @@ export default function HomePage() {
             {activeTab === "botShop" ? (
               <BotShopPanel
                 t={t}
+                dateLocale={dateLocale}
                 loadingGifs={LOADING_GIFS}
                 shopSubTab={shopSubTab}
                 onShopSubTabChange={setShopSubTab}

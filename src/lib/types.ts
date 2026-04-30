@@ -198,6 +198,32 @@ export type ObsMediaPurchaseData = {
   commandId?: string;
 };
 
+export type ObsMediaActionStatus = "pending" | "sent" | "failed" | "refunded";
+
+export type ObsMediaAction = {
+  id: number;
+  buyerDiscordId: string;
+  buyerDisplayName: string | null;
+  streamerId: number;
+  streamerNickname: string;
+  agentId: string | null;
+  productId: string;
+  productKind: "image" | "gif";
+  productTitle: string;
+  mediaUrl: string;
+  priceOdm: number;
+  durationMs: number;
+  status: ObsMediaActionStatus;
+  commandId: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  refundedOdm: number;
+  createdAt: string;
+  sentAt: string | null;
+  failedAt: string | null;
+  refundedAt: string | null;
+};
+
 export type ApiBotShopResponse = {
   ok: boolean;
   listings?: BotShopListing[];
@@ -216,6 +242,13 @@ export type ApiObsShopStreamerDetailsResponse = ApiBaseResponse & {
 
 export type ApiObsMediaPurchaseResponse = ApiBaseResponse & {
   data?: ObsMediaPurchaseData;
+};
+
+export type ApiObsMediaActionsResponse = ApiBaseResponse & {
+  actions?: ObsMediaAction[];
+  page?: number;
+  pageSize?: number;
+  total?: number;
 };
 
 export type CraftRecipeIngredient = {

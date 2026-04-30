@@ -1,12 +1,15 @@
+import { useState } from "react";
 import { DashboardText } from "@/lib/dashboardText";
 import { ObsMediaProduct, ObsShopStreamer, UserBalance } from "@/lib/types";
 import { BotShopObsMediaPanel } from "./BotShopObsMediaPanel";
+import { BotShopObsHistoryPanel } from "./BotShopObsHistoryPanel";
 
 type BotShopObsStreamerPanelProps = {
   t: DashboardText;
   streamer: ObsShopStreamer;
   mediaProducts: ObsMediaProduct[];
   balance: UserBalance | null;
+  dateLocale: string;
   loading: boolean;
   error: string | null;
   onBack: () => void;
@@ -53,6 +56,7 @@ export function BotShopObsStreamerPanel({
   streamer,
   mediaProducts,
   balance,
+  dateLocale,
   loading,
   error,
   onBack,
@@ -61,6 +65,8 @@ export function BotShopObsStreamerPanel({
   errorByProductId,
   onBuyMediaProduct,
 }: BotShopObsStreamerPanelProps) {
+  const [activeInnerTab, setActiveInnerTab] = useState<"media" | "history">("media");
+
   return (
     <div className="obs-streamer-detail">
       <div className="obs-breadcrumb">
@@ -84,18 +90,23 @@ export function BotShopObsStreamerPanel({
       {!loading && !error ? (
         <>
           <div className="shop-subtabs" role="tablist" aria-label={t.media}>
-            <button type="button" className="shop-subtab-chip active">{t.media}</button>
+            <button type="button" className={`shop-subtab-chip ${activeInnerTab === "media" ? "active" : ""}`} onClick={() => setActiveInnerTab("media")}>{t.media}</button>
+            <button type="button" className={`shop-subtab-chip ${activeInnerTab === "history" ? "active" : ""}`} onClick={() => setActiveInnerTab("history")}>{t.obsMediaHistory}</button>
           </div>
-          <BotShopObsMediaPanel
-            t={t}
-            products={mediaProducts}
-            streamer={streamer}
-            balance={balance}
-            buyingProductId={buyingProductId}
-            feedbackByProductId={feedbackByProductId}
-            errorByProductId={errorByProductId}
-            onBuy={onBuyMediaProduct}
-          />
+          {activeInnerTab === "media" ? (
+            <BotShopObsMediaPanel
+              t={t}
+              products={mediaProducts}
+              streamer={streamer}
+              balance={balance}
+              buyingProductId={buyingProductId}
+              feedbackByProductId={feedbackByProductId}
+              errorByProductId={errorByProductId}
+              onBuy={onBuyMediaProduct}
+            />
+          ) : (
+            <BotShopObsHistoryPanel t={t} dateLocale={dateLocale} />
+          )}
         </>
       ) : null}
     </div>

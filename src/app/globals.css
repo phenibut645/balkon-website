@@ -2635,6 +2635,67 @@ body {
   color: #ccd8ee;
 }
 
+.obs-history-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-obs-actions-panel {
+  margin-top: 18px;
+}
+
+.obs-action-list {
+  display: grid;
+  gap: 10px;
+}
+
+.obs-action-card {
+  display: grid;
+  gap: 10px;
+}
+
+.obs-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px 12px;
+}
+
+.obs-action-status {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(111, 141, 199, 0.38);
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.obs-action-status.pending {
+  color: #c9d3ff;
+  border-color: rgba(139, 159, 255, 0.62);
+  background: rgba(75, 91, 171, 0.18);
+}
+
+.obs-action-status.sent {
+  color: #aaf0c0;
+  border-color: rgba(85, 198, 122, 0.62);
+  background: rgba(43, 130, 76, 0.16);
+}
+
+.obs-action-status.failed {
+  color: #ffb4ad;
+  border-color: rgba(241, 99, 93, 0.62);
+  background: rgba(154, 49, 48, 0.18);
+}
+
+.obs-action-status.refunded {
+  color: #ffe2a3;
+  border-color: rgba(224, 173, 74, 0.65);
+  background: rgba(144, 104, 30, 0.18);
+}
+
 .obs-streamer-detail {
   display: grid;
   gap: 10px;
