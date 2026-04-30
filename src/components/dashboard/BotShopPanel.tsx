@@ -31,13 +31,15 @@ export function BotShopPanel({
   buyFeedback,
   buyErrors,
 }: BotShopPanelProps) {
-  const [amounts, setAmounts] = useState<Record<number, string>>({});
+  const [amounts, setAmounts] = useState<Record<number, number>>({});
 
   function getAmount(listingId: number): number {
-    const raw = amounts[listingId];
-    if (!raw) return 1;
-    const n = parseInt(raw, 10);
-    return Number.isInteger(n) && n > 0 ? n : 1;
+    return amounts[listingId] ?? 1;
+  }
+
+  function setAmount(listingId: number, next: number): void {
+    const normalized = Number.isInteger(next) && next > 0 ? Math.min(next, 99) : 1;
+    setAmounts(prev => ({ ...prev, [listingId]: normalized }));
   }
 
   return (
@@ -122,19 +124,44 @@ export function BotShopPanel({
                     </div>
 
                     <div className="botshop-buy-row">
-                      <input
-                        className="botshop-amount-input"
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={amounts[listing.listingId] ?? "1"}
-                        disabled={isBuying}
-                        onChange={event => setAmounts(prev => ({ ...prev, [listing.listingId]: event.target.value }))}
-                        aria-label={t.amount}
-                      />
-                      {qty > 1 ? (
-                        <span className="botshop-total">{t.total}: {totalPrice} ODM</span>
-                      ) : null}
+                      <div className="botshop-qty-block">
+                        <label className="botshop-amount-label">{t.amount}</label>
+                        <div className="botshop-qty-controls">
+                          <div className="botshop-stepper" role="group" aria-label={t.amount}>
+                            <button
+                              type="button"
+                              className="botshop-stepper-btn"
+                              disabled={isBuying || buyingListingId !== null}
+                              onClick={() => setAmount(listing.listingId, Math.max(1, qty - 1))}
+                            >
+                              -
+                            </button>
+                            <span className="botshop-stepper-value" aria-live="polite">{qty}</span>
+                            <button
+                              type="button"
+                              className="botshop-stepper-btn"
+                              disabled={isBuying || buyingListingId !== null}
+                              onClick={() => setAmount(listing.listingId, qty + 1)}
+                            >
+                              +
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            className="botshop-stepper-plus"
+                            disabled={isBuying || buyingListingId !== null}
+                            onClick={() => setAmount(listing.listingId, qty + 5)}
+                          >
+                            +5
+                          </button>
+                        </div>
+                      </div>
+
+                      <span className="botshop-total-chip">
+                        <span aria-hidden="true">🪙</span>
+                        <span>{t.total}: {totalPrice} ODM</span>
+                      </span>
+
                       <button
                         className="pagination-btn botshop-buy-btn"
                         disabled={isBuying || notEnough || buyingListingId !== null}

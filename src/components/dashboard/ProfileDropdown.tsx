@@ -69,9 +69,18 @@ export function ProfileDropdown({
 
           {balance !== null ? (
             <div className="dropdown-balance-block">
-              <p className="language-title">{t.balance}</p>
-              <p className="dropdown-balance-row"><span>{t.odm}:</span><span>{balance.odm}</span></p>
-              <p className="dropdown-balance-row"><span>{t.ldm}:</span><span>{balance.ldm}</span></p>
+              <p className="dropdown-balance-title">
+                <span aria-hidden="true">🪙</span>
+                <span>{t.balance}</span>
+              </p>
+              <div className="dropdown-balance-row">
+                <span>{t.odm}</span>
+                <strong>{balance.odm}</strong>
+              </div>
+              <div className="dropdown-balance-row">
+                <span>{t.ldm}</span>
+                <strong>{balance.ldm}</strong>
+              </div>
             </div>
           ) : null}
 

@@ -81,14 +81,16 @@ export function AppHeader({
           ) : null}
         </div>
 
-        {profileDropdown}
-
-            {balance !== null ? (
-              <div className="balance-pill" title={`${t.odm}: ${balance.odm} | ${t.ldm}: ${balance.ldm}`}>
-                <span className="balance-pill-label">{t.odm}:</span>
-                <span className="balance-pill-value">{balance.odm}</span>
-              </div>
-            ) : null}
+        <div className="header-actions">
+          {profileDropdown}
+          {balance !== null ? (
+            <div className="header-balance-chip" title={`${t.odm}: ${balance.odm} | ${t.ldm}: ${balance.ldm}`}>
+              <span className="header-balance-coin" aria-hidden="true">🪙</span>
+              <span className="header-balance-label">{t.odm}</span>
+              <span className="header-balance-value">{balance.odm}</span>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div className="topbar-divider" />
