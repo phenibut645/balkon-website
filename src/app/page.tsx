@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMarketCapitalization, getMe, getMyBalance, logout } from "@/lib/api";
-import { AdminStats, ApiMeResponse, BotShopListing, CraftRecipe, InventoryItem, MarketCapitalizationData, MarketListing, UserBalance } from "@/lib/types";
+import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMarketCapitalization, getMarketForbes, getMe, getMyBalance, getMyProfile, logout, updateMyProfile } from "@/lib/api";
+import { DashboardMode, DashboardSearchResult, DashboardTab, normalizeDashboardSearchValue, MarketSubTab } from "@/lib/dashboardSearch";
+import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, UserBalance, UserPublicProfile } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
-import { AppHeader, HeaderSearchResult } from "@/components/dashboard/AppHeader";
+import { AppHeader } from "@/components/dashboard/AppHeader";
 import { ProfileDropdown } from "@/components/dashboard/ProfileDropdown";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { InventoryPanel } from "@/components/dashboard/InventoryPanel";
@@ -17,12 +18,9 @@ import { AdminObsPanel } from "@/components/dashboard/AdminObsPanel";
 import { AdminItemsPanel } from "@/components/dashboard/AdminItemsPanel";
 import { AdminBotShopPanel } from "@/components/dashboard/AdminBotShopPanel";
 import { PlaceholderPanel } from "@/components/dashboard/PlaceholderPanel";
+import { ProfileSettingsPanel } from "@/components/dashboard/ProfileSettingsPanel";
 
 type AuthState = "loading" | "guest" | "user";
-type UserTab = "overview" | "inventory" | "market" | "botShop" | "craft" | "profile";
-type AdminTab = "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems" | "adminBotShop";
-type DashboardTab = UserTab | AdminTab;
-type DashboardMode = "user" | "admin";
 type BotUiStatus = "online" | "offline" | "development";
 type InventoryFilter = "all" | "materials" | "sellable" | "tradeable";
 
@@ -59,6 +57,10 @@ export default function HomePage() {
   const [marketCapitalizationLoaded, setMarketCapitalizationLoaded] = useState(false);
   const [marketCapitalizationLoading, setMarketCapitalizationLoading] = useState(false);
   const [marketCapitalizationError, setMarketCapitalizationError] = useState<string | null>(null);
+  const [marketForbes, setMarketForbes] = useState<MarketForbesEntry[]>([]);
+  const [marketForbesLoaded, setMarketForbesLoaded] = useState(false);
+  const [marketForbesLoading, setMarketForbesLoading] = useState(false);
+  const [marketForbesError, setMarketForbesError] = useState<string | null>(null);
   const [botShopListings, setBotShopListings] = useState<BotShopListing[]>([]);
   const [botShopLoaded, setBotShopLoaded] = useState(false);
   const [botShopLoading, setBotShopLoading] = useState(false);
@@ -82,6 +84,16 @@ export default function HomePage() {
   const [adminStatsError, setAdminStatsError] = useState<string | null>(null);
   const [language, setLanguage] = useState<LanguageCode>("ru");
   const [searchQuery, setSearchQuery] = useState("");
+  const [marketSubTab, setMarketSubTab] = useState<MarketSubTab>("overview");
+  const [profileData, setProfileData] = useState<UserPublicProfile | null>(null);
+  const [profileGuilds, setProfileGuilds] = useState<AvailableGuild[]>([]);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [profileSaveLoading, setProfileSaveLoading] = useState(false);
+  const [profileFeedback, setProfileFeedback] = useState<string | null>(null);
+  const [profileHomeGuildIdDraft, setProfileHomeGuildIdDraft] = useState("");
+  const [profileDescriptionDraft, setProfileDescriptionDraft] = useState("");
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -130,38 +142,226 @@ export default function HomePage() {
   ]), [t]);
 
   const searchResults = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query.length) {
-      return [] as HeaderSearchResult[];
+    const query = normalizeDashboardSearchValue(searchQuery);
+    if (!query) {
+      return [] as DashboardSearchResult[];
     }
 
-    const topLevelResults: HeaderSearchResult[] = tabItems
-      .filter(tab => tab.label.toLowerCase().includes(query))
-      .map(tab => ({
-        key: `tab:${tab.id}`,
-        tabId: tab.id,
-        label: tab.label,
-        breadcrumb: tab.label,
-      }));
+    const commonUserTabResults: DashboardSearchResult[] = [
+      {
+        key: "tab:overview",
+        label: t.tabOverview,
+        breadcrumb: t.tabOverview,
+        aliases: ["overview", "home", "главная", "обзор", "avaleht", "ulevaade"],
+        destination: { kind: "userTab", tab: "overview" },
+      },
+      {
+        key: "tab:market",
+        label: t.tabMarket,
+        breadcrumb: t.tabMarket,
+        aliases: ["market", "рынок", "turg", "marketplace"],
+        destination: { kind: "userTab", tab: "market" },
+      },
+      {
+        key: "market:overview",
+        label: `${t.tabMarket} → ${t.marketOverview}`,
+        breadcrumb: `${t.tabMarket} → ${t.marketOverview}`,
+        description: t.marketOverviewSearchDescription,
+        aliases: [
+          "рынок",
+          "обзор рынка",
+          "график",
+          "капитализация",
+          "экономика",
+          "odm",
+          "валюта",
+          "статистика",
+          "market",
+          "overview",
+          "chart",
+          "capitalization",
+          "economy",
+          "currency",
+          "stats",
+          "turg",
+          "ulevaade",
+          "ülevaade",
+          "graafik",
+          "kapitalisatsioon",
+          "majandus",
+          "valuuta",
+        ],
+        destination: { kind: "marketSubtab", subtab: "overview" },
+      },
+      {
+        key: "market:listings",
+        label: `${t.tabMarket} → ${t.marketListings}`,
+        breadcrumb: `${t.tabMarket} → ${t.marketListings}`,
+        description: t.marketListingsSearchDescription,
+        aliases: [
+          "рынок",
+          "предметы",
+          "товары",
+          "листинги",
+          "продажи",
+          "купить",
+          "покупка",
+          "цена",
+          "market",
+          "listings",
+          "items",
+          "goods",
+          "sales",
+          "buy",
+          "purchase",
+          "price",
+          "turg",
+          "esemed",
+          "ost",
+          "osta",
+          "müük",
+          "hind",
+        ],
+        destination: { kind: "marketSubtab", subtab: "listings" },
+      },
+      {
+        key: "market:forbes",
+        label: `${t.tabMarket} → ${t.marketForbes}`,
+        breadcrumb: `${t.tabMarket} → ${t.marketForbes}`,
+        description: t.marketForbesSearchDescription,
+        aliases: [
+          "форбс",
+          "балкон форбс",
+          "топ",
+          "топ 10",
+          "богатые",
+          "богачи",
+          "рейтинг",
+          "лидерборд",
+          "капитал",
+          "деньги",
+          "forbes",
+          "top",
+          "top 10",
+          "richest",
+          "rich",
+          "leaderboard",
+          "ranking",
+          "money",
+          "edetabel",
+          "rikkad",
+          "raha",
+        ],
+        destination: { kind: "marketSubtab", subtab: "forbes" },
+      },
+      {
+        key: "tab:botShop",
+        label: t.tabBotShop,
+        breadcrumb: t.tabBotShop,
+        description: t.botShopSearchDescription,
+        aliases: [
+          "магазин",
+          "бот магазин",
+          "купить",
+          "покупка",
+          "бот",
+          "товары",
+          "shop",
+          "bot shop",
+          "buy",
+          "purchase",
+          "bot",
+          "store",
+          "pood",
+          "botipood",
+          "ost",
+          "osta",
+        ],
+        destination: { kind: "userTab", tab: "botShop" },
+      },
+      {
+        key: "tab:inventory",
+        label: t.tabInventory,
+        breadcrumb: t.tabInventory,
+        description: t.inventorySearchDescription,
+        aliases: [
+          "инвентарь",
+          "предметы",
+          "мои предметы",
+          "продать",
+          "продать боту",
+          "передать",
+          "inventory",
+          "items",
+          "my items",
+          "sell",
+          "sell to bot",
+          "transfer",
+          "inventar",
+          "esemed",
+          "müü",
+          "ülekanne",
+        ],
+        destination: { kind: "userTab", tab: "inventory" },
+      },
+      {
+        key: "tab:craft",
+        label: t.tabCraft,
+        breadcrumb: t.tabCraft,
+        description: t.craftSearchDescription,
+        aliases: ["крафт", "рецепты", "создать предмет", "craft", "recipes", "crafting", "retseptid"],
+        destination: { kind: "userTab", tab: "craft" },
+      },
+      {
+        key: "tab:profile",
+        label: t.tabProfile,
+        breadcrumb: t.tabProfile,
+        description: t.profileSearchDescription,
+        aliases: ["профиль", "аккаунт", "дискорд", "profile", "account", "discord", "profiil", "konto"],
+        destination: { kind: "userTab", tab: "profile" },
+      },
+    ];
 
-    const inventorySubtabResults: HeaderSearchResult[] = dashboardMode === "user"
-      ? inventoryFilterItems
-        .filter(filter => filter.label.toLowerCase().includes(query))
-        .map(filter => ({
-          key: `inventory-filter:${filter.id}`,
-          tabId: "inventory",
-          label: filter.label,
-          breadcrumb: `${t.tabInventory} -> ${filter.label}`,
-        }))
-      : [];
+    const adminResults: DashboardSearchResult[] = [
+      { key: "tab:adminDashboard", label: t.adminTabDashboard, breadcrumb: t.adminTabDashboard, aliases: ["dashboard", "admin", "панель", "paneel"], destination: { kind: "adminTab", tab: "adminDashboard" } },
+      { key: "tab:adminServers", label: t.adminTabServers, breadcrumb: t.adminTabServers, aliases: ["servers", "серверы", "serverid"], destination: { kind: "adminTab", tab: "adminServers" } },
+      { key: "tab:adminLogs", label: t.adminTabLogs, breadcrumb: t.adminTabLogs, aliases: ["logs", "логи", "logid"], destination: { kind: "adminTab", tab: "adminLogs" } },
+      { key: "tab:adminObs", label: t.adminTabObs, breadcrumb: t.adminTabObs, aliases: ["obs", "scene", "сцены"], destination: { kind: "adminTab", tab: "adminObs" } },
+      { key: "tab:adminItems", label: t.adminTabItems, breadcrumb: t.adminTabItems, aliases: ["items", "предметы", "esemed"], destination: { kind: "adminTab", tab: "adminItems" } },
+      { key: "tab:adminBotShop", label: t.adminTabBotShop, breadcrumb: t.adminTabBotShop, aliases: ["shop", "магазин", "pood"], destination: { kind: "adminTab", tab: "adminBotShop" } },
+    ];
 
-    const byKey = new Map<string, HeaderSearchResult>();
-    [...inventorySubtabResults, ...topLevelResults].forEach(result => {
-      byKey.set(result.key, result);
-    });
+    const searchPool = dashboardMode === "admin" && canUseAdminMode ? adminResults : commonUserTabResults;
 
-    return Array.from(byKey.values());
-  }, [dashboardMode, inventoryFilterItems, searchQuery, t.tabInventory, tabItems]);
+    const scored = searchPool
+      .map(item => {
+        const normalizedLabel = normalizeDashboardSearchValue(item.label);
+        const normalizedDescription = normalizeDashboardSearchValue(item.description || "");
+        const normalizedAliases = item.aliases.map(alias => normalizeDashboardSearchValue(alias));
+
+        let score = Number.MAX_SAFE_INTEGER;
+        if (normalizedLabel.includes(query)) {
+          score = 0;
+        } else if (normalizedAliases.some(alias => alias.includes(query))) {
+          score = 1;
+        } else if (normalizedDescription.includes(query)) {
+          score = 2;
+        }
+
+        return { item, score };
+      })
+      .filter(entry => entry.score !== Number.MAX_SAFE_INTEGER)
+      .sort((a, b) => {
+        if (a.score !== b.score) {
+          return a.score - b.score;
+        }
+        return a.item.label.localeCompare(b.item.label);
+      })
+      .slice(0, 8)
+      .map(entry => entry.item);
+
+    return scored;
+  }, [canUseAdminMode, dashboardMode, searchQuery, t]);
 
   const filteredInventory = useMemo(() => {
     if (inventoryFilter === "materials") {
@@ -228,6 +428,10 @@ export default function HomePage() {
     setMarketCapitalizationLoaded(false);
     setMarketCapitalizationLoading(false);
     setMarketCapitalizationError(null);
+    setMarketForbes([]);
+    setMarketForbesLoaded(false);
+    setMarketForbesLoading(false);
+    setMarketForbesError(null);
     setBotShopListings([]);
     setBotShopLoaded(false);
     setBotShopLoading(false);
@@ -243,6 +447,16 @@ export default function HomePage() {
     setCraftLoaded(false);
     setCraftLoading(false);
     setCraftError(null);
+    setProfileData(null);
+    setProfileGuilds([]);
+    setProfileLoaded(false);
+    setProfileLoading(false);
+    setProfileError(null);
+    setProfileSaveLoading(false);
+    setProfileFeedback(null);
+    setProfileHomeGuildIdDraft("");
+    setProfileDescriptionDraft("");
+    setMarketSubTab("overview");
     setDashboardMode("user");
     setCanUseAdminMode(false);
     setAdminProbeDone(false);
@@ -380,6 +594,78 @@ export default function HomePage() {
     setBotShopError(response.message || response.error || t.botShopError);
   }, [botShopLoading, t.botShopError]);
 
+  const loadMarketForbes = useCallback(async (): Promise<void> => {
+    if (marketForbesLoading) {
+      return;
+    }
+
+    setMarketForbesLoading(true);
+    setMarketForbesError(null);
+
+    const response = await getMarketForbes(10);
+    if (response.ok && Array.isArray(response.leaderboard)) {
+      setMarketForbes(response.leaderboard);
+      setMarketForbesLoaded(true);
+      setMarketForbesLoading(false);
+      return;
+    }
+
+    setMarketForbes([]);
+    setMarketForbesLoaded(true);
+    setMarketForbesLoading(false);
+    setMarketForbesError(response.message || response.error || t.marketForbesError);
+  }, [marketForbesLoading, t.marketForbesError]);
+
+  const loadProfile = useCallback(async (): Promise<void> => {
+    if (profileLoading) {
+      return;
+    }
+
+    setProfileLoading(true);
+    setProfileError(null);
+
+    const response = await getMyProfile();
+    if (response.ok && response.profile) {
+      setProfileData(response.profile);
+      setProfileGuilds(response.availableGuilds || []);
+      setProfileHomeGuildIdDraft(response.profile.homeGuildId || "");
+      setProfileDescriptionDraft(response.profile.publicDescription || "");
+      setProfileLoaded(true);
+      setProfileLoading(false);
+      return;
+    }
+
+    setProfileData(null);
+    setProfileGuilds([]);
+    setProfileLoaded(true);
+    setProfileLoading(false);
+    setProfileError(response.message || response.error || t.profileSaveFailed);
+  }, [profileLoading, t.profileSaveFailed]);
+
+  const saveProfile = useCallback(async (): Promise<void> => {
+    setProfileSaveLoading(true);
+    setProfileError(null);
+    setProfileFeedback(null);
+
+    const response = await updateMyProfile({
+      homeGuildId: profileHomeGuildIdDraft || null,
+      publicDescription: profileDescriptionDraft.trim() ? profileDescriptionDraft.trim() : null,
+    });
+
+    if (response.ok && response.profile) {
+      setProfileData(response.profile);
+      setProfileGuilds(response.availableGuilds || profileGuilds);
+      setProfileHomeGuildIdDraft(response.profile.homeGuildId || "");
+      setProfileDescriptionDraft(response.profile.publicDescription || "");
+      setProfileFeedback(t.profileSaved);
+      setProfileSaveLoading(false);
+      return;
+    }
+
+    setProfileError(response.message || response.error || t.profileSaveFailed);
+    setProfileSaveLoading(false);
+  }, [profileDescriptionDraft, profileGuilds, profileHomeGuildIdDraft, t.profileSaveFailed, t.profileSaved]);
+
   const loadBalance = useCallback(async (): Promise<void> => {
     if (balanceLoading) {
       return;
@@ -475,6 +761,18 @@ export default function HomePage() {
   }, [authState, activeTab, marketCapitalizationLoaded, marketCapitalizationLoading, loadMarketCapitalization]);
 
   useEffect(() => {
+    if (
+      authState === "user"
+      && activeTab === "market"
+      && marketSubTab === "forbes"
+      && !marketForbesLoaded
+      && !marketForbesLoading
+    ) {
+      void loadMarketForbes();
+    }
+  }, [authState, activeTab, marketForbesLoaded, marketForbesLoading, marketSubTab, loadMarketForbes]);
+
+  useEffect(() => {
     if (authState === "user" && activeTab === "botShop" && !botShopLoaded && !botShopLoading) {
       void loadBotShop();
     }
@@ -491,6 +789,12 @@ export default function HomePage() {
       void loadCraftRecipes();
     }
   }, [authState, activeTab, craftLoaded, craftLoading, loadCraftRecipes]);
+
+  useEffect(() => {
+    if (authState === "user" && activeTab === "profile" && !profileLoaded && !profileLoading) {
+      void loadProfile();
+    }
+  }, [activeTab, authState, loadProfile, profileLoaded, profileLoading]);
 
   useEffect(() => {
     if (authState !== "user") {
@@ -519,16 +823,27 @@ export default function HomePage() {
     setSearchQuery("");
   }
 
-  function handleSearchResultSelect(result: HeaderSearchResult): void {
-    if (result.key.startsWith("inventory-filter:")) {
-      const filterId = result.key.replace("inventory-filter:", "") as InventoryFilter;
-      setInventoryFilter(filterId);
-      setActiveTab("inventory");
+  function handleSearchResultSelect(result: DashboardSearchResult): void {
+    if (result.destination.kind === "marketSubtab") {
+      setDashboardMode("user");
+      setActiveTab("market");
+      setMarketSubTab(result.destination.subtab);
       setSearchQuery("");
       return;
     }
 
-    handleTabChange(result.tabId);
+    if (result.destination.kind === "userTab") {
+      setDashboardMode("user");
+      setActiveTab(result.destination.tab);
+      setSearchQuery("");
+      return;
+    }
+
+    if (result.destination.kind === "adminTab" && canUseAdminMode) {
+      setDashboardMode("admin");
+      setActiveTab(result.destination.tab);
+      setSearchQuery("");
+    }
   }
 
   function handleDashboardModeChange(nextMode: DashboardMode): void {
@@ -678,6 +993,11 @@ export default function HomePage() {
                 marketCapitalization={marketCapitalization}
                 marketCapitalizationLoading={marketCapitalizationLoading}
                 marketCapitalizationError={marketCapitalizationError}
+                marketForbes={marketForbes}
+                marketForbesLoading={marketForbesLoading}
+                marketForbesError={marketForbesError}
+                marketSubTab={marketSubTab}
+                onMarketSubTabChange={setMarketSubTab}
                 onRefreshListings={() => {
                   setMarketLoaded(false);
                   void loadMarket();
@@ -685,6 +1005,10 @@ export default function HomePage() {
                 onRefreshCapitalization={() => {
                   setMarketCapitalizationLoaded(false);
                   void loadMarketCapitalization();
+                }}
+                onRefreshForbes={() => {
+                  setMarketForbesLoaded(false);
+                  void loadMarketForbes();
                 }}
               />
             ) : null}
@@ -755,24 +1079,27 @@ export default function HomePage() {
             ) : null}
 
             {activeTab === "profile" ? (
-              <div className="panel panel-overview">
-                <p className="display-name">{t.profileSection}</p>
-                <p className="user-id">{displayName}</p>
-                <p className="user-id">{t.discordId}: {user.discordId}</p>
-                {balance !== null ? (
-                  <p className="user-id">{t.balance}: {t.odm} {balance.odm} / {t.ldm} {balance.ldm}</p>
-                ) : null}
-                {balanceError ? <p className="state-text state-error">{balanceError}</p> : null}
-                {roles.length > 0 ? (
-                  <div className="badges">
-                    {roles.map(role => (
-                      <span className="badge" key={role}>{role}</span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="no-roles">{t.noRoles}</p>
-                )}
-              </div>
+              <ProfileSettingsPanel
+                t={t}
+                profile={profileData}
+                availableGuilds={profileGuilds}
+                loading={profileLoading}
+                saveLoading={profileSaveLoading}
+                error={profileError}
+                feedback={profileFeedback}
+                homeGuildIdDraft={profileHomeGuildIdDraft}
+                publicDescriptionDraft={profileDescriptionDraft}
+                onHomeGuildChange={setProfileHomeGuildIdDraft}
+                onDescriptionChange={setProfileDescriptionDraft}
+                onSave={() => {
+                  void saveProfile();
+                }}
+                onReset={() => {
+                  setProfileHomeGuildIdDraft(profileData?.homeGuildId || "");
+                  setProfileDescriptionDraft(profileData?.publicDescription || "");
+                  setProfileFeedback(null);
+                }}
+              />
             ) : null}
 
             </div>

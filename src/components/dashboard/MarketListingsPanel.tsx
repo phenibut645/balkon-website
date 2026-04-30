@@ -1,5 +1,6 @@
 import { DashboardText } from "@/lib/dashboardText";
 import { MarketListing } from "@/lib/types";
+import { UserIdentity } from "./UserIdentity";
 
 type MarketListingsPanelProps = {
   t: DashboardText;
@@ -79,7 +80,19 @@ export function MarketListingsPanel({ t, loadingGifs, marketListings, marketLoad
                     <span className="meta-badge">{t.marketListingId} #{listing.listingId}</span>
                     <span className="meta-badge">{t.marketInventoryItemId} #{listing.inventoryItemId}</span>
                     <span className="meta-badge price">{t.marketPrice}: {listing.price} ODM</span>
-                    <span className="meta-badge">{t.marketSeller}: {listing.sellerDiscordId}</span>
+                    <div className="market-seller-chip">
+                      <span className="market-card-label">{t.marketSeller}</span>
+                      <UserIdentity
+                        user={{
+                          discordId: listing.sellerDiscordId,
+                          username: null,
+                          globalName: null,
+                          avatarUrl: null,
+                        }}
+                        size="sm"
+                        showAvatar={false}
+                      />
+                    </div>
                     <span className={`meta-badge ${listing.tradeable ? "ok" : "muted"}`}>
                       {listing.tradeable ? t.tradeableYes : t.tradeableNo}
                     </span>

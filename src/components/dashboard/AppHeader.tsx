@@ -1,16 +1,9 @@
 import type { ReactNode } from "react";
 import { DashboardText } from "@/lib/dashboardText";
+import { DashboardSearchResult } from "@/lib/dashboardSearch";
 import { UserBalance } from "@/lib/types";
 
 type BotUiStatus = "online" | "offline" | "development";
-type DashboardTab = "overview" | "inventory" | "market" | "botShop" | "craft" | "profile" | "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems" | "adminBotShop";
-
-export type HeaderSearchResult = {
-  key: string;
-  tabId: DashboardTab;
-  label: string;
-  breadcrumb: string;
-};
 
 type AppHeaderProps = {
   appVersion: string;
@@ -19,8 +12,8 @@ type AppHeaderProps = {
   t: DashboardText;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
-  searchResults: HeaderSearchResult[];
-  onSearchResultSelect: (result: HeaderSearchResult) => void;
+  searchResults: DashboardSearchResult[];
+  onSearchResultSelect: (result: DashboardSearchResult) => void;
   profileDropdown: ReactNode;
   balance: UserBalance | null;
 };
@@ -82,7 +75,7 @@ export function AppHeader({
                   onClick={() => onSearchResultSelect(result)}
                 >
                   <span className="search-result-title">{result.label}</span>
-                  <span className="search-result-path">{result.breadcrumb}</span>
+                  <span className="search-result-path">{result.description || result.breadcrumb}</span>
                 </button>
               ))}
             </div>

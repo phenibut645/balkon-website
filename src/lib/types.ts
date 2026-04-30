@@ -67,6 +67,51 @@ export type ApiMarketResponse = {
   message?: string;
 };
 
+export type UserIdentityView = {
+  discordId: string;
+  username: string | null;
+  globalName: string | null;
+  avatarUrl: string | null;
+};
+
+export type UserPublicProfile = UserIdentityView & {
+  balance: number;
+  ldmBalance: number;
+  homeGuildId: string | null;
+  homeGuildName: string | null;
+  publicDescription: string | null;
+};
+
+export type AvailableGuild = {
+  guildId: string;
+  name: string;
+  iconUrl?: string | null;
+};
+
+export type UpdateUserProfileInput = {
+  homeGuildId?: string | null;
+  publicDescription?: string | null;
+};
+
+export type ApiProfileMeResponse = {
+  ok: boolean;
+  profile?: UserPublicProfile;
+  availableGuilds?: AvailableGuild[];
+  error?: string;
+  message?: string;
+};
+
+export type MarketForbesEntry = UserPublicProfile & {
+  rank: number;
+};
+
+export type ApiMarketForbesResponse = {
+  ok: boolean;
+  leaderboard?: MarketForbesEntry[];
+  error?: string;
+  message?: string;
+};
+
 export type MarketCapitalizationPoint = {
   date: string;
   totalOdm: number;

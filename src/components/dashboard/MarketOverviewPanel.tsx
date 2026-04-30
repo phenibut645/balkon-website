@@ -23,10 +23,14 @@ type ChartPoint = {
 };
 
 const CHART_WIDTH = 740;
-const CHART_HEIGHT = 260;
-const CHART_PADDING_X = 24;
-const CHART_PADDING_Y = 24;
-const CHART_BASELINE_Y = 236;
+const CHART_HEIGHT = 280;
+const CHART_PADDING_X = 44;
+const CHART_PADDING_TOP = 28;
+const CHART_PADDING_BOTTOM = 44;
+const PLOT_LEFT = CHART_PADDING_X;
+const PLOT_RIGHT = CHART_WIDTH - CHART_PADDING_X;
+const PLOT_TOP = CHART_PADDING_TOP;
+const PLOT_BOTTOM = CHART_HEIGHT - CHART_PADDING_BOTTOM;
 
 function formatCompactDate(value: string, dateLocale: string): string {
   const date = new Date(`${value}T00:00:00Z`);
@@ -54,8 +58,8 @@ function toChartPoints(points: MarketCapitalizationData["points"], dateLocale: s
   const values = points.map(point => point.totalOdm);
   const labels = points.map(point => formatCompactDate(point.date, dateLocale));
 
-  const plotWidth = CHART_WIDTH - CHART_PADDING_X * 2;
-  const plotHeight = CHART_HEIGHT - CHART_PADDING_Y * 2;
+  const plotWidth = PLOT_RIGHT - PLOT_LEFT;
+  const plotHeight = PLOT_BOTTOM - PLOT_TOP;
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min;
@@ -63,12 +67,12 @@ function toChartPoints(points: MarketCapitalizationData["points"], dateLocale: s
   return points.map((point, index) => {
     const value = point.totalOdm;
     const x = values.length <= 1
-      ? CHART_PADDING_X + plotWidth / 2
-      : CHART_PADDING_X + (index / (values.length - 1)) * plotWidth;
+      ? PLOT_LEFT + plotWidth / 2
+      : PLOT_LEFT + (index / (values.length - 1)) * plotWidth;
 
     const y = range === 0
-      ? CHART_PADDING_Y + plotHeight / 2
-      : CHART_PADDING_Y + ((max - value) / range) * plotHeight;
+      ? PLOT_TOP + plotHeight / 2
+      : PLOT_TOP + ((max - value) / range) * plotHeight;
 
     return {
       x,
@@ -101,7 +105,7 @@ export function MarketOverviewPanel({
   const polylinePoints = chartPoints.map(point => `${point.x},${point.y}`).join(" ");
 
   const areaPath = chartPoints.length > 1
-    ? `M ${chartPoints[0].x} ${CHART_BASELINE_Y} L ${chartPoints.map(point => `${point.x} ${point.y}`).join(" L ")} L ${chartPoints[chartPoints.length - 1].x} ${CHART_BASELINE_Y} Z`
+    ? `M ${chartPoints[0].x} ${PLOT_BOTTOM} L ${chartPoints.map(point => `${point.x} ${point.y}`).join(" L ")} L ${chartPoints[chartPoints.length - 1].x} ${PLOT_BOTTOM} Z`
     : "";
 
   const minValue = values.length ? Math.min(...values) : 0;
@@ -116,7 +120,7 @@ export function MarketOverviewPanel({
     }
 
     const leftPercent = Math.max(8, Math.min(92, (hoveredPoint.x / CHART_WIDTH) * 100));
-    const topPercent = Math.max(18, Math.min(84, (hoveredPoint.y / CHART_HEIGHT) * 100));
+    const topPercent = Math.max(18, Math.min(86, (hoveredPoint.y / CHART_HEIGHT) * 100));
 
     return {
       left: `${leftPercent}%`,
@@ -206,7 +210,7 @@ export function MarketOverviewPanel({
                   </div>
                 ) : null}
 
-                <svg className="market-chart-svg" viewBox="0 0 740 260" role="img" aria-label={t.marketCapitalization}>
+                <svg className="market-chart-svg" viewBox="0 0 740 280" role="img" aria-label={t.marketCapitalization}>
                   <defs>
                     <linearGradient id={`marketAreaGradient-${gradientId}`} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="rgba(245, 200, 75, 0.34)" />
@@ -215,13 +219,13 @@ export function MarketOverviewPanel({
                   </defs>
 
                   {[0, 1, 2, 3].map(index => {
-                    const y = CHART_PADDING_Y + (index / 3) * (CHART_BASELINE_Y - CHART_PADDING_Y);
+                    const y = PLOT_TOP + (index / 3) * (PLOT_BOTTOM - PLOT_TOP);
                     return (
                       <line
                         key={`grid-${index}`}
-                        x1={CHART_PADDING_X}
+                        x1={PLOT_LEFT}
                         y1={y}
-                        x2={CHART_WIDTH - CHART_PADDING_X}
+                        x2={PLOT_RIGHT}
                         y2={y}
                         className="market-chart-grid"
                       />
@@ -231,14 +235,14 @@ export function MarketOverviewPanel({
                   {hoveredPoint ? (
                     <line
                       x1={hoveredPoint.x}
-                      y1={CHART_PADDING_Y}
+                      y1={PLOT_TOP}
                       x2={hoveredPoint.x}
-                      y2={CHART_BASELINE_Y}
+                      y2={PLOT_BOTTOM}
                       className="market-chart-guide"
                     />
                   ) : null}
 
-                  <line x1={CHART_PADDING_X} y1={CHART_BASELINE_Y} x2={CHART_WIDTH - CHART_PADDING_X} y2={CHART_BASELINE_Y} className="market-chart-axis" />
+                  <line x1={PLOT_LEFT} y1={PLOT_BOTTOM} x2={PLOT_RIGHT} y2={PLOT_BOTTOM} className="market-chart-axis" />
 
                   {areaPath ? <path d={areaPath} className="market-chart-area" fill={`url(#marketAreaGradient-${gradientId})`} /> : null}
 
@@ -263,7 +267,7 @@ export function MarketOverviewPanel({
                         key={`${point.rawDate}-${point.totalOdm}`}
                         cx={point.x}
                         cy={point.y}
-                        r={isActive ? "5.2" : "3.6"}
+                        r={isActive ? "5.2" : "3.8"}
                         className={`market-chart-point ${isActive ? "active" : ""}`}
                         tabIndex={0}
                         role="button"
@@ -287,7 +291,7 @@ export function MarketOverviewPanel({
                       <text
                         key={`axis-${point.dateLabel}-${index}`}
                         x={point.x}
-                        y="252"
+                        y={PLOT_BOTTOM + 28}
                         textAnchor="middle"
                         fontSize="11"
                         className="market-chart-axis-label"
@@ -297,8 +301,8 @@ export function MarketOverviewPanel({
                     );
                   })}
 
-                  <text x={CHART_PADDING_X} y="16" className="market-chart-value-label">{numberFormat.format(maxValue)} ODM</text>
-                  <text x={CHART_PADDING_X} y="252" className="market-chart-value-label">{numberFormat.format(minValue)} ODM</text>
+                  <text x={PLOT_LEFT} y={PLOT_TOP - 8} className="market-chart-value-label">{numberFormat.format(maxValue)} ODM</text>
+                  <text x={PLOT_LEFT} y={PLOT_BOTTOM - 6} className="market-chart-value-label">{numberFormat.format(minValue)} ODM</text>
                 </svg>
               </div>
             )}

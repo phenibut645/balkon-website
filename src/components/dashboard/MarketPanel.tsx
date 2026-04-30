@@ -1,10 +1,9 @@
-import { useState } from "react";
 import { DashboardText } from "@/lib/dashboardText";
-import { MarketCapitalizationData, MarketListing } from "@/lib/types";
+import { MarketSubTab } from "@/lib/dashboardSearch";
+import { MarketCapitalizationData, MarketForbesEntry, MarketListing } from "@/lib/types";
 import { MarketOverviewPanel } from "./MarketOverviewPanel";
 import { MarketListingsPanel } from "./MarketListingsPanel";
-
-type MarketSubTab = "overview" | "listings";
+import { MarketForbesPanel } from "./MarketForbesPanel";
 
 type MarketPanelProps = {
   t: DashboardText;
@@ -16,8 +15,14 @@ type MarketPanelProps = {
   marketCapitalization: MarketCapitalizationData | null;
   marketCapitalizationLoading: boolean;
   marketCapitalizationError: string | null;
+  marketForbes: MarketForbesEntry[];
+  marketForbesLoading: boolean;
+  marketForbesError: string | null;
+  marketSubTab: MarketSubTab;
+  onMarketSubTabChange: (subTab: MarketSubTab) => void;
   onRefreshListings: () => void;
   onRefreshCapitalization: () => void;
+  onRefreshForbes: () => void;
 };
 
 export function MarketPanel({
@@ -30,11 +35,15 @@ export function MarketPanel({
   marketCapitalization,
   marketCapitalizationLoading,
   marketCapitalizationError,
+  marketForbes,
+  marketForbesLoading,
+  marketForbesError,
+  marketSubTab,
+  onMarketSubTabChange,
   onRefreshListings,
   onRefreshCapitalization,
+  onRefreshForbes,
 }: MarketPanelProps) {
-  const [subTab, setSubTab] = useState<MarketSubTab>("overview");
-
   return (
     <div className="panel panel-market">
       <div className="market-scroll">
@@ -42,24 +51,33 @@ export function MarketPanel({
           <button
             type="button"
             role="tab"
-            aria-selected={subTab === "overview"}
-            className={`market-subtab-chip ${subTab === "overview" ? "active" : ""}`}
-            onClick={() => setSubTab("overview")}
+            aria-selected={marketSubTab === "overview"}
+            className={`market-subtab-chip ${marketSubTab === "overview" ? "active" : ""}`}
+            onClick={() => onMarketSubTabChange("overview")}
           >
             {t.marketOverview}
           </button>
           <button
             type="button"
             role="tab"
-            aria-selected={subTab === "listings"}
-            className={`market-subtab-chip ${subTab === "listings" ? "active" : ""}`}
-            onClick={() => setSubTab("listings")}
+            aria-selected={marketSubTab === "listings"}
+            className={`market-subtab-chip ${marketSubTab === "listings" ? "active" : ""}`}
+            onClick={() => onMarketSubTabChange("listings")}
           >
             {t.marketListings}
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={marketSubTab === "forbes"}
+            className={`market-subtab-chip ${marketSubTab === "forbes" ? "active" : ""}`}
+            onClick={() => onMarketSubTabChange("forbes")}
+          >
+            {t.marketForbes}
+          </button>
         </div>
 
-        {subTab === "overview" ? (
+        {marketSubTab === "overview" ? (
           <MarketOverviewPanel
             t={t}
             dateLocale={dateLocale}
@@ -67,6 +85,15 @@ export function MarketPanel({
             error={marketCapitalizationError}
             capitalization={marketCapitalization}
             onRefresh={onRefreshCapitalization}
+          />
+        ) : marketSubTab === "forbes" ? (
+          <MarketForbesPanel
+            t={t}
+            leaderboard={marketForbes}
+            loading={marketForbesLoading}
+            error={marketForbesError}
+            onRefresh={onRefreshForbes}
+            streamerMode={false}
           />
         ) : (
           <MarketListingsPanel

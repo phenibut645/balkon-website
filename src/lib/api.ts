@@ -11,12 +11,15 @@ import {
   ApiBaseResponse,
   ApiBotShopResponse,
   ApiCraftRecipesResponse,
+  ApiProfileMeResponse,
+  ApiMarketForbesResponse,
   ApiInventoryResponse,
   ApiMarketResponse,
   ApiMarketCapitalizationResponse,
   ApiMeResponse,
   ApiEconomyMeResponse,
   ApiBotShopBuyResponse,
+  UpdateUserProfileInput,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
@@ -264,6 +267,102 @@ export async function getMarketCapitalization(days = 15): Promise<ApiMarketCapit
     }
 
     return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getMarketForbes(limit = 10): Promise<ApiMarketForbesResponse> {
+  try {
+    const safeLimit = Number.isFinite(limit) ? Math.min(50, Math.max(1, Math.floor(limit))) : 10;
+    const response = await fetch(`${API_BASE_URL}/api/market/forbes?limit=${safeLimit}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiMarketForbesResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "MARKET_FORBES_LOAD_FAILED",
+        message: data?.message || "Failed to load market forbes leaderboard.",
+      };
+    }
+
+    if (!data || typeof data !== "object") {
+      return {
+        ok: false,
+        error: "INVALID_RESPONSE",
+        message: "Invalid API response.",
+      };
+    }
+
+    return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getMyProfile(): Promise<ApiProfileMeResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/profile/me`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiProfileMeResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "PROFILE_LOAD_FAILED",
+        message: data?.message || "Failed to load profile.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function updateMyProfile(input: UpdateUserProfileInput): Promise<ApiProfileMeResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/profile/me`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiProfileMeResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "PROFILE_UPDATE_FAILED",
+        message: data?.message || "Failed to update profile.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
   } catch {
     return {
       ok: false,
