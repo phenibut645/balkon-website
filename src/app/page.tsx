@@ -9,6 +9,7 @@ import { AppHeader } from "@/components/dashboard/AppHeader";
 import { NotificationBell } from "@/components/dashboard/NotificationBell";
 import { ProfileDropdown } from "@/components/dashboard/ProfileDropdown";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
+import { OverviewPanel } from "@/components/dashboard/OverviewPanel";
 import { InventoryPanel } from "@/components/dashboard/InventoryPanel";
 import { MarketPanel } from "@/components/dashboard/MarketPanel";
 import { BotShopPanel } from "@/components/dashboard/BotShopPanel";
@@ -1487,39 +1488,30 @@ export default function HomePage() {
                 <div className="dashboard-content">
 
             {activeTab === "overview" ? (
-              <div className="panel panel-overview">
-                  <h2 className="section-title">{t.welcome}</h2>
-                <div className="user-row">
-                  {avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={avatarUrl}
-                      alt="Discord avatar"
-                      className="avatar"
-                      onError={() => setAvatarFailed(true)}
-                      style={{ display: avatarFailed ? "none" : "block" }}
-                    />
-                  ) : (
-                    <div className="avatar placeholder" aria-hidden="true" />
-                  )}
-                  {avatarUrl && avatarFailed ? (
-                    <div className="avatar placeholder" aria-hidden="true" />
-                  ) : null}
-                  <div>
-                    <p className="display-name">{displayName}</p>
-                    <p className="user-id">{t.discordId}: {user.discordId}</p>
-                    {roles.length > 0 ? (
-                      <div className="badges">
-                        {roles.map(role => (
-                          <span className="badge" key={role}>{role}</span>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="no-roles">{t.noRoles}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <OverviewPanel
+                t={t}
+                dateLocale={dateLocale}
+                displayName={displayName}
+                discordId={user.discordId}
+                roles={roles}
+                avatarUrl={avatarUrl}
+                avatarFailed={avatarFailed}
+                onAvatarError={() => setAvatarFailed(true)}
+                balance={balance}
+                balanceLoaded={balanceLoaded}
+                inventoryLoaded={inventoryLoaded}
+                inventoryCount={inventory.length}
+                unreadNotifications={notificationsSummary.unreadCount}
+                latestNotifications={notificationsSummary.latest}
+                profile={profileData}
+                availableGuilds={profileGuilds}
+                onOpenInventory={() => handleUserTabSelect("inventory")}
+                onOpenMarket={() => handleUserTabSelect("market")}
+                onOpenObsShop={() => handleShopSubTabShortcut("obs")}
+                onOpenObsHistory={() => handleShopSubTabShortcut("obs")}
+                onOpenNotifications={() => handleUserTabSelect("notifications")}
+                onOpenProfile={() => handleUserTabSelect("profile")}
+              />
             ) : null}
 
             {activeTab === "inventory" ? (
