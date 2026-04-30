@@ -16,7 +16,21 @@ function getAgentStatusLabel(t: DashboardText, streamer: ObsShopStreamer): strin
     return t.agentNotConfigured;
   }
 
-  return streamer.obsAgentOnline ? t.agentConnected : t.agentOffline;
+  if (streamer.obsAgentOnline) {
+    return t.agentConnected;
+  }
+
+  const lastSeenRaw = streamer.obsAgentLastSeenAt || streamer.lastSeenAt;
+  if (!lastSeenRaw) {
+    return t.agentOffline;
+  }
+
+  const lastSeenDate = new Date(lastSeenRaw);
+  if (Number.isNaN(lastSeenDate.getTime())) {
+    return t.agentOffline;
+  }
+
+  return `${t.agentOfflineRecently}: ${lastSeenDate.toLocaleString()}`;
 }
 
 function getStreamStatusLabel(t: DashboardText, status: ObsShopStreamer["streamingStatus"]): string {

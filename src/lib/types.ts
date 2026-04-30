@@ -170,6 +170,11 @@ export type ObsShopStreamer = {
   isPrimary: boolean;
   obsAgentId: string | null;
   obsAgentOnline: boolean;
+  obsAgentLastSeenAt?: string | null;
+  obsAgentConnectedAt?: string | null;
+  obsAgentDisconnectedAt?: string | null;
+  obsAgentLastError?: string | null;
+  obsAgentStatusSource?: "database";
   streamingStatus: "live" | "offline" | "unknown";
   lastSeenAt: string | null;
 };
