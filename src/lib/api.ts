@@ -52,7 +52,7 @@ export async function getMe(): Promise<ApiMeResponse> {
     return {
       ok: false,
       error: "NETWORK_ERROR",
-      message: "Failed to reach API.",
+      message: "Failed to reach API. Is the API server running?",
     };
   }
 }
@@ -81,7 +81,7 @@ export async function getMyBalance(): Promise<ApiEconomyMeResponse> {
     return {
       ok: false,
       error: "NETWORK_ERROR",
-      message: "Failed to reach API.",
+      message: "Failed to reach API. Is the API server running?",
     };
   }
 }

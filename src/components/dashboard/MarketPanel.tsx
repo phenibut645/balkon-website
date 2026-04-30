@@ -18,6 +18,7 @@ type MarketPanelProps = {
   marketForbes: MarketForbesEntry[];
   marketForbesLoading: boolean;
   marketForbesError: string | null;
+  streamerMode?: boolean;
   marketSubTab: MarketSubTab;
   onMarketSubTabChange: (subTab: MarketSubTab) => void;
   onRefreshListings: () => void;
@@ -38,6 +39,7 @@ export function MarketPanel({
   marketForbes,
   marketForbesLoading,
   marketForbesError,
+  streamerMode = false,
   marketSubTab,
   onMarketSubTabChange,
   onRefreshListings,
@@ -93,7 +95,7 @@ export function MarketPanel({
             loading={marketForbesLoading}
             error={marketForbesError}
             onRefresh={onRefreshForbes}
-            streamerMode={false}
+            streamerMode={streamerMode}
           />
         ) : (
           <MarketListingsPanel
@@ -102,6 +104,7 @@ export function MarketPanel({
             marketListings={marketListings}
             marketLoading={marketLoading}
             marketError={marketError}
+            streamerMode={streamerMode}
             onRefresh={onRefreshListings}
           />
         )}

@@ -8,10 +8,11 @@ type MarketListingsPanelProps = {
   marketListings: MarketListing[];
   marketLoading: boolean;
   marketError: string | null;
+  streamerMode?: boolean;
   onRefresh: () => void;
 };
 
-export function MarketListingsPanel({ t, loadingGifs, marketListings, marketLoading, marketError, onRefresh }: MarketListingsPanelProps) {
+export function MarketListingsPanel({ t, loadingGifs, marketListings, marketLoading, marketError, streamerMode = false, onRefresh }: MarketListingsPanelProps) {
   return (
     <div className="market-subpanel">
       {marketLoading ? (
@@ -91,6 +92,7 @@ export function MarketListingsPanel({ t, loadingGifs, marketListings, marketLoad
                         }}
                         size="sm"
                         showAvatar={false}
+                        mode={streamerMode ? "streamer" : "normal"}
                       />
                     </div>
                     <span className={`meta-badge ${listing.tradeable ? "ok" : "muted"}`}>

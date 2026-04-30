@@ -3,7 +3,7 @@ import { DashboardText, LanguageCode } from "@/lib/dashboardText";
 import { UserBalance } from "@/lib/types";
 
 type DashboardMode = "user" | "admin";
-type DashboardTab = "overview" | "inventory" | "market" | "botShop" | "craft" | "profile" | "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems";
+type DashboardTab = "overview" | "inventory" | "market" | "botShop" | "craft" | "profile" | "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems" | "adminBotShop";
 
 type ProfileDropdownProps = {
   profileMenuRef: RefObject<HTMLDivElement>;
@@ -21,6 +21,8 @@ type ProfileDropdownProps = {
   onDashboardModeChange: (mode: DashboardMode) => void;
   language: LanguageCode;
   onLanguageChange: (language: LanguageCode) => void;
+  streamerMode: boolean;
+  onStreamerModeChange: (next: boolean) => void;
   onLogout: () => void;
   isLoggingOut: boolean;
   balance: UserBalance | null;
@@ -42,6 +44,8 @@ export function ProfileDropdown({
   onDashboardModeChange,
   language,
   onLanguageChange,
+  streamerMode,
+  onStreamerModeChange,
   onLogout,
   isLoggingOut,
   balance,
@@ -87,6 +91,16 @@ export function ProfileDropdown({
           <button className="dropdown-action" onClick={onProfileTabOpen}>
             {t.profile}
           </button>
+
+          <label className="toggle-row" htmlFor="streamerModeToggle">
+            <span>{t.streamerMode}</span>
+            <input
+              id="streamerModeToggle"
+              type="checkbox"
+              checked={streamerMode}
+              onChange={event => onStreamerModeChange(event.target.checked)}
+            />
+          </label>
 
           {canUseAdminMode ? (
             <div className="mode-switch-block">

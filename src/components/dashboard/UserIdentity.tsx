@@ -8,6 +8,7 @@ type UserIdentityProps = {
   showAvatar?: boolean;
   mode?: "normal" | "streamer";
   subtitle?: string;
+  missingProfileLabel?: string;
 };
 
 export function UserIdentity({
@@ -17,6 +18,7 @@ export function UserIdentity({
   showAvatar = true,
   mode = "normal",
   subtitle,
+  missingProfileLabel,
 }: UserIdentityProps) {
   const streamerMode = mode === "streamer";
   const displayName = getSafeDisplayName(user, streamerMode);
@@ -28,6 +30,7 @@ export function UserIdentity({
   };
 
   const shouldShowImage = showAvatar && !streamerMode && Boolean(user.avatarUrl);
+  const hasCachedIdentity = Boolean(user.globalName || user.username || user.avatarUrl);
 
   return (
     <div className={`user-identity ${size} ${streamerMode ? "streamer" : ""}`}>
@@ -45,6 +48,9 @@ export function UserIdentity({
       <div className="user-identity-meta">
         <p className="user-identity-name">{displayName}</p>
         {subtitle ? <p className="user-identity-subtitle">{subtitle}</p> : null}
+        {!subtitle && !streamerMode && !hasCachedIdentity && missingProfileLabel ? (
+          <p className="user-identity-subtitle">{missingProfileLabel}</p>
+        ) : null}
         {showDiscordId ? <p className="user-identity-subtitle">ID: {user.discordId}</p> : null}
       </div>
     </div>

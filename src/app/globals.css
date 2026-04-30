@@ -367,6 +367,21 @@ body {
   background: rgba(90, 37, 45, 0.38);
 }
 
+.toggle-row {
+  margin: 2px 0 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(98, 117, 153, 0.45);
+  border-radius: 10px;
+  background: rgba(26, 33, 50, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #d8e2fb;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .language-block {
   margin: 2px 0 10px;
 }
@@ -2025,6 +2040,98 @@ body {
   display: grid;
   gap: 10px;
   max-width: 680px;
+}
+
+.guild-select {
+  position: relative;
+  max-width: 460px;
+}
+
+.guild-select-button {
+  width: 100%;
+  border: 1px solid rgba(103, 121, 157, 0.48);
+  border-radius: 10px;
+  background: rgba(18, 24, 37, 0.72);
+  color: #e6ecfb;
+  font-size: 13px;
+  padding: 9px 10px;
+  outline: none;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.guild-select-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid rgba(99, 116, 157, 0.5);
+  border-radius: 10px;
+  background: rgba(15, 21, 34, 0.94);
+  padding: 6px;
+  display: grid;
+  gap: 4px;
+  z-index: 20;
+}
+
+.guild-select-option {
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #cfd9f2;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.guild-select-option:hover,
+.guild-select-option.active {
+  background: rgba(72, 86, 119, 0.35);
+}
+
+.guild-select-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(111, 132, 176, 0.45);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #dce7ff;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(24, 32, 49, 0.8);
+}
+
+.guild-select-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.guild-select-name {
+  color: #eef3ff;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.guild-select-id {
+  color: #95a7cd;
+  font-size: 11px;
 }
 
 .profile-select {

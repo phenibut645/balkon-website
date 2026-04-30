@@ -83,6 +83,7 @@ export default function HomePage() {
   const [adminStatsLoading, setAdminStatsLoading] = useState(false);
   const [adminStatsError, setAdminStatsError] = useState<string | null>(null);
   const [language, setLanguage] = useState<LanguageCode>("ru");
+  const [streamerMode, setStreamerMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [marketSubTab, setMarketSubTab] = useState<MarketSubTab>("overview");
   const [profileData, setProfileData] = useState<UserPublicProfile | null>(null);
@@ -409,6 +410,17 @@ export default function HomePage() {
   }, [language]);
 
   useEffect(() => {
+    const savedStreamerMode = window.localStorage.getItem("balkon.streamerMode");
+    if (savedStreamerMode === "1") {
+      setStreamerMode(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("balkon.streamerMode", streamerMode ? "1" : "0");
+  }, [streamerMode]);
+
+  useEffect(() => {
     void refreshMe();
   }, []);
 
@@ -639,8 +651,12 @@ export default function HomePage() {
     setProfileGuilds([]);
     setProfileLoaded(true);
     setProfileLoading(false);
-    setProfileError(response.message || response.error || t.profileSaveFailed);
-  }, [profileLoading, t.profileSaveFailed]);
+    setProfileError(
+      response.error === "NETWORK_ERROR"
+        ? t.apiReachFailedHint
+        : (response.message || response.error || t.profileSaveFailed),
+    );
+  }, [profileLoading, t.apiReachFailedHint, t.profileSaveFailed]);
 
   const saveProfile = useCallback(async (): Promise<void> => {
     setProfileSaveLoading(true);
@@ -662,9 +678,13 @@ export default function HomePage() {
       return;
     }
 
-    setProfileError(response.message || response.error || t.profileSaveFailed);
+    setProfileError(
+      response.error === "NETWORK_ERROR"
+        ? t.apiReachFailedHint
+        : (response.message || response.error || t.profileSaveFailed),
+    );
     setProfileSaveLoading(false);
-  }, [profileDescriptionDraft, profileGuilds, profileHomeGuildIdDraft, t.profileSaveFailed, t.profileSaved]);
+  }, [profileDescriptionDraft, profileGuilds, profileHomeGuildIdDraft, t.apiReachFailedHint, t.profileSaveFailed, t.profileSaved]);
 
   const loadBalance = useCallback(async (): Promise<void> => {
     if (balanceLoading) {
@@ -917,6 +937,8 @@ export default function HomePage() {
                   onDashboardModeChange={handleDashboardModeChange}
                   language={language}
                   onLanguageChange={setLanguage}
+                  streamerMode={streamerMode}
+                  onStreamerModeChange={setStreamerMode}
                   onLogout={() => {
                     void handleLogout();
                   }}
@@ -996,6 +1018,7 @@ export default function HomePage() {
                 marketForbes={marketForbes}
                 marketForbesLoading={marketForbesLoading}
                 marketForbesError={marketForbesError}
+                streamerMode={streamerMode}
                 marketSubTab={marketSubTab}
                 onMarketSubTabChange={setMarketSubTab}
                 onRefreshListings={() => {

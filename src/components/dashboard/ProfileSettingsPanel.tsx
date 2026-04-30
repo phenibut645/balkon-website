@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DashboardText } from "@/lib/dashboardText";
 import { AvailableGuild, UserPublicProfile } from "@/lib/types";
 import { UserIdentity } from "./UserIdentity";
@@ -33,7 +34,39 @@ export function ProfileSettingsPanel({
   onSave,
   onReset,
 }: ProfileSettingsPanelProps) {
+  const [guildMenuOpen, setGuildMenuOpen] = useState(false);
+  const guildMenuRef = useRef<HTMLDivElement>(null);
   const charactersLeft = 500 - publicDescriptionDraft.length;
+  const selectedGuild = useMemo(
+    () => availableGuilds.find(guild => guild.guildId === homeGuildIdDraft) || null,
+    [availableGuilds, homeGuildIdDraft],
+  );
+
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent): void {
+      if (!guildMenuOpen) {
+        return;
+      }
+
+      const container = guildMenuRef.current;
+      if (container && !container.contains(event.target as Node)) {
+        setGuildMenuOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        setGuildMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [guildMenuOpen]);
 
   return (
     <div className="panel panel-overview profile-settings-panel">
@@ -47,18 +80,73 @@ export function ProfileSettingsPanel({
 
           <p className="user-id">{t.balance}: {t.odm} {profile.balance} / {t.ldm} {profile.ldmBalance}</p>
 
-          <label className="market-card-label" htmlFor="homeGuildSelect">{t.homeGuild}</label>
-          <select
-            id="homeGuildSelect"
-            className="profile-select"
-            value={homeGuildIdDraft}
-            onChange={event => onHomeGuildChange(event.target.value)}
-          >
-            <option value="">{t.notSelected}</option>
-            {availableGuilds.map(guild => (
-              <option key={guild.guildId} value={guild.guildId}>{guild.name}</option>
-            ))}
-          </select>
+          <p className="market-card-label">{t.homeGuild}</p>
+          <div className="guild-select" ref={guildMenuRef}>
+            <button
+              id="homeGuildSelect"
+              type="button"
+              className="guild-select-button"
+              aria-haspopup="listbox"
+              aria-expanded={guildMenuOpen}
+              aria-label={t.selectHomeGuild}
+              onClick={() => setGuildMenuOpen(prev => !prev)}
+            >
+              <span className="guild-select-icon" aria-hidden="true">
+                {selectedGuild?.iconUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={selectedGuild.iconUrl} alt="" />
+                ) : (
+                  <span>{(selectedGuild?.name || t.guildNotSelected).slice(0, 2).toUpperCase()}</span>
+                )}
+              </span>
+              <span className="guild-select-name">{selectedGuild?.name || t.guildNotSelected}</span>
+              <span className="guild-select-id">{selectedGuild?.guildId || t.selectHomeGuild}</span>
+            </button>
+
+            {guildMenuOpen ? (
+              <div className="guild-select-menu" role="listbox" aria-label={t.selectHomeGuild}>
+                <button
+                  type="button"
+                  className={`guild-select-option ${homeGuildIdDraft ? "" : "active"}`}
+                  role="option"
+                  aria-selected={!homeGuildIdDraft}
+                  onClick={() => {
+                    onHomeGuildChange("");
+                    setGuildMenuOpen(false);
+                  }}
+                >
+                  <span className="guild-select-icon" aria-hidden="true"><span>--</span></span>
+                  <span className="guild-select-name">{t.guildNotSelected}</span>
+                  <span className="guild-select-id">{t.notSelected}</span>
+                </button>
+
+                {availableGuilds.map(guild => (
+                  <button
+                    key={guild.guildId}
+                    type="button"
+                    className={`guild-select-option ${homeGuildIdDraft === guild.guildId ? "active" : ""}`}
+                    role="option"
+                    aria-selected={homeGuildIdDraft === guild.guildId}
+                    onClick={() => {
+                      onHomeGuildChange(guild.guildId);
+                      setGuildMenuOpen(false);
+                    }}
+                  >
+                    <span className="guild-select-icon" aria-hidden="true">
+                      {guild.iconUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={guild.iconUrl} alt="" />
+                      ) : (
+                        <span>{guild.name.slice(0, 2).toUpperCase()}</span>
+                      )}
+                    </span>
+                    <span className="guild-select-name">{guild.name}</span>
+                    <span className="guild-select-id">{guild.guildId}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
 
           <label className="market-card-label" htmlFor="publicDescriptionInput">{t.publicDescription}</label>
           <textarea

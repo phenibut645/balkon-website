@@ -56,6 +56,7 @@ export function MarketForbesPanel({
                     size="md"
                     mode={streamerMode ? "streamer" : "normal"}
                     subtitle={`${t.fromGuild}: ${guildText}`}
+                    missingProfileLabel={t.discordProfileNotCached}
                   />
 
                   <p className="forbes-description">{descriptionText}</p>
