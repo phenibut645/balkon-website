@@ -1,22 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMarketCapitalization, getMarketForbes, getMe, getMyBalance, getMyProfile, logout, updateMyProfile } from "@/lib/api";
+import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMarketCapitalization, getMarketForbes, getMe, getMyBalance, getMyProfile, getNotifications, getNotificationsSummary, logout, markAllNotificationsRead, markNotificationRead, updateMyProfile } from "@/lib/api";
 import { DashboardMode, DashboardSearchResult, DashboardTab, normalizeDashboardSearchValue, MarketSubTab } from "@/lib/dashboardSearch";
-import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, UserBalance, UserPublicProfile } from "@/lib/types";
+import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, NotificationItem, UserBalance, UserPublicProfile } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
 import { AppHeader } from "@/components/dashboard/AppHeader";
+import { NotificationBell } from "@/components/dashboard/NotificationBell";
 import { ProfileDropdown } from "@/components/dashboard/ProfileDropdown";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { InventoryPanel } from "@/components/dashboard/InventoryPanel";
 import { MarketPanel } from "@/components/dashboard/MarketPanel";
 import { BotShopPanel } from "@/components/dashboard/BotShopPanel";
 import { CraftPanel } from "@/components/dashboard/CraftPanel";
+import { NotificationsPanel } from "@/components/dashboard/NotificationsPanel";
 import { AdminDashboardPanel } from "@/components/dashboard/AdminDashboardPanel";
 import { AdminLogsPanel } from "@/components/dashboard/AdminLogsPanel";
 import { AdminObsPanel } from "@/components/dashboard/AdminObsPanel";
 import { AdminItemsPanel } from "@/components/dashboard/AdminItemsPanel";
 import { AdminBotShopPanel } from "@/components/dashboard/AdminBotShopPanel";
+import { AdminBroadcastPanel } from "@/components/dashboard/AdminBroadcastPanel";
 import { PlaceholderPanel } from "@/components/dashboard/PlaceholderPanel";
 import { ProfileSettingsPanel } from "@/components/dashboard/ProfileSettingsPanel";
 
@@ -95,6 +98,17 @@ export default function HomePage() {
   const [profileFeedback, setProfileFeedback] = useState<string | null>(null);
   const [profileHomeGuildIdDraft, setProfileHomeGuildIdDraft] = useState("");
   const [profileDescriptionDraft, setProfileDescriptionDraft] = useState("");
+  const [notificationsSummary, setNotificationsSummary] = useState<{ unreadCount: number; latest: NotificationItem[] }>({ unreadCount: 0, latest: [] });
+  const [notificationsSummaryLoading, setNotificationsSummaryLoading] = useState(false);
+  const [notificationsSummaryError, setNotificationsSummaryError] = useState<string | null>(null);
+  const [notificationsList, setNotificationsList] = useState<NotificationItem[]>([]);
+  const [notificationsLoaded, setNotificationsLoaded] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
+  const [notificationPage, setNotificationPage] = useState(1);
+  const [notificationPageSize] = useState(8);
+  const [notificationTotal, setNotificationTotal] = useState(0);
+  const [notificationFilterUnreadOnly, setNotificationFilterUnreadOnly] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -109,6 +123,7 @@ export default function HomePage() {
     { id: "botShop" as const, label: t.tabBotShop },
     { id: "craft" as const, label: t.tabCraft },
     { id: "profile" as const, label: t.tabProfile },
+    { id: "notifications" as const, label: t.tabNotifications },
   ]), [t]);
 
   const adminTabItems = useMemo(() => ([
@@ -118,6 +133,7 @@ export default function HomePage() {
     { id: "adminObs" as const, label: t.adminTabObs },
     { id: "adminItems" as const, label: t.adminTabItems },
     { id: "adminBotShop" as const, label: t.adminTabBotShop },
+    { id: "adminMessage" as const, label: t.adminBroadcast },
   ]), [t]);
 
   const tabItems = useMemo(
@@ -321,6 +337,14 @@ export default function HomePage() {
         aliases: ["профиль", "аккаунт", "дискорд", "profile", "account", "discord", "profiil", "konto"],
         destination: { kind: "userTab", tab: "profile" },
       },
+      {
+        key: "tab:notifications",
+        label: t.tabNotifications,
+        breadcrumb: t.tabNotifications,
+        description: t.notifications,
+        aliases: ["уведомления", "нотификации", "сообщения", "alerts", "notifications", "teavitused"],
+        destination: { kind: "userTab", tab: "notifications" },
+      },
     ];
 
     const adminResults: DashboardSearchResult[] = [
@@ -330,6 +354,7 @@ export default function HomePage() {
       { key: "tab:adminObs", label: t.adminTabObs, breadcrumb: t.adminTabObs, aliases: ["obs", "scene", "сцены"], destination: { kind: "adminTab", tab: "adminObs" } },
       { key: "tab:adminItems", label: t.adminTabItems, breadcrumb: t.adminTabItems, aliases: ["items", "предметы", "esemed"], destination: { kind: "adminTab", tab: "adminItems" } },
       { key: "tab:adminBotShop", label: t.adminTabBotShop, breadcrumb: t.adminTabBotShop, aliases: ["shop", "магазин", "pood"], destination: { kind: "adminTab", tab: "adminBotShop" } },
+      { key: "tab:adminMessage", label: t.adminBroadcast, breadcrumb: t.adminBroadcast, aliases: ["создать сообщение", "рассылка", "broadcast", "announcement"], destination: { kind: "adminTab", tab: "adminMessage" } },
     ];
 
     const searchPool = dashboardMode === "admin" && canUseAdminMode ? adminResults : commonUserTabResults;
@@ -468,6 +493,16 @@ export default function HomePage() {
     setProfileFeedback(null);
     setProfileHomeGuildIdDraft("");
     setProfileDescriptionDraft("");
+    setNotificationsSummary({ unreadCount: 0, latest: [] });
+    setNotificationsSummaryLoading(false);
+    setNotificationsSummaryError(null);
+    setNotificationsList([]);
+    setNotificationsLoaded(false);
+    setNotificationsLoading(false);
+    setNotificationsError(null);
+    setNotificationPage(1);
+    setNotificationTotal(0);
+    setNotificationFilterUnreadOnly(false);
     setMarketSubTab("overview");
     setDashboardMode("user");
     setCanUseAdminMode(false);
@@ -658,6 +693,80 @@ export default function HomePage() {
     );
   }, [profileLoading, t.apiReachFailedHint, t.profileSaveFailed]);
 
+  const loadNotificationsSummary = useCallback(async (): Promise<void> => {
+    setNotificationsSummaryLoading(true);
+    setNotificationsSummaryError(null);
+
+    const response = await getNotificationsSummary();
+    if (response.ok) {
+      setNotificationsSummary({
+        unreadCount: Number(response.unreadCount ?? 0),
+        latest: Array.isArray(response.latest) ? response.latest : [],
+      });
+      setNotificationsSummaryLoading(false);
+      return;
+    }
+
+    setNotificationsSummary({ unreadCount: 0, latest: [] });
+    setNotificationsSummaryLoading(false);
+    setNotificationsSummaryError(response.message || response.error || t.notificationError);
+  }, [t.notificationError]);
+
+  const loadNotifications = useCallback(async (page = notificationPage, unreadOnly = notificationFilterUnreadOnly): Promise<void> => {
+    if (notificationsLoading) {
+      return;
+    }
+
+    setNotificationsLoading(true);
+    setNotificationsError(null);
+
+    const response = await getNotifications({
+      page,
+      pageSize: notificationPageSize,
+      unreadOnly,
+    });
+
+    if (response.ok && Array.isArray(response.notifications)) {
+      setNotificationsList(response.notifications);
+      setNotificationPage(response.page || page);
+      setNotificationTotal(response.total || 0);
+      setNotificationsLoaded(true);
+      setNotificationsLoading(false);
+      return;
+    }
+
+    setNotificationsList([]);
+    setNotificationsLoaded(true);
+    setNotificationsLoading(false);
+    setNotificationsError(response.message || response.error || t.notificationError);
+  }, [notificationFilterUnreadOnly, notificationPage, notificationPageSize, notificationsLoading, t.notificationError]);
+
+  const handleMarkNotificationRead = useCallback(async (id: number): Promise<void> => {
+    const response = await markNotificationRead(id);
+    if (!response.ok) {
+      setNotificationsError(response.message || response.error || t.notificationError);
+      return;
+    }
+
+    await loadNotificationsSummary();
+    if (activeTab === "notifications") {
+      await loadNotifications(notificationPage, notificationFilterUnreadOnly);
+    }
+  }, [activeTab, loadNotifications, loadNotificationsSummary, notificationFilterUnreadOnly, notificationPage, t.notificationError]);
+
+  const handleMarkAllNotificationsRead = useCallback(async (): Promise<void> => {
+    const response = await markAllNotificationsRead();
+    if (!response.ok) {
+      setNotificationsError(response.message || response.error || t.notificationError);
+      return;
+    }
+
+    await loadNotificationsSummary();
+    if (activeTab === "notifications") {
+      await loadNotifications(notificationPage, notificationFilterUnreadOnly);
+    }
+  }, [activeTab, loadNotifications, loadNotificationsSummary, notificationFilterUnreadOnly, notificationPage, t.notificationError]);
+
   const saveProfile = useCallback(async (): Promise<void> => {
     setProfileSaveLoading(true);
     setProfileError(null);
@@ -817,6 +926,18 @@ export default function HomePage() {
   }, [activeTab, authState, loadProfile, profileLoaded, profileLoading]);
 
   useEffect(() => {
+    if (authState === "user") {
+      void loadNotificationsSummary();
+    }
+  }, [authState, loadNotificationsSummary]);
+
+  useEffect(() => {
+    if (authState === "user" && activeTab === "notifications" && !notificationsLoaded && !notificationsLoading) {
+      void loadNotifications(notificationPage, notificationFilterUnreadOnly);
+    }
+  }, [activeTab, authState, loadNotifications, notificationFilterUnreadOnly, notificationPage, notificationsLoaded, notificationsLoading]);
+
+  useEffect(() => {
     if (authState !== "user") {
       return;
     }
@@ -916,6 +1037,24 @@ export default function HomePage() {
               onSearchQueryChange={setSearchQuery}
               searchResults={searchResults}
               onSearchResultSelect={handleSearchResultSelect}
+              notificationBell={(
+                <NotificationBell
+                  t={t}
+                  summary={notificationsSummary}
+                  loading={notificationsSummaryLoading}
+                  error={notificationsSummaryError}
+                  onOpenAll={() => {
+                    setDashboardMode("user");
+                    setActiveTab("notifications");
+                    setNotificationsLoaded(false);
+                  }}
+                  onRefresh={() => {
+                    void loadNotificationsSummary();
+                  }}
+                  onMarkRead={handleMarkNotificationRead}
+                  onMarkAllRead={handleMarkAllNotificationsRead}
+                />
+              )}
               balance={balance}
               profileDropdown={(
                 <ProfileDropdown
@@ -1069,6 +1208,37 @@ export default function HomePage() {
               />
             ) : null}
 
+            {activeTab === "notifications" ? (
+              <NotificationsPanel
+                t={t}
+                dateLocale={dateLocale}
+                notifications={notificationsList}
+                loading={notificationsLoading}
+                error={notificationsError}
+                unreadOnly={notificationFilterUnreadOnly}
+                page={notificationPage}
+                pageSize={notificationPageSize}
+                total={notificationTotal}
+                onUnreadOnlyChange={(next) => {
+                  setNotificationFilterUnreadOnly(next);
+                  setNotificationPage(1);
+                  setNotificationsLoaded(false);
+                  void loadNotifications(1, next);
+                }}
+                onPageChange={(nextPage) => {
+                  setNotificationPage(nextPage);
+                  setNotificationsLoaded(false);
+                  void loadNotifications(nextPage, notificationFilterUnreadOnly);
+                }}
+                onRefresh={() => {
+                  setNotificationsLoaded(false);
+                  void loadNotifications(notificationPage, notificationFilterUnreadOnly);
+                }}
+                onMarkRead={handleMarkNotificationRead}
+                onMarkAllRead={handleMarkAllNotificationsRead}
+              />
+            ) : null}
+
             {activeTab === "adminDashboard" ? (
               <AdminDashboardPanel
                 t={t}
@@ -1099,6 +1269,15 @@ export default function HomePage() {
 
             {activeTab === "adminBotShop" ? (
               <AdminBotShopPanel t={t} />
+            ) : null}
+
+            {activeTab === "adminMessage" ? (
+              <AdminBroadcastPanel
+                t={t}
+                onSent={() => {
+                  void loadNotificationsSummary();
+                }}
+              />
             ) : null}
 
             {activeTab === "profile" ? (

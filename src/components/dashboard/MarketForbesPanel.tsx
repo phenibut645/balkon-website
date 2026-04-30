@@ -43,7 +43,9 @@ export function MarketForbesPanel({
         <div className="forbes-list">
           {leaderboard.map(entry => {
             const rankClass = entry.rank <= 3 ? `rank-${entry.rank}` : "rank-other";
-            const guildText = entry.homeGuildName || t.noHomeGuild;
+            const guildText = streamerMode
+              ? t.hidden
+              : (entry.homeGuildName || t.noHomeGuild);
             const descriptionText = entry.publicDescription || t.noDescription;
 
             return (
@@ -59,7 +61,11 @@ export function MarketForbesPanel({
                     missingProfileLabel={t.discordProfileNotCached}
                   />
 
-                  <p className="forbes-description">{descriptionText}</p>
+                  {streamerMode ? (
+                    <p className="forbes-description forbes-description-hidden">{t.streamerModeHidden}</p>
+                  ) : (
+                    <p className="forbes-description">{descriptionText}</p>
+                  )}
                 </div>
 
                 <div className="forbes-balance">

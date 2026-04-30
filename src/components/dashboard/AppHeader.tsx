@@ -14,6 +14,7 @@ type AppHeaderProps = {
   onSearchQueryChange: (query: string) => void;
   searchResults: DashboardSearchResult[];
   onSearchResultSelect: (result: DashboardSearchResult) => void;
+  notificationBell?: ReactNode;
   profileDropdown: ReactNode;
   balance: UserBalance | null;
 };
@@ -27,6 +28,7 @@ export function AppHeader({
   onSearchQueryChange,
   searchResults,
   onSearchResultSelect,
+  notificationBell,
   profileDropdown,
   balance,
 }: AppHeaderProps) {
@@ -83,6 +85,7 @@ export function AppHeader({
         </div>
 
         <div className="header-actions">
+          {notificationBell}
           {profileDropdown}
           {balance !== null ? (
             <div className="header-balance-chip" title={`${t.odm}: ${balance.odm} | ${t.ldm}: ${balance.ldm}`}>

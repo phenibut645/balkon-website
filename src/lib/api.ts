@@ -4,9 +4,13 @@ import {
   AdminStatsResponse,
   ApiAdminBotShopMutationResponse,
   ApiAdminBotShopResponse,
+  ApiAdminBroadcastNotificationResponse,
   ApiAdminItemMutationResponse,
   ApiAdminItemsResponse,
   ApiAdminRaritiesResponse,
+  ApiNotificationMutationResponse,
+  ApiNotificationsResponse,
+  ApiNotificationsSummaryResponse,
   ApiAdminSearchResponse,
   ApiBaseResponse,
   ApiBotShopResponse,
@@ -19,6 +23,7 @@ import {
   ApiMeResponse,
   ApiEconomyMeResponse,
   ApiBotShopBuyResponse,
+  AdminBroadcastNotificationInput,
   UpdateUserProfileInput,
 } from "./types";
 
@@ -765,6 +770,164 @@ export async function deleteAdminBotShopListing(listingId: number): Promise<ApiB
         ok: false,
         error: data?.error || "ADMIN_BOTSHOP_DELETE_FAILED",
         message: data?.message || "Failed to delete bot shop listing.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getNotifications(input: { page?: number; pageSize?: number; unreadOnly?: boolean }): Promise<ApiNotificationsResponse> {
+  try {
+    const page = Number.isFinite(input.page) ? Math.max(1, Math.floor(input.page!)) : 1;
+    const pageSize = Number.isFinite(input.pageSize) ? Math.min(50, Math.max(1, Math.floor(input.pageSize!))) : 10;
+    const unreadOnly = input.unreadOnly === true;
+    const query = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+      unreadOnly: unreadOnly ? "true" : "false",
+    });
+
+    const response = await fetch(`${API_BASE_URL}/api/notifications?${query.toString()}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiNotificationsResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "NOTIFICATIONS_LOAD_FAILED",
+        message: data?.message || "Failed to load notifications.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getNotificationsSummary(): Promise<ApiNotificationsSummaryResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/notifications/summary`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiNotificationsSummaryResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "NOTIFICATIONS_SUMMARY_LOAD_FAILED",
+        message: data?.message || "Failed to load notifications summary.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function markNotificationRead(notificationId: number): Promise<ApiNotificationMutationResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/read`, {
+      method: "POST",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiNotificationMutationResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "NOTIFICATION_MARK_READ_FAILED",
+        message: data?.message || "Failed to mark notification as read.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: true };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function markAllNotificationsRead(): Promise<ApiNotificationMutationResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/notifications/read-all`, {
+      method: "POST",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiNotificationMutationResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "NOTIFICATIONS_MARK_ALL_READ_FAILED",
+        message: data?.message || "Failed to mark all notifications as read.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: true, updated: 0 };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function adminBroadcastNotification(input: AdminBroadcastNotificationInput): Promise<ApiAdminBroadcastNotificationResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/notifications/broadcast`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminBroadcastNotificationResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_BROADCAST_NOTIFICATION_FAILED",
+        message: data?.message || "Failed to send broadcast notification.",
       };
     }
 

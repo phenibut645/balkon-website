@@ -351,3 +351,48 @@ export type ApiBotShopBuyResponse = ApiBaseResponse & {
     listingId: number;
   };
 };
+
+export type NotificationSeverity = "info" | "success" | "warning" | "danger";
+
+export type NotificationItem = {
+  id: number;
+  type: string;
+  severity: NotificationSeverity;
+  title: string;
+  body: string;
+  imageUrl: string | null;
+  linkUrl: string | null;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type ApiNotificationsResponse = ApiBaseResponse & {
+  notifications?: NotificationItem[];
+  page?: number;
+  pageSize?: number;
+  total?: number;
+  unreadCount?: number;
+};
+
+export type ApiNotificationsSummaryResponse = ApiBaseResponse & {
+  unreadCount?: number;
+  latest?: NotificationItem[];
+};
+
+export type ApiNotificationMutationResponse = ApiBaseResponse & {
+  updated?: number;
+};
+
+export type AdminBroadcastNotificationInput = {
+  title: string;
+  body: string;
+  imageUrl?: string | null;
+  linkUrl?: string | null;
+  severity?: NotificationSeverity;
+};
+
+export type ApiAdminBroadcastNotificationResponse = ApiBaseResponse & {
+  data?: {
+    inserted: number;
+  };
+};

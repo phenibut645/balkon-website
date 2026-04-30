@@ -2012,6 +2012,12 @@ body {
   overflow: hidden;
 }
 
+.forbes-description-hidden {
+  color: transparent;
+  text-shadow: 0 0 8px rgba(180, 190, 220, 0.7);
+  user-select: none;
+}
+
 .forbes-balance {
   text-align: right;
 }
@@ -2505,6 +2511,161 @@ body {
 .botshop-buy-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 0 18px rgba(110, 153, 242, 0.3);
+}
+
+.notification-bell {
+  position: relative;
+}
+
+.notification-bell-button {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(141, 165, 214, 0.46);
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(26, 39, 64, 0.92), rgba(16, 26, 45, 0.92));
+  color: #e8f2ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.notification-unread-dot {
+  position: absolute;
+  right: 7px;
+  top: 7px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ff6363;
+  box-shadow: 0 0 0 2px rgba(12, 18, 31, 0.95);
+}
+
+.notification-dropdown {
+  position: absolute;
+  right: 0;
+  top: 46px;
+  width: min(380px, calc(100vw - 24px));
+  border-radius: 16px;
+  border: 1px solid rgba(128, 157, 214, 0.4);
+  background: rgba(11, 18, 34, 0.96);
+  backdrop-filter: blur(12px);
+  z-index: 40;
+  overflow: hidden;
+}
+
+.notification-dropdown-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(120, 149, 205, 0.28);
+}
+
+.notification-dropdown-body {
+  max-height: 360px;
+  overflow: auto;
+  padding: 10px;
+}
+
+.notification-dropdown-list {
+  display: grid;
+  gap: 8px;
+}
+
+.notification-dropdown-card {
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid rgba(111, 141, 199, 0.36);
+  background: rgba(26, 39, 67, 0.5);
+  padding: 10px;
+  cursor: pointer;
+}
+
+.notification-dropdown-card.unread {
+  border-color: rgba(165, 198, 255, 0.58);
+}
+
+.notification-dropdown-fade {
+  opacity: 0.7;
+}
+
+.notification-dropdown-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 10px;
+  border-top: 1px solid rgba(120, 149, 205, 0.28);
+}
+
+.notifications-panel {
+  gap: 14px;
+}
+
+.notifications-list {
+  display: grid;
+  gap: 10px;
+}
+
+.notification-item {
+  border: 1px solid rgba(119, 146, 199, 0.36);
+  border-radius: 14px;
+  background: rgba(17, 26, 45, 0.76);
+  padding: 12px;
+}
+
+.notification-item.unread {
+  box-shadow: 0 0 0 1px rgba(174, 203, 255, 0.24) inset;
+}
+
+.notification-title {
+  margin: 0;
+  color: #e8f1ff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.notification-body {
+  margin: 6px 0 0;
+  color: #cad9f3;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.notification-image {
+  margin-top: 10px;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid rgba(123, 148, 200, 0.34);
+}
+
+.notification-severity-info {
+  border-left: 3px solid rgba(124, 163, 239, 0.8);
+}
+
+.notification-severity-success {
+  border-left: 3px solid rgba(92, 202, 128, 0.85);
+}
+
+.notification-severity-warning {
+  border-left: 3px solid rgba(232, 181, 82, 0.9);
+}
+
+.notification-severity-danger {
+  border-left: 3px solid rgba(236, 101, 101, 0.9);
+}
+
+.admin-broadcast-panel {
+  gap: 14px;
+}
+
+.admin-broadcast-preview {
+  margin-top: 6px;
+  padding: 10px;
+  border: 1px solid rgba(121, 149, 204, 0.3);
+  border-radius: 12px;
+  background: rgba(13, 20, 37, 0.7);
 }
 
 @keyframes totalChipPulse {
