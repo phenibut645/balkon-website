@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMarketCapitalization, getMarketForbes, getMe, getMyBalance, getMyProfile, getNotifications, getNotificationsSummary, getObsShopStreamerDetails, getObsShopStreamers, logout, markAllNotificationsRead, markNotificationRead, purchaseObsMedia, updateMyProfile } from "@/lib/api";
-import { DashboardMode, DashboardSearchResult, DashboardTab, normalizeDashboardSearchValue, MarketSubTab } from "@/lib/dashboardSearch";
+import { AdminTab, DashboardMode, DashboardSearchResult, DashboardTab, normalizeDashboardSearchValue, MarketSubTab, UserTab } from "@/lib/dashboardSearch";
 import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, NotificationItem, ObsMediaProduct, ObsShopStreamer, ShopSubTab, UserBalance, UserPublicProfile } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
 import { AppHeader } from "@/components/dashboard/AppHeader";
 import { NotificationBell } from "@/components/dashboard/NotificationBell";
 import { ProfileDropdown } from "@/components/dashboard/ProfileDropdown";
-import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { InventoryPanel } from "@/components/dashboard/InventoryPanel";
 import { MarketPanel } from "@/components/dashboard/MarketPanel";
 import { BotShopPanel } from "@/components/dashboard/BotShopPanel";
@@ -136,32 +136,6 @@ export default function HomePage() {
   const user = meResponse?.me;
   const roles = useMemo(() => user?.roles ?? [], [user?.roles]);
   const t = DASHBOARD_TEXT[language];
-
-  const userTabItems = useMemo(() => ([
-    { id: "overview" as const, label: t.tabOverview },
-    { id: "inventory" as const, label: t.tabInventory },
-    { id: "market" as const, label: t.tabMarket },
-    { id: "botShop" as const, label: t.tabBotShop },
-    { id: "craft" as const, label: t.tabCraft },
-    { id: "profile" as const, label: t.tabProfile },
-    { id: "notifications" as const, label: t.tabNotifications },
-  ]), [t]);
-
-  const adminTabItems = useMemo(() => ([
-    { id: "adminDashboard" as const, label: t.adminTabDashboard },
-    { id: "adminServers" as const, label: t.adminTabServers },
-    { id: "adminLogs" as const, label: t.adminTabLogs },
-    { id: "adminObs" as const, label: t.adminTabObs },
-    { id: "adminItems" as const, label: t.adminTabItems },
-      { id: "adminEconomy" as const, label: t.adminEconomy },
-    { id: "adminBotShop" as const, label: t.adminTabBotShop },
-    { id: "adminMessage" as const, label: t.adminBroadcast },
-  ]), [t]);
-
-  const tabItems = useMemo(
-    () => dashboardMode === "admin" ? adminTabItems : userTabItems,
-    [dashboardMode, adminTabItems, userTabItems],
-  );
 
   const statusText = useMemo(() => {
     if (BOT_UI_STATUS === "offline") {
@@ -1346,6 +1320,27 @@ export default function HomePage() {
     setSearchQuery("");
   }
 
+  function handleUserTabSelect(tab: UserTab): void {
+    setDashboardMode("user");
+    handleTabChange(tab);
+  }
+
+  function handleAdminTabSelect(tab: AdminTab): void {
+    if (!canUseAdminMode) {
+      return;
+    }
+
+    setDashboardMode("admin");
+    handleTabChange(tab);
+  }
+
+  function handleShopSubTabShortcut(subtab: ShopSubTab): void {
+    setDashboardMode("user");
+    setActiveTab("botShop");
+    setShopSubTab(subtab);
+    setSearchQuery("");
+  }
+
   function handleSearchResultSelect(result: DashboardSearchResult): void {
     if (result.destination.kind === "marketSubtab") {
       setDashboardMode("user");
@@ -1477,9 +1472,19 @@ export default function HomePage() {
               )}
             />
 
-            <DashboardTabs tabItems={tabItems} activeTab={activeTab} onTabChange={handleTabChange} />
+            <div className="dashboard-main-layout">
+              <DashboardSidebar
+                t={t}
+                dashboardMode={dashboardMode}
+                activeTab={activeTab}
+                shopSubTab={shopSubTab}
+                onUserTabSelect={handleUserTabSelect}
+                onAdminTabSelect={handleAdminTabSelect}
+                onShopSubTabSelect={handleShopSubTabShortcut}
+              />
 
-            <div className="dashboard-content">
+              <div className="dashboard-main-panel">
+                <div className="dashboard-content">
 
             {activeTab === "overview" ? (
               <div className="panel panel-overview">
@@ -1731,6 +1736,8 @@ export default function HomePage() {
               />
             ) : null}
 
+                </div>
+              </div>
             </div>
           </div>
         )}
