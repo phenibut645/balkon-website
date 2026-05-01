@@ -22,6 +22,7 @@ function isValidDiscordId(value: string): boolean {
 
 export function StreamerTrustedUsersPanel({ t, streamerId }: StreamerTrustedUsersPanelProps) {
   const [users, setUsers] = useState<StreamerStudioTrustedUserView[]>([]);
+  const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -120,20 +121,36 @@ export function StreamerTrustedUsersPanel({ t, streamerId }: StreamerTrustedUser
     setFeedback({ message: t.streamerStudioTrustedUsersRemoveSuccess, isError: false });
   }, [streamerId, t.streamerStudioTrustedUsersDeleteFailed, t.streamerStudioTrustedUsersRemoveSuccess]);
 
+  const trustedCountText = t.streamerStudioTrustedUsersCount.replace("{count}", String(users.length));
+
   return (
-    <section className="streamer-trusted-panel">
+    <section className={`streamer-trusted-panel ${expanded ? "expanded" : "collapsed"}`}>
       <div className="streamer-trusted-head">
-        <div>
+        <div className="streamer-trusted-head-copy">
           <h3 className="section-title small">{t.streamerStudioTrustedUsersTitle}</h3>
-          <p className="market-card-hint">{t.streamerStudioTrustedUsersSubtitle}</p>
-          <p className="market-card-hint">{t.streamerStudioTrustedUsersManagerHint}</p>
+          <p className="market-card-hint">
+            {users.length > 0 ? `${trustedCountText} · ${t.streamerStudioTrustedUsersManagerHint}` : t.streamerStudioTrustedUsersSubtitle}
+          </p>
         </div>
-        <button className="pagination-btn ghost" type="button" onClick={() => void loadUsers()} disabled={loading}>
-          {t.streamerStudioTrustedUsersRefresh}
-        </button>
+        <div className="streamer-trusted-head-actions">
+          {expanded ? (
+            <button className="pagination-btn ghost" type="button" onClick={() => void loadUsers()} disabled={loading}>
+              {t.streamerStudioTrustedUsersRefresh}
+            </button>
+          ) : null}
+          <button className="pagination-btn ghost" type="button" onClick={() => setExpanded(prev => !prev)}>
+            {expanded ? t.streamerStudioTrustedUsersCollapse : t.streamerStudioTrustedUsersOpen}
+          </button>
+        </div>
       </div>
 
-      <div className="streamer-trusted-form">
+      {!expanded ? (
+        <p className="streamer-trusted-compact-summary">{loading ? t.shopObsLoading : trustedCountText}</p>
+      ) : null}
+
+      {expanded ? (
+        <>
+          <div className="streamer-trusted-form">
         <label className="streamer-transform-field">
           <span>{t.streamerStudioTrustedUsersDiscordId}</span>
           <input
@@ -154,15 +171,15 @@ export function StreamerTrustedUsersPanel({ t, streamerId }: StreamerTrustedUser
         <button className="pagination-btn" type="button" onClick={() => void handleAdd()} disabled={saving || !discordId.trim()}>
           {t.streamerStudioTrustedUsersAdd}
         </button>
-      </div>
+          </div>
 
-      {feedback ? (
-        <p className={`streamer-trusted-feedback ${feedback.isError ? "state-error" : "state-ok"}`}>
-          {feedback.message}
-        </p>
-      ) : null}
+          {feedback ? (
+            <p className={`streamer-trusted-feedback ${feedback.isError ? "state-error" : "state-ok"}`}>
+              {feedback.message}
+            </p>
+          ) : null}
 
-      <div className="streamer-trusted-list">
+          <div className="streamer-trusted-list">
         {loading ? <p className="state-text compact">{t.shopObsLoading}</p> : null}
         {!loading && users.length === 0 ? <p className="state-text state-empty">{t.streamerStudioTrustedUsersEmpty}</p> : null}
         {users.map(user => {
@@ -185,7 +202,9 @@ export function StreamerTrustedUsersPanel({ t, streamerId }: StreamerTrustedUser
             </div>
           );
         })}
-      </div>
+          </div>
+        </>
+      ) : null}
     </section>
   );
 }
