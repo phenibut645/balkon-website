@@ -42,6 +42,28 @@ function buildDraftMap(sceneItems: ObsStudioSceneItemView[]): Record<number, Obs
   }, {});
 }
 
+function pickPreferredSceneItemId(items: ObsStudioSceneItemView[], previousSelectedId: number | null): number | null {
+  if (!items.length) {
+    return null;
+  }
+
+  if (previousSelectedId !== null && items.some(item => item.sceneItemId === previousSelectedId)) {
+    return previousSelectedId;
+  }
+
+  const recommended = items.find(item => item.sourceName.trim() === "Balkon Media Group");
+  if (recommended) {
+    return recommended.sceneItemId;
+  }
+
+  const firstEnabled = items.find(item => item.enabled);
+  if (firstEnabled) {
+    return firstEnabled.sceneItemId;
+  }
+
+  return items[0]?.sceneItemId ?? null;
+}
+
 export function StreamerControlSession({ t, streamer, onBack }: StreamerControlSessionProps) {
   const scenesRequestSeqRef = useRef(0);
   const itemsRequestSeqRef = useRef(0);
@@ -97,10 +119,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
       setItems(nextItems);
       setDraftTransforms(buildDraftMap(nextItems));
       setSelectedItemId((prev) => {
-        if (prev !== null && nextItems.some(item => item.sceneItemId === prev)) {
-          return prev;
-        }
-        return nextItems[0]?.sceneItemId ?? null;
+        return pickPreferredSceneItemId(nextItems, prev);
       });
       setItemsLoading(false);
       return;

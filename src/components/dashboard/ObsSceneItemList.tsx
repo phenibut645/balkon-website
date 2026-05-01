@@ -21,7 +21,24 @@ function formatTransform(item: ObsStudioSceneItemView): string {
   const t = item.transform;
   const w = t.width ? ` w:${Math.round(t.width)}` : "";
   const h = t.height ? ` h:${Math.round(t.height)}` : "";
-  return `x:${Math.round(t.positionX)} y:${Math.round(t.positionY)} sx:${t.scaleX.toFixed(2)} sy:${t.scaleY.toFixed(2)} r:${Math.round(t.rotation)}${w}${h}`;
+  return `x:${t.positionX.toFixed(1)} y:${t.positionY.toFixed(1)} sx:${t.scaleX.toFixed(2)} sy:${t.scaleY.toFixed(2)} r:${t.rotation.toFixed(1)}${w}${h}`;
+}
+
+function isRecommendedItem(sourceName: string): boolean {
+  return sourceName.trim() === "Balkon Media Group";
+}
+
+function getTypeLabel(item: ObsStudioSceneItemView, t: DashboardText): string {
+  const kind = item.inputKind?.trim();
+  if (kind && kind.length > 0) {
+    return kind;
+  }
+
+  if (item.sourceName.toLowerCase().includes("group")) {
+    return t.streamerStudioTypeGroup;
+  }
+
+  return t.streamerStudioUnknownInput;
 }
 
 function parseNumberInput(value: string): number | null {
@@ -91,14 +108,17 @@ export function ObsSceneItemList({
               >
                 <div className="obs-scene-item-row-title">
                   <span className="obs-scene-item-row-name">{item.sourceName}</span>
-                  <span className={`meta-badge ${item.enabled ? "ok" : "danger"}`}>
-                    {item.enabled ? t.streamerStudioEnabled : t.streamerStudioDisabled}
-                  </span>
+                  <div className="obs-scene-item-row-badges">
+                    {isRecommendedItem(item.sourceName) ? (
+                      <span className="meta-badge neutral">{t.streamerStudioRecommended}</span>
+                    ) : null}
+                    <span className={`meta-badge ${item.enabled ? "ok" : "danger"}`}>
+                      {item.enabled ? t.streamerStudioEnabled : t.streamerStudioDisabled}
+                    </span>
+                  </div>
                 </div>
                 <div className="obs-scene-item-row-meta">
-                  <span className="market-card-hint">
-                    {item.inputKind ? item.inputKind : t.streamerStudioUnknownInput}
-                  </span>
+                  <span className="market-card-hint">{getTypeLabel(item, t)}</span>
                   <span className="market-card-hint mono">{formatTransform(item)}</span>
                 </div>
               </button>
@@ -154,20 +174,23 @@ export function ObsSceneItemList({
               </div>
 
               <div className="streamer-transform-actions">
-                <button className="pagination-btn" type="button" disabled={!canEdit || !dirtySelected || applyLoading} onClick={onApply}>
-                  {t.streamerStudioApplyTransform}
-                </button>
-                <button className="pagination-btn ghost" type="button" disabled={!dirtySelected || applyLoading} onClick={onReset}>
-                  {t.streamerStudioResetTransform}
-                </button>
+                <div className="streamer-transform-action-buttons">
+                  <button className="pagination-btn" type="button" disabled={!canEdit || !dirtySelected || applyLoading} onClick={onApply}>
+                    {t.streamerStudioApplyTransform}
+                  </button>
+                  <button className="pagination-btn ghost" type="button" disabled={!dirtySelected || applyLoading} onClick={onReset}>
+                    {t.streamerStudioResetTransform}
+                  </button>
+                </div>
+                <div className="streamer-transform-status-stack" aria-live="polite">
+                  {dirtySelected ? <p className="streamer-transform-status">{t.streamerStudioUnsavedChanges}</p> : <span />}
+                  {statusMessage ? (
+                    <p className={`streamer-transform-status ${statusError ? "state-error" : "state-ok"}`}>
+                      {statusMessage}
+                    </p>
+                  ) : null}
+                </div>
               </div>
-
-              {dirtySelected ? <p className="streamer-transform-status">{t.streamerStudioUnsavedChanges}</p> : null}
-              {statusMessage ? (
-                <p className={`streamer-transform-status ${statusError ? "state-error" : "state-ok"}`}>
-                  {statusMessage}
-                </p>
-              ) : null}
             </div>
           ) : null}
         </>

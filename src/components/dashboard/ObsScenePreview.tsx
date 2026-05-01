@@ -17,6 +17,23 @@ const CANVAS_HEIGHT = 1080;
 const DEFAULT_BOX_W = 220;
 const DEFAULT_BOX_H = 120;
 
+function isRecommendedItem(sourceName: string): boolean {
+  return sourceName.trim() === "Balkon Media Group";
+}
+
+function getTypeLabel(item: ObsStudioSceneItemView, t: DashboardText): string {
+  const kind = item.inputKind?.trim();
+  if (kind && kind.length > 0) {
+    return kind;
+  }
+
+  if (item.sourceName.toLowerCase().includes("group")) {
+    return t.streamerStudioTypeGroup;
+  }
+
+  return t.streamerStudioUnknownInput;
+}
+
 export function ObsScenePreview({
   t,
   items,
@@ -98,6 +115,10 @@ export function ObsScenePreview({
           const widthPct = Math.min(100, Math.max(4, (w / CANVAS_WIDTH) * 100));
           const heightPct = Math.min(100, Math.max(4, (h / CANVAS_HEIGHT) * 100));
           const isSelected = selectedItemId === item.sceneItemId;
+          const isDirty = dirtyItemId === item.sceneItemId;
+          const recommended = isRecommendedItem(item.sourceName);
+          const typeLabel = getTypeLabel(item, t);
+          const zIndex = isSelected ? 420 : (isDirty ? 320 : (item.enabled ? 180 : 90));
 
           return (
             <button
@@ -108,7 +129,7 @@ export function ObsScenePreview({
                 canEdit ? "draggable" : "",
                 item.enabled ? "" : "disabled",
                 isSelected ? "selected" : "",
-                dirtyItemId === item.sceneItemId ? "dirty" : "",
+                isDirty ? "dirty" : "",
               ].join(" ").trim()}
               style={{
                 left: `${left}%`,
@@ -116,13 +137,19 @@ export function ObsScenePreview({
                 width: `${widthPct}%`,
                 height: `${heightPct}%`,
                 transform: `rotate(${item.transform.rotation || 0}deg)`,
-                zIndex: isSelected ? 300 : (item.enabled ? 120 : 80),
+                zIndex,
               }}
               onPointerDown={(event) => handlePointerDown(event, item.sceneItemId)}
               onClick={() => onSelectItem(item.sceneItemId)}
               title={`${item.sourceName} (${item.enabled ? t.streamerStudioEnabled : t.streamerStudioDisabled})`}
             >
-              <span className="obs-scene-item-label">{item.sourceName}</span>
+              <span className="obs-scene-item-label" aria-hidden="true">
+                <span className="obs-scene-item-label-main">{item.sourceName}</span>
+                <span className="obs-scene-item-label-meta">
+                  <span className="obs-scene-item-kind">{typeLabel}</span>
+                  {recommended ? <span className="obs-scene-item-recommended">{t.streamerStudioRecommended}</span> : null}
+                </span>
+              </span>
             </button>
           );
         })}
