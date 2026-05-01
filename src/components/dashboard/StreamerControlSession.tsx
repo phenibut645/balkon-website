@@ -235,10 +235,15 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
   const dirtyItemId = dirtySelected && selectedServerItem ? selectedServerItem.sceneItemId : null;
 
   const displayedItems = useMemo(
-    () => items.map(item => ({
-      ...item,
-      transform: draftTransforms[item.sceneItemId] ?? item.transform,
-    })),
+    () => items
+      .map(item => ({
+        ...item,
+        transform: draftTransforms[item.sceneItemId] ?? item.transform,
+      }))
+      // OBS GetSceneItemList returns items bottom-to-top (sceneItemIndex 0 is bottom).
+      // Reverse so that the OBS Sources panel order (top first) is mirrored in the website UI.
+      .slice()
+      .reverse(),
     [draftTransforms, items],
   );
 

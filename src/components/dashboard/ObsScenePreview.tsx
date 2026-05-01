@@ -107,18 +107,35 @@ export function ObsScenePreview({
         onPointerUp={stopDragging}
         onPointerCancel={stopDragging}
       >
-        {items.map(item => {
+        {items.map((item, index) => {
           const left = (item.transform.positionX / CANVAS_WIDTH) * 100;
           const top = (item.transform.positionY / CANVAS_HEIGHT) * 100;
-          const w = item.transform.width ?? DEFAULT_BOX_W;
-          const h = item.transform.height ?? DEFAULT_BOX_H;
+          // transform.width / transform.height from OBS already include scaleX/scaleY,
+          // so they represent the final rendered box size in canvas coordinates.
+          // Do NOT multiply by scaleX/scaleY again here.
+          const rawW = item.transform.width;
+          const rawH = item.transform.height;
+          const w = typeof rawW === "number" && Number.isFinite(rawW) && rawW > 0 ? rawW : DEFAULT_BOX_W;
+          const h = typeof rawH === "number" && Number.isFinite(rawH) && rawH > 0 ? rawH : DEFAULT_BOX_H;
           const widthPct = Math.min(100, Math.max(4, (w / CANVAS_WIDTH) * 100));
           const heightPct = Math.min(100, Math.max(4, (h / CANVAS_HEIGHT) * 100));
           const isSelected = selectedItemId === item.sceneItemId;
           const isDirty = dirtyItemId === item.sceneItemId;
           const recommended = isRecommendedItem(item.sourceName);
           const typeLabel = getTypeLabel(item, t);
-          const zIndex = isSelected ? 420 : (isDirty ? 320 : (item.enabled ? 180 : 90));
+          // items array is in OBS Sources visual order (top first).
+          // First item should render on top, so its z-index must be the highest.
+          const baseZ = items.length - index;
+          let zIndex = baseZ;
+          if (!item.enabled) {
+            zIndex = baseZ;
+          }
+          if (isDirty) {
+            zIndex = 1000 + baseZ;
+          }
+          if (isSelected) {
+            zIndex = 2000 + baseZ;
+          }
 
           return (
             <button
