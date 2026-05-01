@@ -392,14 +392,30 @@ export type StreamerStudioAccessibleResponse = ApiBaseResponse & {
   data?: StreamerStudioAccessView[];
 };
 
+export type StreamerStudioTrustedUserRole = "moderator" | "manager";
+
 export type StreamerStudioTrustedUserView = {
-  id: number;
-  memberId: number;
+  id?: number;
+  memberId?: number;
   discordId: string;
-  displayName: string;
-  avatarUrl: string | null;
-  role: "moderator" | "manager";
-  createdAt: string;
+  displayName?: string | null;
+  username?: string | null;
+  avatarUrl?: string | null;
+  role: StreamerStudioTrustedUserRole;
+  createdAt?: string | null;
+};
+
+export type StreamerStudioTrustedUsersResponse = ApiBaseResponse & {
+  data?: StreamerStudioTrustedUserView[];
+};
+
+export type StreamerStudioTrustedUserMutationResponse = ApiBaseResponse & {
+  data?: StreamerStudioTrustedUserView;
+};
+
+export type StreamerStudioTrustedUserInput = {
+  discordId: string;
+  role?: StreamerStudioTrustedUserRole;
 };
 
 export type ObsStudioSceneView = {

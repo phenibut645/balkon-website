@@ -37,6 +37,9 @@ import {
   UpdateUserProfileInput,
   StreamerStudioAccessibleResponse,
   StreamerStudioMeResponse,
+  StreamerStudioTrustedUserInput,
+  StreamerStudioTrustedUserMutationResponse,
+  StreamerStudioTrustedUsersResponse,
   ApiStreamerStudioSceneItemsListResponse,
   ApiStreamerStudioScenesListResponse,
   ApiStreamerStudioSceneItemIndexApplyResponse,
@@ -1264,6 +1267,98 @@ export async function getStreamerStudioAccessible(): Promise<StreamerStudioAcces
     return data && typeof data === "object"
       ? data
       : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getStreamerStudioTrustedUsers(streamerId: number): Promise<StreamerStudioTrustedUsersResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/trusted-users`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as StreamerStudioTrustedUsersResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_STUDIO_LOAD_FAILED",
+        message: data?.message || "Failed to load trusted users.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function addStreamerStudioTrustedUser(
+  streamerId: number,
+  input: StreamerStudioTrustedUserInput,
+): Promise<StreamerStudioTrustedUserMutationResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/trusted-users`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as StreamerStudioTrustedUserMutationResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_STUDIO_SAVE_FAILED",
+        message: data?.message || "Failed to save trusted user.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function deleteStreamerStudioTrustedUser(
+  streamerId: number,
+  memberId: number,
+): Promise<StreamerStudioTrustedUserMutationResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/trusted-users/${encodeURIComponent(String(memberId))}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as StreamerStudioTrustedUserMutationResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_STUDIO_DELETE_FAILED",
+        message: data?.message || "Failed to delete trusted user.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: true };
   } catch {
     return {
       ok: false,

@@ -4,6 +4,7 @@ import { applyStreamerStudioSceneItemIndex, applyStreamerStudioSceneItemTransfor
 import { ObsStudioSceneItemTransform, ObsStudioSceneItemView, ObsStudioSceneView, StreamerStudioAccessView } from "@/lib/types";
 import { ObsScenePreview } from "./ObsScenePreview";
 import { ObsSceneItemList } from "./ObsSceneItemList";
+import { StreamerTrustedUsersPanel } from "./StreamerTrustedUsersPanel";
 
 type StreamerControlSessionProps = {
   t: DashboardText;
@@ -458,6 +459,10 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
         <p className="state-text">{t.streamerStudioAgentOffline}</p>
       ) : null}
       {scenesError ? <p className="state-text state-error">{scenesError}</p> : null}
+
+      {streamer.canManage ? (
+        <StreamerTrustedUsersPanel t={t} streamerId={streamer.streamerId} />
+      ) : null}
 
       <div className="streamer-scene-toolbar">
         <label className="market-card-hint" htmlFor="sceneSelect">{t.streamerStudioSelectScene}</label>
