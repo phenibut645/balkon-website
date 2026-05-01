@@ -1,7 +1,8 @@
 "use client";
 
 import { DashboardText } from "@/lib/dashboardText";
-import { AvailableGuild, NotificationItem, ObsMediaActionStatus, OverviewLatestNotification, OverviewSummary, UserBalance, UserPublicProfile } from "@/lib/types";
+import { AvailableGuild, NotificationItem, OverviewLatestNotification, OverviewSummary, UserBalance, UserPublicProfile } from "@/lib/types";
+import { OverviewModelShowcase } from "./OverviewModelShowcase";
 
 type ActivityNotification = NotificationItem | OverviewLatestNotification;
 
@@ -28,6 +29,7 @@ type OverviewPanelProps = {
   availableGuilds: AvailableGuild[];
   onOpenInventory: () => void;
   onOpenMarket: () => void;
+  onOpenBotShop: () => void;
   onOpenObsShop: () => void;
   onOpenObsHistory: () => void;
   onOpenNotifications: () => void;
@@ -73,17 +75,25 @@ function getHomeGuildLabel(profile: UserPublicProfile | null, availableGuilds: A
   return fallback;
 }
 
-function getObsStatusLabel(t: DashboardText, status: ObsMediaActionStatus): string {
-  if (status === "pending") {
-    return t.obsActionStatusPending;
+function sanitizePlainText(value?: string | null, maxLength = 110): string {
+  if (!value) {
+    return "";
   }
-  if (status === "sent") {
-    return t.obsActionStatusSent;
+
+  const text = value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  if (text.length <= maxLength) {
+    return text;
   }
-  if (status === "failed") {
-    return t.obsActionStatusFailed;
+
+  return `${text.slice(0, maxLength).trim()}...`;
+}
+
+function getNotificationHint(t: DashboardText, unreadCount: number): string {
+  if (unreadCount <= 0) {
+    return t.allNotifications;
   }
-  return t.obsActionStatusRefunded;
+
+  return t.notificationUnread.toLowerCase();
 }
 
 export function OverviewPanel({
@@ -109,6 +119,7 @@ export function OverviewPanel({
   availableGuilds,
   onOpenInventory,
   onOpenMarket,
+  onOpenBotShop,
   onOpenObsShop,
   onOpenObsHistory,
   onOpenNotifications,
@@ -120,9 +131,11 @@ export function OverviewPanel({
   const effectiveUnreadNotifications = overviewSummary?.unreadNotificationsCount ?? unreadNotifications;
   const effectiveLatestNotifications: ActivityNotification[] = overviewSummary?.latestNotifications ?? latestNotifications;
   const homeGuildLabel = overviewSummary?.homeGuild?.name ?? getHomeGuildLabel(profile, availableGuilds, t.noHomeGuild);
+  const profileDescription = sanitizePlainText(profile?.publicDescription);
   const latestObsAction = overviewSummary?.obsActions.latest ?? null;
   const obsActionsTotal = overviewSummary?.obsActions.total ?? 0;
   const showInitialLoading = overviewLoading && !overviewSummary;
+  const profileSummaryText = profileDescription || t.overviewProfileHint;
 
   return (
     <div className="panel panel-overview overview-dashboard">
@@ -167,79 +180,95 @@ export function OverviewPanel({
       </section>
 
       <section className="overview-card-grid" aria-label={t.tabOverview}>
-        <article className="overview-card">
+        <article className="overview-card overview-stat-card">
           <div className="overview-card-head">
             <span className="overview-card-icon" aria-hidden="true">💰</span>
             <span className="overview-card-title">{t.balance}</span>
           </div>
-          <p className="overview-card-value">{effectiveBalance ? `${effectiveBalance.odm.toLocaleString()} ${t.odm}` : "..."}</p>
-          <p className="overview-card-hint">{effectiveBalance ? `${effectiveBalance.ldm.toLocaleString()} ${t.ldm}` : balanceLoaded ? t.balanceLoadFailed : t.checking}</p>
+          <div className="overview-stat-body">
+            <p className="overview-card-value">{effectiveBalance ? `${effectiveBalance.odm.toLocaleString()} ${t.odm}` : "..."}</p>
+            <p className="overview-card-hint">{effectiveBalance ? `${effectiveBalance.ldm.toLocaleString()} ${t.ldm}` : balanceLoaded ? t.balanceLoadFailed : t.checking}</p>
+          </div>
         </article>
 
-        <article className="overview-card">
+        <article className="overview-card overview-stat-card">
           <div className="overview-card-head">
             <span className="overview-card-icon" aria-hidden="true">🎒</span>
             <span className="overview-card-title">{t.tabInventory}</span>
           </div>
-          <p className="overview-card-value">{effectiveInventoryLoaded ? effectiveInventoryCount.toLocaleString() : t.overviewNotLoaded}</p>
-          <button className="overview-inline-action" type="button" onClick={onOpenInventory}>
-            {effectiveInventoryLoaded ? t.tabInventory : t.overviewOpenInventory}
-          </button>
+          <div className="overview-stat-body">
+            <p className="overview-card-value">{effectiveInventoryLoaded ? effectiveInventoryCount.toLocaleString() : t.overviewNotLoaded}</p>
+            <p className="overview-card-hint">{effectiveInventoryLoaded ? t.itemsWord : t.checking}</p>
+          </div>
+          <div className="overview-card-actions">
+            <button className="overview-inline-action" type="button" onClick={onOpenInventory}>{t.openStreamer}</button>
+          </div>
         </article>
 
-        <article className="overview-card">
+        <article className="overview-card overview-stat-card">
           <div className="overview-card-head">
             <span className="overview-card-icon" aria-hidden="true">🔔</span>
             <span className="overview-card-title">{t.tabNotifications}</span>
           </div>
-          <p className="overview-card-value">{effectiveUnreadNotifications.toLocaleString()}</p>
-          <button className="overview-inline-action" type="button" onClick={onOpenNotifications}>
-            {effectiveUnreadNotifications > 0 ? t.notificationUnread : t.allNotifications}
-          </button>
+          <div className="overview-stat-body">
+            <p className="overview-card-value">{effectiveUnreadNotifications.toLocaleString()}</p>
+            <p className="overview-card-hint">{getNotificationHint(t, effectiveUnreadNotifications)}</p>
+          </div>
+          <div className="overview-card-actions">
+            <button className="overview-inline-action" type="button" onClick={onOpenNotifications}>{t.openStreamer}</button>
+          </div>
         </article>
 
-        <article className="overview-card">
+        <article className="overview-card overview-stat-card">
           <div className="overview-card-head">
             <span className="overview-card-icon" aria-hidden="true">🎥</span>
             <span className="overview-card-title">{t.navObs}</span>
           </div>
-          <p className="overview-card-value">{obsActionsTotal.toLocaleString()}</p>
-          <p className="overview-card-hint">
-            {latestObsAction
-              ? `${latestObsAction.productTitle} · ${latestObsAction.streamerNickname} · ${getObsStatusLabel(t, latestObsAction.status)}`
-              : t.obsMediaHistoryEmpty}
-          </p>
+          <div className="overview-stat-body">
+            <p className="overview-card-value">{obsActionsTotal.toLocaleString()}</p>
+            <p className="overview-card-hint">
+              {latestObsAction
+                ? `${latestObsAction.productTitle} · ${latestObsAction.streamerNickname}`
+                : t.obsMediaHistoryEmpty}
+            </p>
+          </div>
           <div className="overview-card-actions">
-            <button className="overview-inline-action" type="button" onClick={onOpenObsShop}>{t.obsShop}</button>
-            <button className="overview-inline-action ghost" type="button" onClick={onOpenObsHistory}>{t.obsHistory}</button>
+            <button className="overview-inline-action" type="button" onClick={onOpenObsShop}>{t.tabBotShop}</button>
+            <button className="overview-inline-action ghost" type="button" onClick={onOpenObsHistory}>{t.obsMediaHistory}</button>
           </div>
-        </article>
-
-        <article className="overview-card overview-card-wide">
-          <div className="overview-card-head">
-            <span className="overview-card-icon" aria-hidden="true">👤</span>
-            <span className="overview-card-title">{t.profile}</span>
-          </div>
-          <p className="overview-card-value">{homeGuildLabel}</p>
-          <p className="overview-card-hint">{profile?.publicDescription || t.overviewProfileHint}</p>
-          <button className="overview-inline-action" type="button" onClick={onOpenProfile}>{t.profileSettings}</button>
         </article>
       </section>
 
       <section className="overview-split">
-        <div className="overview-section-card">
+        <div className="overview-section-card overview-quick-card">
           <div className="overview-section-head">
             <h3>{t.quickActions}</h3>
           </div>
           <div className="overview-quick-actions">
-            <button type="button" className="overview-action-button" onClick={onOpenInventory}>🎒 {t.tabInventory}</button>
-            <button type="button" className="overview-action-button" onClick={onOpenMarket}>📈 {t.tabMarket}</button>
-            <button type="button" className="overview-action-button" onClick={onOpenObsShop}>🎥 {t.obsShop}</button>
-            <button type="button" className="overview-action-button" onClick={onOpenNotifications}>🔔 {t.tabNotifications}</button>
+            <button type="button" className="overview-action-button" onClick={onOpenInventory}>
+              <span className="overview-action-icon" aria-hidden="true">🎒</span>
+              <span className="overview-action-copy">{t.tabInventory}</span>
+              <span className="overview-action-arrow" aria-hidden="true">→</span>
+            </button>
+            <button type="button" className="overview-action-button" onClick={onOpenMarket}>
+              <span className="overview-action-icon" aria-hidden="true">📈</span>
+              <span className="overview-action-copy">{t.tabMarket}</span>
+              <span className="overview-action-arrow" aria-hidden="true">→</span>
+            </button>
+            <button type="button" className="overview-action-button" onClick={onOpenObsShop}>
+              <span className="overview-action-icon" aria-hidden="true">🎥</span>
+              <span className="overview-action-copy">OBS</span>
+              <span className="overview-action-arrow" aria-hidden="true">→</span>
+            </button>
+            <button type="button" className="overview-action-button" onClick={onOpenNotifications}>
+              <span className="overview-action-icon" aria-hidden="true">🔔</span>
+              <span className="overview-action-copy">{t.tabNotifications}</span>
+              <span className="overview-action-arrow" aria-hidden="true">→</span>
+            </button>
           </div>
         </div>
 
-        <div className="overview-section-card">
+        <div className="overview-section-card overview-activity-card">
           <div className="overview-section-head">
             <h3>{t.recentActivity}</h3>
             <button className="overview-inline-action ghost" type="button" onClick={onOpenNotifications}>{t.viewAll}</button>
@@ -248,7 +277,7 @@ export function OverviewPanel({
             <div className="overview-activity-list">
               {effectiveLatestNotifications.slice(0, 3).map(item => (
                 <article key={`overview-notification-${item.id}`} className={`overview-activity-item severity-${item.severity}`}>
-                  <div>
+                  <div className="overview-activity-copy">
                     <p className="overview-activity-title">{localizeNotificationTitle(t, item)}</p>
                     <p className="overview-activity-date">{formatNotificationDate(item.createdAt, dateLocale, t.unknownDate)}</p>
                   </div>
@@ -260,7 +289,28 @@ export function OverviewPanel({
             <div className="overview-empty-activity">{t.overviewRecentEmpty}</div>
           )}
         </div>
+
+        <div className="overview-section-card overview-profile-summary">
+          <div className="overview-section-head">
+            <h3>{t.profile}</h3>
+            <button className="overview-inline-action ghost" type="button" onClick={onOpenProfile}>{t.configure}</button>
+          </div>
+          <div className="overview-profile-line">
+            <span className="overview-card-icon overview-profile-icon" aria-hidden="true">👤</span>
+            <div className="overview-profile-copy">
+              <p className="overview-profile-meta">{t.homeGuild}</p>
+              <p className="overview-profile-guild">{homeGuildLabel}</p>
+              <p className="overview-profile-description">{profileSummaryText}</p>
+            </div>
+          </div>
+        </div>
       </section>
+
+      <OverviewModelShowcase
+        t={t}
+        onOpenBotShop={onOpenBotShop}
+        onOpenObsShop={onOpenObsShop}
+      />
     </div>
   );
 }

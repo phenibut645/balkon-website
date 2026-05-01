@@ -1596,6 +1596,7 @@ export default function HomePage() {
                 availableGuilds={profileGuilds}
                 onOpenInventory={() => handleUserTabSelect("inventory")}
                 onOpenMarket={() => handleUserTabSelect("market")}
+                onOpenBotShop={() => handleShopSubTabShortcut("overview")}
                 onOpenObsShop={() => handleShopSubTabShortcut("obs")}
                 onOpenObsHistory={() => handleShopSubTabShortcut("obs")}
                 onOpenNotifications={() => handleUserTabSelect("notifications")}
