@@ -508,6 +508,30 @@ export type ApiStreamerStudioSceneItemIndexApplyResponse = ApiBaseResponse & {
   data?: ObsStudioSceneItemIndexApplyResult;
 };
 
+export type ObsStudioTextSourceCreateInput = {
+  sceneName: string;
+  sourceName?: string | null;
+  text: string;
+  positionX?: number;
+  positionY?: number;
+  scaleX?: number;
+  scaleY?: number;
+  rotation?: number;
+};
+
+export type ObsStudioTextSourceCreateResult = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName: string;
+  inputKind: string;
+  transform: ObsStudioSceneItemTransform;
+  items: ObsStudioSceneItemIndexListItem[];
+};
+
+export type ApiStreamerStudioTextSourceCreateResponse = ApiBaseResponse & {
+  data?: ObsStudioTextSourceCreateResult;
+};
+
 export type AdminItem = {
   id: number;
   name: string;

@@ -231,6 +231,70 @@ body {
   font-size: 12px;
 }
 
+.streamer-source-create-panel {
+  border: 1px solid rgba(95, 116, 159, 0.22);
+  border-radius: 14px;
+  background: rgba(10, 14, 24, 0.55);
+  backdrop-filter: blur(14px);
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.streamer-source-create-panel.collapsed {
+  padding: 9px 12px;
+  gap: 0;
+}
+
+.streamer-source-create-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.streamer-source-create-head .section-title,
+.streamer-source-create-head .market-card-hint {
+  margin: 0;
+}
+
+.streamer-source-create-form {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.streamer-source-create-form-title {
+  color: #dce6ff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.streamer-source-create-form textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.streamer-source-create-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.streamer-source-create-feedback {
+  margin: 0;
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .streamer-source-create-head {
+    display: grid;
+  }
+}
+
 @media (max-width: 760px) {
   .streamer-trusted-head,
   .streamer-trusted-head-actions,

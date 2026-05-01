@@ -43,8 +43,10 @@ import {
   ApiStreamerStudioSceneItemsListResponse,
   ApiStreamerStudioScenesListResponse,
   ApiStreamerStudioSceneItemIndexApplyResponse,
+  ApiStreamerStudioTextSourceCreateResponse,
   ApiStreamerStudioTransformApplyResponse,
   ObsStudioSceneItemIndexApplyInput,
+  ObsStudioTextSourceCreateInput,
   ObsStudioTransformApplyInput,
 } from "./types";
 
@@ -1446,6 +1448,39 @@ export async function applyStreamerStudioSceneItemIndex(
         ok: false,
         error: data?.error || "OBS_INDEX_COMMAND_FAILED",
         message: data?.message || "Failed to update layer order.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function createStreamerStudioTextSource(
+  streamerId: number,
+  input: ObsStudioTextSourceCreateInput,
+): Promise<ApiStreamerStudioTextSourceCreateResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/control/source/text`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerStudioTextSourceCreateResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "OBS_TEXT_SOURCE_COMMAND_FAILED",
+        message: data?.message || "Failed to create text source.",
       };
     }
 
