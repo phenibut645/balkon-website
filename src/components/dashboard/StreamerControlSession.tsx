@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DashboardText } from "@/lib/dashboardText";
 import { listStreamerStudioSceneItems, listStreamerStudioScenes } from "@/lib/api";
 import { ObsStudioSceneItemView, ObsStudioSceneView, StreamerStudioAccessView } from "@/lib/types";
@@ -12,6 +12,10 @@ type StreamerControlSessionProps = {
 };
 
 export function StreamerControlSession({ t, streamer, onBack }: StreamerControlSessionProps) {
+  const scenesRequestSeqRef = useRef(0);
+  const itemsRequestSeqRef = useRef(0);
+  const skipNextSceneEffectRef = useRef<string | null>(null);
+
   const [scenesLoading, setScenesLoading] = useState(false);
   const [scenesError, setScenesError] = useState<string | null>(null);
   const [scenes, setScenes] = useState<ObsStudioSceneView[]>([]);
@@ -33,67 +37,116 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
     return t.streamerStudioAgentOffline;
   }, [streamer.obsAgentConfigured, streamer.obsAgentOnline, t.streamerStudioAgentNotConfigured, t.streamerStudioAgentOffline, t.streamerStudioAgentOnline]);
 
-  const loadScenes = useCallback(async () => {
-    setScenesLoading(true);
-    setScenesError(null);
-
-    const response = await listStreamerStudioScenes(streamer.streamerId);
-    if (response.ok && response.data) {
-      const nextScenes = Array.isArray(response.data.scenes) ? response.data.scenes : [];
-      setScenes(nextScenes);
-      const nextCurrent = response.data.currentProgramSceneName ?? null;
-      setCurrentSceneName(nextCurrent);
-
-      if (!selectedSceneName) {
-        const defaultName = nextCurrent || nextScenes[0]?.name || "";
-        setSelectedSceneName(defaultName);
-      }
-
-      setScenesLoading(false);
-      return;
-    }
-
-    setScenes([]);
-    setCurrentSceneName(null);
-    setScenesLoading(false);
-    setScenesError(response.message || response.error || t.streamerStudioError);
-  }, [selectedSceneName, streamer.streamerId, t.streamerStudioError]);
-
   const loadItems = useCallback(async (sceneName: string) => {
     const normalized = sceneName.trim();
+    const requestId = ++itemsRequestSeqRef.current;
+
     if (!normalized) {
       setItems([]);
       setSelectedItemId(null);
+      setItemsError(null);
+      setItemsLoading(false);
       return;
     }
 
     setItemsLoading(true);
     setItemsError(null);
-    setSelectedItemId(null);
 
     const response = await listStreamerStudioSceneItems(streamer.streamerId, normalized);
+    if (requestId !== itemsRequestSeqRef.current) {
+      return;
+    }
+
     if (response.ok && response.data) {
-      setItems(response.data.items || []);
+      const nextItems = response.data.items || [];
+      setItems(nextItems);
+      setSelectedItemId((prev) => {
+        if (prev !== null && nextItems.some(item => item.sceneItemId === prev)) {
+          return prev;
+        }
+        return nextItems[0]?.sceneItemId ?? null;
+      });
       setItemsLoading(false);
       return;
     }
 
     setItems([]);
+    setSelectedItemId(null);
     setItemsLoading(false);
     setItemsError(response.message || response.error || t.streamerStudioError);
   }, [streamer.streamerId, t.streamerStudioError]);
 
+  const loadScenesAndItems = useCallback(async () => {
+    setScenesLoading(true);
+    setScenesError(null);
+    const scenesRequestId = ++scenesRequestSeqRef.current;
+
+    const response = await listStreamerStudioScenes(streamer.streamerId);
+    if (scenesRequestId !== scenesRequestSeqRef.current) {
+      return;
+    }
+
+    if (!response.ok || !response.data) {
+      setScenes([]);
+      setCurrentSceneName(null);
+      setSelectedSceneName("");
+      setItems([]);
+      setSelectedItemId(null);
+      setScenesLoading(false);
+      setScenesError(response.message || response.error || t.streamerStudioError);
+      return;
+    }
+
+    const nextScenes = Array.isArray(response.data.scenes) ? response.data.scenes : [];
+    const nextCurrent = response.data.currentProgramSceneName ?? null;
+    const hasPreviousSelection = nextScenes.some(scene => scene.name === selectedSceneName);
+    const nextSceneName = hasPreviousSelection
+      ? selectedSceneName
+      : (nextCurrent && nextScenes.some(scene => scene.name === nextCurrent) ? nextCurrent : (nextScenes[0]?.name || ""));
+
+    setScenes(nextScenes);
+    setCurrentSceneName(nextCurrent);
+    setSelectedSceneName(nextSceneName);
+    setScenesLoading(false);
+
+    if (!nextSceneName) {
+      setItems([]);
+      setSelectedItemId(null);
+      setItemsError(null);
+      return;
+    }
+
+    skipNextSceneEffectRef.current = nextSceneName;
+    await loadItems(nextSceneName);
+  }, [loadItems, selectedSceneName, streamer.streamerId, t.streamerStudioError]);
+
+  const loadCurrentItems = useCallback(async () => {
+    const normalized = selectedSceneName.trim();
+    if (!normalized) {
+      setItems([]);
+      setSelectedItemId(null);
+      setItemsError(null);
+      return;
+    }
+
+    await loadItems(normalized);
+  }, [loadItems, selectedSceneName]);
+
   useEffect(() => {
-    // auto-load scenes when session opens
-    void loadScenes();
+    void loadScenesAndItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamer.streamerId]);
 
   useEffect(() => {
-    if (!selectedSceneName.trim()) {
+    const normalized = selectedSceneName.trim();
+    if (!normalized) {
       return;
     }
-    void loadItems(selectedSceneName);
+    if (skipNextSceneEffectRef.current === normalized) {
+      skipNextSceneEffectRef.current = null;
+      return;
+    }
+    void loadItems(normalized);
   }, [loadItems, selectedSceneName]);
 
   const canAttemptLoad = streamer.canControl;
@@ -115,22 +168,37 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
           <button
             className="pagination-btn"
             type="button"
-            onClick={() => void loadScenes()}
+            onClick={() => void loadScenesAndItems()}
             disabled={!canAttemptLoad || scenesLoading}
             title={!canAttemptLoad ? t.streamerStudioForbiddenHint : undefined}
           >
-            {t.streamerStudioLoadScenes}
+            {t.streamerStudioRefreshScenes}
+          </button>
+          <button
+            className="pagination-btn"
+            type="button"
+            onClick={() => void loadCurrentItems()}
+            disabled={!canAttemptLoad || !selectedSceneName.trim() || itemsLoading}
+            title={!canAttemptLoad ? t.streamerStudioForbiddenHint : undefined}
+          >
+            {t.streamerStudioRefreshItems}
           </button>
         </div>
       </div>
 
+      {!streamer.obsAgentConfigured ? (
+        <p className="state-text state-error">{t.streamerStudioAgentNotConfigured}</p>
+      ) : null}
+      {streamer.obsAgentConfigured && !streamer.obsAgentOnline ? (
+        <p className="state-text">{t.streamerStudioAgentOffline}</p>
+      ) : null}
       {scenesError ? <p className="state-text state-error">{scenesError}</p> : null}
 
       <div className="streamer-scene-toolbar">
         <label className="market-card-hint" htmlFor="sceneSelect">{t.streamerStudioSelectScene}</label>
         <select
           id="sceneSelect"
-          className="searchable-select"
+          className="searchable-select streamer-scene-select"
           value={selectedSceneName}
           onChange={(event) => setSelectedSceneName(event.target.value)}
           disabled={scenesLoading || scenes.length === 0}
@@ -145,11 +213,11 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
             ))
           )}
         </select>
-        {scenesLoading ? <span className="state-text compact">{t.shopObsLoading}</span> : null}
+        {scenesLoading ? <span className="state-text compact">{t.streamerStudioLoadingScenes}</span> : null}
       </div>
 
       {itemsError ? <p className="state-text state-error">{itemsError}</p> : null}
-      {itemsLoading ? <p className="state-text">{t.shopObsLoading}</p> : null}
+      {itemsLoading ? <p className="state-text">{t.streamerStudioLoadingItems}</p> : null}
 
       <div className="streamer-studio-session-grid">
         <ObsScenePreview

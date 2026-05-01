@@ -107,6 +107,19 @@ body {
   backdrop-filter: blur(14px);
 }
 
+.streamer-scene-select {
+  min-width: min(360px, 100%);
+  border: 1px solid rgba(104, 123, 163, 0.48);
+  border-radius: 10px;
+  background:
+    linear-gradient(145deg, rgba(20, 30, 50, 0.86), rgba(12, 18, 31, 0.92)),
+    rgba(15, 24, 42, 0.72);
+  color: #dfe8fb;
+  font-size: 13px;
+  padding: 8px 10px;
+  box-shadow: 0 0 0 1px rgba(143, 165, 213, 0.08) inset;
+}
+
 .inventory-toolbar.compact {
   margin-bottom: 8px;
 }
@@ -154,7 +167,7 @@ body {
 .obs-scene-item-box {
   position: absolute;
   border: 1px solid rgba(160, 190, 255, 0.30);
-  background: rgba(30, 60, 120, 0.12);
+  background: linear-gradient(150deg, rgba(23, 47, 95, 0.32), rgba(12, 24, 52, 0.16));
   border-radius: 10px;
   padding: 0;
   cursor: pointer;
@@ -162,30 +175,44 @@ body {
   text-align: left;
   display: grid;
   place-items: end start;
+  min-width: 36px;
+  min-height: 28px;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .obs-scene-item-box .obs-scene-item-label {
   font-size: 11px;
   font-weight: 700;
-  padding: 6px 8px;
+  line-height: 1.2;
+  padding: 5px 7px;
   color: rgba(235, 242, 255, 0.92);
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+  max-width: calc(100% - 8px);
+  border-radius: 8px;
+  background: rgba(8, 13, 23, 0.68);
+  backdrop-filter: blur(2px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .obs-scene-item-box.disabled {
-  opacity: 0.40;
-  filter: saturate(0.6);
+  opacity: 0.38;
+  filter: saturate(0.45);
 }
 
 .obs-scene-item-box.selected {
-  border-color: rgba(174, 255, 234, 0.55);
-  box-shadow: 0 0 0 2px rgba(110, 255, 220, 0.16) inset, 0 0 22px rgba(90, 255, 220, 0.18);
+  border-color: rgba(174, 255, 234, 0.72);
+  box-shadow: 0 0 0 2px rgba(110, 255, 220, 0.22) inset, 0 0 26px rgba(90, 255, 220, 0.24);
 }
 
 .obs-scene-item-list-rows {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 
 .obs-scene-item-row {
@@ -233,6 +260,17 @@ body {
   gap: 10px;
   align-items: center;
   margin-top: 6px;
+  min-width: 0;
+}
+
+.obs-scene-item-row-meta .market-card-hint {
+  min-width: 0;
+}
+
+.obs-scene-item-row-meta .market-card-hint.mono {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .market-card-hint.mono {

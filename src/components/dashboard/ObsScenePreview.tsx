@@ -26,8 +26,9 @@ export function ObsScenePreview({ t, items, selectedItemId, onSelectItem }: ObsS
           const top = (item.transform.positionY / CANVAS_HEIGHT) * 100;
           const w = item.transform.width ?? DEFAULT_BOX_W;
           const h = item.transform.height ?? DEFAULT_BOX_H;
-          const widthPct = (w / CANVAS_WIDTH) * 100;
-          const heightPct = (h / CANVAS_HEIGHT) * 100;
+          const widthPct = Math.min(100, Math.max(4, (w / CANVAS_WIDTH) * 100));
+          const heightPct = Math.min(100, Math.max(4, (h / CANVAS_HEIGHT) * 100));
+          const isSelected = selectedItemId === item.sceneItemId;
 
           return (
             <button
@@ -36,7 +37,7 @@ export function ObsScenePreview({ t, items, selectedItemId, onSelectItem }: ObsS
               className={[
                 "obs-scene-item-box",
                 item.enabled ? "" : "disabled",
-                selectedItemId === item.sceneItemId ? "selected" : "",
+                isSelected ? "selected" : "",
               ].join(" ").trim()}
               style={{
                 left: `${left}%`,
@@ -44,6 +45,7 @@ export function ObsScenePreview({ t, items, selectedItemId, onSelectItem }: ObsS
                 width: `${widthPct}%`,
                 height: `${heightPct}%`,
                 transform: `rotate(${item.transform.rotation || 0}deg)`,
+                zIndex: isSelected ? 300 : (item.enabled ? 120 : 80),
               }}
               onClick={() => onSelectItem(item.sceneItemId)}
               title={`${item.sourceName} (${item.enabled ? t.streamerStudioEnabled : t.streamerStudioDisabled})`}
