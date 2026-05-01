@@ -1699,8 +1699,8 @@ export default function HomePage() {
                 onShopSubTabSelect={handleShopSubTabShortcut}
               />
 
-              <div className="dashboard-main-panel">
-                <div className="dashboard-content">
+              <div className={`dashboard-main-panel${activeTab === "streamerStudio" ? " streamer-studio-main-panel" : ""}`}>
+                <div className={`dashboard-content${activeTab === "streamerStudio" ? " streamer-studio-content" : ""}`}>
 
             {activeTab === "overview" ? (
               <OverviewPanel

@@ -734,6 +734,17 @@ body {
   margin: 0;
 }
 
+.dashboard-main-panel.streamer-studio-main-panel {
+  min-height: 0;
+}
+
+.dashboard-content.streamer-studio-content {
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  padding-bottom: 32px;
+}
+
 .sidebar-section + .sidebar-section {
   margin-top: 14px;
   padding-top: 12px;
