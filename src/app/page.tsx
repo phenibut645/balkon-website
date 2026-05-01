@@ -25,6 +25,7 @@ import { AdminBroadcastPanel } from "@/components/dashboard/AdminBroadcastPanel"
 import { AdminEconomyPanel } from "@/components/dashboard/AdminEconomyPanel";
 import { PlaceholderPanel } from "@/components/dashboard/PlaceholderPanel";
 import { ProfileSettingsPanel } from "@/components/dashboard/ProfileSettingsPanel";
+import { StreamerStudioPanel } from "@/components/dashboard/StreamerStudioPanel";
 import { useSafePolling } from "@/hooks/useSafePolling";
 import { areJsonEqual } from "@/lib/shallowDataEqual";
 
@@ -332,6 +333,24 @@ export default function HomePage() {
         description: t.obsMediaDescription,
         aliases: ["obs", "обс", "стример", "стримеры", "твич", "twitch", "media", "медиа", "показать картинку", "гифка"],
         destination: { kind: "shopSubtab", subtab: "obs" },
+      },
+      {
+        key: "tab:streamerStudio",
+        label: t.tabStreamerStudio,
+        breadcrumb: t.tabStreamerStudio,
+        description: t.streamerStudioSubtitle,
+        aliases: [
+          "стримерская",
+          "стример",
+          "streamer studio",
+          "obs control",
+          "scene control",
+          "управление сценой",
+          "studio",
+          "scenes",
+          "obs",
+        ],
+        destination: { kind: "userTab", tab: "streamerStudio" },
       },
       {
         key: "tab:inventory",
@@ -1951,6 +1970,10 @@ export default function HomePage() {
                   setProfileFeedback(null);
                 }}
               />
+            ) : null}
+
+            {activeTab === "streamerStudio" ? (
+              <StreamerStudioPanel t={t} active />
             ) : null}
 
                 </div>

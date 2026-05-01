@@ -365,6 +365,83 @@ export type ApiBaseResponse = {
   message?: string;
 };
 
+// ── Streamer Studio (Phase 4 UI) ──────────────────────────────────────────────
+
+export type StreamerStudioAccessRole = "owner" | "manager" | "moderator" | "bot_admin";
+
+export type StreamerStudioAccessView = {
+  streamerId: number;
+  nickname: string;
+  twitchUrl: string | null;
+  accessRole: StreamerStudioAccessRole;
+  canManage: boolean;
+  canControl: boolean;
+  obsAgentConfigured?: boolean;
+  obsAgentOnline?: boolean;
+};
+
+export type StreamerStudioMeResponse = ApiBaseResponse & {
+  data?: {
+    owned: StreamerStudioAccessView[];
+    trusted: StreamerStudioAccessView[];
+    isBotAdmin: boolean;
+  };
+};
+
+export type StreamerStudioAccessibleResponse = ApiBaseResponse & {
+  data?: StreamerStudioAccessView[];
+};
+
+export type StreamerStudioTrustedUserView = {
+  id: number;
+  memberId: number;
+  discordId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  role: "moderator" | "manager";
+  createdAt: string;
+};
+
+export type ObsStudioSceneView = {
+  name: string;
+};
+
+export type ObsStudioScenesListResult = {
+  scenes: ObsStudioSceneView[];
+  currentProgramSceneName: string | null;
+};
+
+export type ObsStudioSceneItemTransform = {
+  positionX: number;
+  positionY: number;
+  scaleX: number;
+  scaleY: number;
+  rotation: number;
+  width?: number;
+  height?: number;
+};
+
+export type ObsStudioSceneItemView = {
+  sceneItemId: number;
+  sourceName: string;
+  inputKind: string | null;
+  enabled: boolean;
+  transform: ObsStudioSceneItemTransform;
+};
+
+export type ObsStudioSceneItemsListResult = {
+  sceneName: string;
+  items: ObsStudioSceneItemView[];
+};
+
+export type ApiStreamerStudioScenesListResponse = ApiBaseResponse & {
+  data?: ObsStudioScenesListResult;
+};
+
+export type ApiStreamerStudioSceneItemsListResponse = ApiBaseResponse & {
+  data?: ObsStudioSceneItemsListResult;
+};
+
 export type AdminItem = {
   id: number;
   name: string;

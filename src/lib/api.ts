@@ -35,6 +35,10 @@ import {
   AdminBroadcastNotificationInput,
   ObsMediaActionStatus,
   UpdateUserProfileInput,
+  StreamerStudioAccessibleResponse,
+  StreamerStudioMeResponse,
+  ApiStreamerStudioSceneItemsListResponse,
+  ApiStreamerStudioScenesListResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
@@ -1198,6 +1202,124 @@ export async function markAllNotificationsRead(): Promise<ApiNotificationMutatio
     return data && typeof data === "object"
       ? data
       : { ok: true, updated: 0 };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+// ── Streamer Studio ───────────────────────────────────────────────────────────
+
+export async function getStreamerStudioMe(): Promise<StreamerStudioMeResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/me`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as StreamerStudioMeResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_STUDIO_LOAD_FAILED",
+        message: data?.message || "Failed to load streamer studio access.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getStreamerStudioAccessible(): Promise<StreamerStudioAccessibleResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/accessible`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as StreamerStudioAccessibleResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_STUDIO_LOAD_FAILED",
+        message: data?.message || "Failed to load accessible streamers.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function listStreamerStudioScenes(streamerId: number): Promise<ApiStreamerStudioScenesListResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/control/scenes/list`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerStudioScenesListResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "OBS_SCENE_COMMAND_FAILED",
+        message: data?.message || "Failed to load scenes.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function listStreamerStudioSceneItems(streamerId: number, sceneName: string): Promise<ApiStreamerStudioSceneItemsListResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/control/scene-items/list`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sceneName }),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerStudioSceneItemsListResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "OBS_SCENE_COMMAND_FAILED",
+        message: data?.message || "Failed to load scene items.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
   } catch {
     return {
       ok: false,
