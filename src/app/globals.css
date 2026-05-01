@@ -109,6 +109,8 @@ body {
 
 .streamer-scene-select {
   min-width: min(360px, 100%);
+  width: min(760px, 100%);
+  flex: 1 1 360px;
   border: 1px solid rgba(104, 123, 163, 0.48);
   border-radius: 10px;
   background:
@@ -136,9 +138,9 @@ body {
 }
 
 .streamer-studio-session-grid {
-  display: grid;
-  grid-template-columns: minmax(280px, 1.6fr) minmax(260px, 1fr);
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   width: 100%;
   min-width: 0;
 }
@@ -154,14 +156,20 @@ body {
   min-width: 0;
 }
 
-.obs-scene-frame {
+.obs-scene-preview {
   width: 100%;
+}
+
+.obs-scene-frame {
+  width: min(100%, 1400px);
   aspect-ratio: 16 / 9;
   background: rgba(2, 6, 15, 0.55);
   border-radius: 14px;
   border: 1px solid rgba(120, 145, 196, 0.20);
   position: relative;
   overflow: hidden;
+  margin-inline: auto;
+  max-height: min(70vh, 820px);
 }
 
 .obs-scene-frame.editable {
@@ -271,6 +279,36 @@ body {
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.obs-scene-lower-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.2fr);
+  gap: 12px;
+  min-width: 0;
+}
+
+.obs-scene-selected-panel,
+.obs-scene-list-panel {
+  min-width: 0;
+}
+
+.obs-scene-list-panel {
+  border: 1px solid rgba(95, 116, 159, 0.26);
+  border-radius: 12px;
+  background: rgba(11, 16, 27, 0.58);
+  padding: 10px;
+}
+
+.obs-scene-selected-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .obs-scene-item-row {
@@ -425,6 +463,10 @@ body {
 
 @media (max-width: 960px) {
   .streamer-studio-session-grid {
+    gap: 10px;
+  }
+
+  .obs-scene-lower-grid {
     grid-template-columns: 1fr;
   }
 }

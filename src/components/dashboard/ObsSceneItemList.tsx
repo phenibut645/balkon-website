@@ -93,108 +93,130 @@ export function ObsSceneItemList({
         <p className="state-text state-empty">{t.streamerStudioNoItems}</p>
       ) : (
         <>
-          <div className="obs-scene-item-list-rows">
-            {items.map(item => (
-              <button
-                key={item.sceneItemId}
-                type="button"
-                className={[
-                  "obs-scene-item-row",
-                  selectedItemId === item.sceneItemId ? "selected" : "",
-                  item.enabled ? "" : "disabled",
-                ].join(" ").trim()}
-                onClick={() => onSelect(item.sceneItemId)}
-                title={item.sourceName}
-              >
-                <div className="obs-scene-item-row-title">
-                  <span className="obs-scene-item-row-name">{item.sourceName}</span>
-                  <div className="obs-scene-item-row-badges">
-                    {isRecommendedItem(item.sourceName) ? (
-                      <span className="meta-badge neutral">{t.streamerStudioRecommended}</span>
-                    ) : null}
-                    <span className={`meta-badge ${item.enabled ? "ok" : "danger"}`}>
-                      {item.enabled ? t.streamerStudioEnabled : t.streamerStudioDisabled}
-                    </span>
+          <p className="market-card-hint">{t.streamerStudioLayerOrderHint}</p>
+          <div className="obs-scene-lower-grid">
+            <div className="obs-scene-selected-panel">
+              {selectedItem && selectedDraftTransform ? (
+                <div className="streamer-transform-editor">
+                  <div className="obs-scene-selected-head">
+                    <span className="obs-scene-item-row-name" title={selectedItem.sourceName}>{selectedItem.sourceName}</span>
+                    <div className="obs-scene-item-row-badges">
+                      {isRecommendedItem(selectedItem.sourceName) ? (
+                        <span className="meta-badge neutral">{t.streamerStudioRecommended}</span>
+                      ) : null}
+                      <span className={`meta-badge ${selectedItem.enabled ? "ok" : "danger"}`}>
+                        {selectedItem.enabled ? t.streamerStudioEnabled : t.streamerStudioDisabled}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="streamer-transform-grid">
+                    <label className="streamer-transform-field">
+                      <span>{t.streamerStudioTransformX}</span>
+                      <input
+                        type="number"
+                        value={selectedDraftTransform.positionX}
+                        onChange={(event) => updateField(event.target.value, -10000, 10000, "positionX")}
+                      />
+                    </label>
+                    <label className="streamer-transform-field">
+                      <span>{t.streamerStudioTransformY}</span>
+                      <input
+                        type="number"
+                        value={selectedDraftTransform.positionY}
+                        onChange={(event) => updateField(event.target.value, -10000, 10000, "positionY")}
+                      />
+                    </label>
+                    <label className="streamer-transform-field">
+                      <span>{t.streamerStudioTransformScaleX}</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={selectedDraftTransform.scaleX}
+                        onChange={(event) => updateField(event.target.value, 0.05, 10, "scaleX")}
+                      />
+                    </label>
+                    <label className="streamer-transform-field">
+                      <span>{t.streamerStudioTransformScaleY}</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={selectedDraftTransform.scaleY}
+                        onChange={(event) => updateField(event.target.value, 0.05, 10, "scaleY")}
+                      />
+                    </label>
+                    <label className="streamer-transform-field">
+                      <span>{t.streamerStudioTransformRotation}</span>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={selectedDraftTransform.rotation}
+                        onChange={(event) => updateField(event.target.value, -360, 360, "rotation")}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="streamer-transform-actions">
+                    <div className="streamer-transform-action-buttons">
+                      <button className="pagination-btn" type="button" disabled={!canEdit || !dirtySelected || applyLoading} onClick={onApply}>
+                        {t.streamerStudioApplyTransform}
+                      </button>
+                      <button className="pagination-btn ghost" type="button" disabled={!dirtySelected || applyLoading} onClick={onReset}>
+                        {t.streamerStudioResetTransform}
+                      </button>
+                    </div>
+                    <div className="streamer-transform-status-stack" aria-live="polite">
+                      {dirtySelected ? <p className="streamer-transform-status">{t.streamerStudioUnsavedChanges}</p> : <span />}
+                      {statusMessage ? (
+                        <p className={`streamer-transform-status ${statusError ? "state-error" : "state-ok"}`}>
+                          {statusMessage}
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
-                <div className="obs-scene-item-row-meta">
-                  <span className="market-card-hint">{getTypeLabel(item, t)}</span>
-                  <span className="market-card-hint mono">{formatTransform(item)}</span>
+              ) : (
+                <div className="streamer-transform-editor">
+                  <p className="state-text state-empty">{t.noItemSelected}</p>
                 </div>
-              </button>
-            ))}
-          </div>
+              )}
+            </div>
 
-          {selectedItem && selectedDraftTransform ? (
-            <div className="streamer-transform-editor">
-              <div className="streamer-transform-grid">
-                <label className="streamer-transform-field">
-                  <span>{t.streamerStudioTransformX}</span>
-                  <input
-                    type="number"
-                    value={selectedDraftTransform.positionX}
-                    onChange={(event) => updateField(event.target.value, -10000, 10000, "positionX")}
-                  />
-                </label>
-                <label className="streamer-transform-field">
-                  <span>{t.streamerStudioTransformY}</span>
-                  <input
-                    type="number"
-                    value={selectedDraftTransform.positionY}
-                    onChange={(event) => updateField(event.target.value, -10000, 10000, "positionY")}
-                  />
-                </label>
-                <label className="streamer-transform-field">
-                  <span>{t.streamerStudioTransformScaleX}</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={selectedDraftTransform.scaleX}
-                    onChange={(event) => updateField(event.target.value, 0.05, 10, "scaleX")}
-                  />
-                </label>
-                <label className="streamer-transform-field">
-                  <span>{t.streamerStudioTransformScaleY}</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={selectedDraftTransform.scaleY}
-                    onChange={(event) => updateField(event.target.value, 0.05, 10, "scaleY")}
-                  />
-                </label>
-                <label className="streamer-transform-field">
-                  <span>{t.streamerStudioTransformRotation}</span>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={selectedDraftTransform.rotation}
-                    onChange={(event) => updateField(event.target.value, -360, 360, "rotation")}
-                  />
-                </label>
-              </div>
-
-              <div className="streamer-transform-actions">
-                <div className="streamer-transform-action-buttons">
-                  <button className="pagination-btn" type="button" disabled={!canEdit || !dirtySelected || applyLoading} onClick={onApply}>
-                    {t.streamerStudioApplyTransform}
+            <div className="obs-scene-list-panel">
+              <div className="obs-scene-item-list-rows">
+                {items.map(item => (
+                  <button
+                    key={item.sceneItemId}
+                    type="button"
+                    className={[
+                      "obs-scene-item-row",
+                      selectedItemId === item.sceneItemId ? "selected" : "",
+                      item.enabled ? "" : "disabled",
+                    ].join(" ").trim()}
+                    onClick={() => onSelect(item.sceneItemId)}
+                    title={item.sourceName}
+                  >
+                    <div className="obs-scene-item-row-title">
+                      <span className="obs-scene-item-row-name">{item.sourceName}</span>
+                      <div className="obs-scene-item-row-badges">
+                        {isRecommendedItem(item.sourceName) ? (
+                          <span className="meta-badge neutral">{t.streamerStudioRecommended}</span>
+                        ) : null}
+                        <span className={`meta-badge ${item.enabled ? "ok" : "danger"}`}>
+                          {item.enabled ? t.streamerStudioEnabled : t.streamerStudioDisabled}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="obs-scene-item-row-meta">
+                      <span className="market-card-hint">{getTypeLabel(item, t)}</span>
+                      <span className="market-card-hint mono">{formatTransform(item)}</span>
+                    </div>
                   </button>
-                  <button className="pagination-btn ghost" type="button" disabled={!dirtySelected || applyLoading} onClick={onReset}>
-                    {t.streamerStudioResetTransform}
-                  </button>
-                </div>
-                <div className="streamer-transform-status-stack" aria-live="polite">
-                  {dirtySelected ? <p className="streamer-transform-status">{t.streamerStudioUnsavedChanges}</p> : <span />}
-                  {statusMessage ? (
-                    <p className={`streamer-transform-status ${statusError ? "state-error" : "state-ok"}`}>
-                      {statusMessage}
-                    </p>
-                  ) : null}
+                ))}
                 </div>
               </div>
             </div>
-          ) : null}
-        </>
-      )}
+          </>
+        )}
     </section>
   );
 }
