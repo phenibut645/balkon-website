@@ -88,6 +88,40 @@ export type AvailableGuild = {
   iconUrl?: string | null;
 };
 
+export type GuildUserRole = "owner" | "admin" | "member" | "unknown";
+
+export type UserGuild = {
+  guildId: string;
+  name: string;
+  iconUrl: string | null;
+  memberCount: number | null;
+  streamerCount: number | null;
+  isHomeGuild: boolean;
+  userRole: GuildUserRole;
+  botRegistered: boolean;
+};
+
+export type GuildOverview = {
+  guildId: string;
+  name: string;
+  iconUrl: string | null;
+  memberCount: number | null;
+  streamerCount: number | null;
+  itemCount: number | null;
+  inventoryCount: number | null;
+  marketListingCount: number | null;
+  userRole: GuildUserRole;
+  botRegistered: boolean;
+};
+
+export type ApiMyGuildsResponse = ApiBaseResponse & {
+  guilds?: UserGuild[];
+};
+
+export type ApiGuildOverviewResponse = ApiBaseResponse & {
+  guild?: GuildOverview;
+};
+
 export type UpdateUserProfileInput = {
   homeGuildId?: string | null;
   publicDescription?: string | null;

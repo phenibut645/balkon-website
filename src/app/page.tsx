@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getInventory, getMarket, getMarketCapitalization, getMarketForbes, getMe, getMyBalance, getMyProfile, getNotifications, getNotificationsSummary, getObsShopStreamerDetails, getObsShopStreamers, getOverviewMe, logout, markAllNotificationsRead, markNotificationRead, purchaseObsMedia, updateMyProfile } from "@/lib/api";
+import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getGuildOverview, getInventory, getMarket, getMarketCapitalization, getMarketForbes, getMe, getMyBalance, getMyGuilds, getMyProfile, getNotifications, getNotificationsSummary, getObsShopStreamerDetails, getObsShopStreamers, getOverviewMe, logout, markAllNotificationsRead, markNotificationRead, purchaseObsMedia, updateMyProfile } from "@/lib/api";
 import { AdminTab, DashboardMode, DashboardSearchResult, DashboardTab, normalizeDashboardSearchValue, MarketSubTab, UserTab } from "@/lib/dashboardSearch";
-import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, NotificationItem, ObsMediaProduct, ObsShopStreamer, OverviewSummary, ShopSubTab, UserBalance, UserPublicProfile } from "@/lib/types";
+import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, GuildOverview, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, NotificationItem, ObsMediaProduct, ObsShopStreamer, OverviewSummary, ShopSubTab, UserBalance, UserGuild, UserPublicProfile } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
 import { AppHeader } from "@/components/dashboard/AppHeader";
 import { NotificationBell } from "@/components/dashboard/NotificationBell";
@@ -15,6 +15,7 @@ import { MarketPanel } from "@/components/dashboard/MarketPanel";
 import { BotShopPanel } from "@/components/dashboard/BotShopPanel";
 import { CraftPanel } from "@/components/dashboard/CraftPanel";
 import { NotificationsPanel } from "@/components/dashboard/NotificationsPanel";
+import { ServersPanel } from "@/components/dashboard/ServersPanel";
 import { AdminDashboardPanel } from "@/components/dashboard/AdminDashboardPanel";
 import { AdminLogsPanel } from "@/components/dashboard/AdminLogsPanel";
 import { AdminObsPanel } from "@/components/dashboard/AdminObsPanel";
@@ -114,6 +115,14 @@ export default function HomePage() {
   const [overviewLoaded, setOverviewLoaded] = useState(false);
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [overviewError, setOverviewError] = useState<string | null>(null);
+  const [guilds, setGuilds] = useState<UserGuild[]>([]);
+  const [guildsLoaded, setGuildsLoaded] = useState(false);
+  const [guildsLoading, setGuildsLoading] = useState(false);
+  const [guildsError, setGuildsError] = useState<string | null>(null);
+  const [selectedGuildId, setSelectedGuildId] = useState<string | null>(null);
+  const [selectedGuildOverview, setSelectedGuildOverview] = useState<GuildOverview | null>(null);
+  const [selectedGuildOverviewLoading, setSelectedGuildOverviewLoading] = useState(false);
+  const [selectedGuildOverviewError, setSelectedGuildOverviewError] = useState<string | null>(null);
   const [notificationsList, setNotificationsList] = useState<NotificationItem[]>([]);
   const [notificationsLoaded, setNotificationsLoaded] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
@@ -137,6 +146,8 @@ export default function HomePage() {
   const notificationsSummaryLoadingRef = useRef(false);
   const notificationsSummaryLastLoadedAtRef = useRef(0);
   const overviewLoadingRef = useRef(false);
+  const guildsLoadingRef = useRef(false);
+  const selectedGuildOverviewLoadingRef = useRef(false);
   const notificationsLoadingRef = useRef(false);
 
   const user = meResponse?.me;
@@ -370,6 +381,14 @@ export default function HomePage() {
         description: t.notifications,
         aliases: ["уведомления", "нотификации", "сообщения", "alerts", "notifications", "teavitused"],
         destination: { kind: "userTab", tab: "notifications" },
+      },
+      {
+        key: "tab:servers",
+        label: t.tabServers,
+        breadcrumb: t.tabServers,
+        description: t.serversSubtitle,
+        aliases: ["серверы", "мои серверы", "servers", "guilds", "serverid", "guildid"],
+        destination: { kind: "userTab", tab: "servers" },
       },
     ];
 
@@ -952,6 +971,81 @@ export default function HomePage() {
     }
   }, [t.overviewLoadFailed]);
 
+  const loadGuilds = useCallback(async (options: LoadOptions = {}): Promise<void> => {
+    const silent = options.silent === true;
+    if (guildsLoadingRef.current) {
+      return;
+    }
+
+    guildsLoadingRef.current = true;
+    if (!silent) {
+      setGuildsLoading(true);
+      setGuildsError(null);
+    }
+
+    try {
+      const response = await getMyGuilds();
+      if (response.ok && Array.isArray(response.guilds)) {
+        const nextGuilds = response.guilds;
+        setGuilds(prev => (areJsonEqual(prev, nextGuilds) ? prev : nextGuilds));
+        setGuildsLoaded(true);
+        setGuildsError(null);
+        return;
+      }
+
+      if (!silent) {
+        setGuildsLoaded(true);
+        setGuildsError(response.message || response.error || t.serversError);
+      }
+    } catch {
+      if (!silent) {
+        setGuildsLoaded(true);
+        setGuildsError(t.serversError);
+      }
+    } finally {
+      guildsLoadingRef.current = false;
+      if (!silent) {
+        setGuildsLoading(false);
+      }
+    }
+  }, [t.serversError]);
+
+  const loadGuildOverview = useCallback(async (guildId: string, options: LoadOptions = {}): Promise<void> => {
+    const silent = options.silent === true;
+    if (selectedGuildOverviewLoadingRef.current) {
+      return;
+    }
+
+    selectedGuildOverviewLoadingRef.current = true;
+    if (!silent) {
+      setSelectedGuildOverviewLoading(true);
+      setSelectedGuildOverviewError(null);
+    }
+
+    try {
+      const response = await getGuildOverview(guildId);
+      if (response.ok && response.guild) {
+        const nextOverview = response.guild;
+        setSelectedGuildOverview(prev => (areJsonEqual(prev, nextOverview) ? prev : nextOverview));
+        setSelectedGuildOverviewError(null);
+        return;
+      }
+
+      if (!silent) {
+        setSelectedGuildOverviewError(response.message || response.error || t.serversError);
+      }
+    } catch {
+      if (!silent) {
+        setSelectedGuildOverviewError(t.serversError);
+      }
+    } finally {
+      selectedGuildOverviewLoadingRef.current = false;
+      if (!silent) {
+        setSelectedGuildOverviewLoading(false);
+      }
+    }
+  }, [t.serversError]);
+
   const loadNotifications = useCallback(async (page = notificationPage, unreadOnly = notificationFilterUnreadOnly, options: LoadOptions = {}): Promise<void> => {
     const silent = options.silent === true;
     if (notificationsLoadingRef.current) {
@@ -1235,6 +1329,12 @@ export default function HomePage() {
   }, [activeTab, authState, loadProfile, profileLoaded, profileLoading]);
 
   useEffect(() => {
+    if (authState === "user" && activeTab === "servers" && !guildsLoaded && !guildsLoading) {
+      void loadGuilds();
+    }
+  }, [activeTab, authState, guildsLoaded, guildsLoading, loadGuilds]);
+
+  useEffect(() => {
     if (authState === "user") {
       void loadNotificationsSummary();
     }
@@ -1423,6 +1523,19 @@ export default function HomePage() {
     setActiveTab("botShop");
     setShopSubTab(subtab);
     setSearchQuery("");
+  }
+
+  function handleOpenGuild(guild: UserGuild): void {
+    setSelectedGuildId(guild.guildId);
+    setSelectedGuildOverview(null);
+    setSelectedGuildOverviewError(null);
+    void loadGuildOverview(guild.guildId);
+  }
+
+  function handleBackToGuilds(): void {
+    setSelectedGuildId(null);
+    setSelectedGuildOverview(null);
+    setSelectedGuildOverviewError(null);
   }
 
   function handleSearchResultSelect(result: DashboardSearchResult): void {
@@ -1733,6 +1846,28 @@ export default function HomePage() {
                 }}
                 onMarkRead={handleMarkNotificationRead}
                 onMarkAllRead={handleMarkAllNotificationsRead}
+              />
+            ) : null}
+
+            {activeTab === "servers" ? (
+              <ServersPanel
+                t={t}
+                guilds={guilds}
+                guildsLoading={guildsLoading}
+                guildsError={guildsError}
+                selectedGuildId={selectedGuildId}
+                selectedGuildOverview={selectedGuildOverview}
+                selectedGuildLoading={selectedGuildOverviewLoading}
+                selectedGuildError={selectedGuildOverviewError}
+                onRefreshGuilds={() => {
+                  setGuildsLoaded(false);
+                  void loadGuilds();
+                }}
+                onOpenGuild={handleOpenGuild}
+                onBackToGuilds={handleBackToGuilds}
+                onRefreshGuildOverview={(guildId) => {
+                  void loadGuildOverview(guildId);
+                }}
               />
             ) : null}
 

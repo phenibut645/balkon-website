@@ -1,6 +1,6 @@
 import { ShopSubTab } from "./types";
 
-export type UserTab = "overview" | "inventory" | "market" | "botShop" | "craft" | "profile" | "notifications";
+export type UserTab = "overview" | "inventory" | "market" | "botShop" | "craft" | "profile" | "notifications" | "servers";
 export type AdminTab = "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems" | "adminBotShop" | "adminEconomy" | "adminMessage";
 export type DashboardTab = UserTab | AdminTab;
 export type DashboardMode = "user" | "admin";

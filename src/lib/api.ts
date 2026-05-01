@@ -29,6 +29,8 @@ import {
   ApiMeResponse,
   ApiEconomyMeResponse,
   ApiBotShopBuyResponse,
+  ApiGuildOverviewResponse,
+  ApiMyGuildsResponse,
   AdminEconomyAdjustInput,
   AdminBroadcastNotificationInput,
   ObsMediaActionStatus,
@@ -113,6 +115,64 @@ export async function getOverviewMe(): Promise<ApiOverviewMeResponse> {
         ok: false,
         error: data?.error || "OVERVIEW_LOAD_FAILED",
         message: data?.message || "Failed to load overview.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API. Is the API server running?",
+    };
+  }
+}
+
+export async function getMyGuilds(): Promise<ApiMyGuildsResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/guilds/me`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiMyGuildsResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "GUILDS_LOAD_FAILED",
+        message: data?.message || "Failed to load guilds.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API. Is the API server running?",
+    };
+  }
+}
+
+export async function getGuildOverview(guildId: string): Promise<ApiGuildOverviewResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/guilds/${encodeURIComponent(guildId)}/overview`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiGuildOverviewResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "GUILDS_LOAD_FAILED",
+        message: data?.message || "Failed to load guild overview.",
       };
     }
 
