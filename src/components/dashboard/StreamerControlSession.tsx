@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DashboardText } from "@/lib/dashboardText";
-import { listStreamerStudioSceneItems, listStreamerStudioScenes } from "@/lib/api";
-import { ObsStudioSceneItemView, ObsStudioSceneView, StreamerStudioAccessView } from "@/lib/types";
+import { applyStreamerStudioSceneItemTransform, listStreamerStudioSceneItems, listStreamerStudioScenes } from "@/lib/api";
+import { ObsStudioSceneItemTransform, ObsStudioSceneItemView, ObsStudioSceneView, StreamerStudioAccessView } from "@/lib/types";
 import { ObsScenePreview } from "./ObsScenePreview";
 import { ObsSceneItemList } from "./ObsSceneItemList";
 
@@ -10,6 +10,37 @@ type StreamerControlSessionProps = {
   streamer: StreamerStudioAccessView;
   onBack: () => void;
 };
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function normalizeTransform(transform: ObsStudioSceneItemTransform): ObsStudioSceneItemTransform {
+  return {
+    positionX: clampNumber(transform.positionX, -10000, 10000),
+    positionY: clampNumber(transform.positionY, -10000, 10000),
+    scaleX: clampNumber(transform.scaleX, 0.05, 10),
+    scaleY: clampNumber(transform.scaleY, 0.05, 10),
+    rotation: clampNumber(transform.rotation, -360, 360),
+    width: transform.width,
+    height: transform.height,
+  };
+}
+
+function transformsEqual(a: ObsStudioSceneItemTransform, b: ObsStudioSceneItemTransform): boolean {
+  return a.positionX === b.positionX
+    && a.positionY === b.positionY
+    && a.scaleX === b.scaleX
+    && a.scaleY === b.scaleY
+    && a.rotation === b.rotation;
+}
+
+function buildDraftMap(sceneItems: ObsStudioSceneItemView[]): Record<number, ObsStudioSceneItemTransform> {
+  return sceneItems.reduce<Record<number, ObsStudioSceneItemTransform>>((acc, item) => {
+    acc[item.sceneItemId] = normalizeTransform(item.transform);
+    return acc;
+  }, {});
+}
 
 export function StreamerControlSession({ t, streamer, onBack }: StreamerControlSessionProps) {
   const scenesRequestSeqRef = useRef(0);
@@ -26,6 +57,9 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
   const [itemsError, setItemsError] = useState<string | null>(null);
   const [items, setItems] = useState<ObsStudioSceneItemView[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [draftTransforms, setDraftTransforms] = useState<Record<number, ObsStudioSceneItemTransform>>({});
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [transformStatus, setTransformStatus] = useState<{ message: string; isError: boolean } | null>(null);
 
   const agentStatusText = useMemo(() => {
     if (!streamer.obsAgentConfigured) {
@@ -44,6 +78,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
     if (!normalized) {
       setItems([]);
       setSelectedItemId(null);
+      setDraftTransforms({});
       setItemsError(null);
       setItemsLoading(false);
       return;
@@ -60,6 +95,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
     if (response.ok && response.data) {
       const nextItems = response.data.items || [];
       setItems(nextItems);
+      setDraftTransforms(buildDraftMap(nextItems));
       setSelectedItemId((prev) => {
         if (prev !== null && nextItems.some(item => item.sceneItemId === prev)) {
           return prev;
@@ -72,6 +108,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
 
     setItems([]);
     setSelectedItemId(null);
+    setDraftTransforms({});
     setItemsLoading(false);
     setItemsError(response.message || response.error || t.streamerStudioError);
   }, [streamer.streamerId, t.streamerStudioError]);
@@ -112,6 +149,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
     if (!nextSceneName) {
       setItems([]);
       setSelectedItemId(null);
+      setDraftTransforms({});
       setItemsError(null);
       return;
     }
@@ -129,8 +167,18 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
       return;
     }
 
+    const hasDraftChanges = items.some(item => {
+      const draft = draftTransforms[item.sceneItemId];
+      return draft ? !transformsEqual(item.transform, draft) : false;
+    });
+    if (hasDraftChanges) {
+      const confirmed = window.confirm(t.streamerStudioDirtyRefreshConfirm);
+      if (!confirmed) {
+        return;
+      }
+    }
     await loadItems(normalized);
-  }, [loadItems, selectedSceneName]);
+  }, [draftTransforms, items, loadItems, selectedSceneName, t.streamerStudioDirtyRefreshConfirm]);
 
   useEffect(() => {
     void loadScenesAndItems();
@@ -149,7 +197,128 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
     void loadItems(normalized);
   }, [loadItems, selectedSceneName]);
 
+  useEffect(() => {
+    setTransformStatus(null);
+  }, [selectedItemId]);
+
   const canAttemptLoad = streamer.canControl;
+  const canEdit = streamer.canControl && Boolean(streamer.obsAgentConfigured) && Boolean(streamer.obsAgentOnline);
+
+  const selectedServerItem = useMemo(
+    () => (selectedItemId === null ? null : items.find(item => item.sceneItemId === selectedItemId) ?? null),
+    [items, selectedItemId],
+  );
+  const selectedDraftTransform = useMemo(
+    () => (selectedServerItem ? draftTransforms[selectedServerItem.sceneItemId] ?? normalizeTransform(selectedServerItem.transform) : null),
+    [draftTransforms, selectedServerItem],
+  );
+  const dirtySelected = Boolean(selectedServerItem && selectedDraftTransform && !transformsEqual(selectedServerItem.transform, selectedDraftTransform));
+  const dirtyItemId = dirtySelected && selectedServerItem ? selectedServerItem.sceneItemId : null;
+
+  const displayedItems = useMemo(
+    () => items.map(item => ({
+      ...item,
+      transform: draftTransforms[item.sceneItemId] ?? item.transform,
+    })),
+    [draftTransforms, items],
+  );
+
+  const updateDraftTransform = useCallback((sceneItemId: number, patch: Partial<ObsStudioSceneItemTransform>) => {
+    setDraftTransforms(prev => {
+      const base = prev[sceneItemId] ?? normalizeTransform(items.find(item => item.sceneItemId === sceneItemId)?.transform ?? {
+        positionX: 0,
+        positionY: 0,
+        scaleX: 1,
+        scaleY: 1,
+        rotation: 0,
+      });
+      return {
+        ...prev,
+        [sceneItemId]: normalizeTransform({
+          ...base,
+          ...patch,
+          rotation: patch.rotation ?? base.rotation,
+        }),
+      };
+    });
+    setTransformStatus(null);
+  }, [items]);
+
+  const moveSelectedDraft = useCallback((deltaX: number, deltaY: number) => {
+    if (!selectedServerItem || !canEdit) {
+      return;
+    }
+    const current = draftTransforms[selectedServerItem.sceneItemId] ?? normalizeTransform(selectedServerItem.transform);
+    updateDraftTransform(selectedServerItem.sceneItemId, {
+      positionX: current.positionX + deltaX,
+      positionY: current.positionY + deltaY,
+    });
+  }, [canEdit, draftTransforms, selectedServerItem, updateDraftTransform]);
+
+  const resetSelectedDraft = useCallback(() => {
+    if (!selectedServerItem) {
+      return;
+    }
+    setDraftTransforms(prev => ({
+      ...prev,
+      [selectedServerItem.sceneItemId]: normalizeTransform(selectedServerItem.transform),
+    }));
+    setTransformStatus(null);
+  }, [selectedServerItem]);
+
+  const applySelectedTransform = useCallback(async () => {
+    if (!selectedServerItem || !selectedDraftTransform || !canEdit || !selectedSceneName.trim()) {
+      return;
+    }
+    setApplyLoading(true);
+    setTransformStatus(null);
+
+    const response = await applyStreamerStudioSceneItemTransform(streamer.streamerId, {
+      sceneName: selectedSceneName,
+      sceneItemId: selectedServerItem.sceneItemId,
+      sourceName: selectedServerItem.sourceName,
+      transform: {
+        positionX: selectedDraftTransform.positionX,
+        positionY: selectedDraftTransform.positionY,
+        scaleX: selectedDraftTransform.scaleX,
+        scaleY: selectedDraftTransform.scaleY,
+        rotation: selectedDraftTransform.rotation,
+      },
+    });
+
+    if (!response.ok || !response.data) {
+      setApplyLoading(false);
+      setTransformStatus({
+        message: response.message || t.streamerStudioTransformApplyFailed,
+        isError: true,
+      });
+      return;
+    }
+
+    const normalized = normalizeTransform(response.data.transform);
+    setItems(prev => prev.map(item => (
+      item.sceneItemId === response.data!.sceneItemId
+        ? { ...item, transform: normalized, sourceName: response.data!.sourceName || item.sourceName }
+        : item
+    )));
+    setDraftTransforms(prev => ({
+      ...prev,
+      [response.data!.sceneItemId]: normalized,
+    }));
+    setApplyLoading(false);
+    setTransformStatus({
+      message: t.streamerStudioTransformApplied,
+      isError: false,
+    });
+  }, [
+    canEdit,
+    selectedDraftTransform,
+    selectedSceneName,
+    selectedServerItem,
+    streamer.streamerId,
+    t.streamerStudioTransformApplyFailed,
+    t.streamerStudioTransformApplied,
+  ]);
 
   return (
     <div className="streamer-control-session">
@@ -222,15 +391,32 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
       <div className="streamer-studio-session-grid">
         <ObsScenePreview
           t={t}
-          items={items}
+          items={displayedItems}
           selectedItemId={selectedItemId}
+          canEdit={canEdit}
+          dirtyItemId={dirtyItemId}
           onSelectItem={setSelectedItemId}
+          onMoveSelected={moveSelectedDraft}
         />
         <ObsSceneItemList
           t={t}
-          items={items}
+          items={displayedItems}
           selectedItemId={selectedItemId}
+          selectedDraftTransform={selectedDraftTransform}
+          dirtySelected={dirtySelected}
+          canEdit={canEdit}
+          applyLoading={applyLoading}
+          statusMessage={transformStatus?.message ?? null}
+          statusError={Boolean(transformStatus?.isError)}
           onSelect={setSelectedItemId}
+          onUpdateDraftTransform={(patch) => {
+            if (!selectedServerItem) {
+              return;
+            }
+            updateDraftTransform(selectedServerItem.sceneItemId, patch);
+          }}
+          onApply={() => void applySelectedTransform()}
+          onReset={resetSelectedDraft}
         />
       </div>
     </div>

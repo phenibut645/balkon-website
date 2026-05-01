@@ -39,6 +39,8 @@ import {
   StreamerStudioMeResponse,
   ApiStreamerStudioSceneItemsListResponse,
   ApiStreamerStudioScenesListResponse,
+  ApiStreamerStudioTransformApplyResponse,
+  ObsStudioTransformApplyInput,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
@@ -1314,6 +1316,39 @@ export async function listStreamerStudioSceneItems(streamerId: number, sceneName
         ok: false,
         error: data?.error || "OBS_SCENE_COMMAND_FAILED",
         message: data?.message || "Failed to load scene items.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function applyStreamerStudioSceneItemTransform(
+  streamerId: number,
+  input: ObsStudioTransformApplyInput,
+): Promise<ApiStreamerStudioTransformApplyResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/control/scene-item/transform`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerStudioTransformApplyResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "OBS_TRANSFORM_COMMAND_FAILED",
+        message: data?.message || "Failed to apply transform.",
       };
     }
 

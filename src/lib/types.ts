@@ -442,6 +442,30 @@ export type ApiStreamerStudioSceneItemsListResponse = ApiBaseResponse & {
   data?: ObsStudioSceneItemsListResult;
 };
 
+export type ObsStudioTransformApplyInput = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName?: string | null;
+  transform: {
+    positionX: number;
+    positionY: number;
+    scaleX: number;
+    scaleY: number;
+    rotation?: number;
+  };
+};
+
+export type ObsStudioTransformApplyResult = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName: string | null;
+  transform: ObsStudioSceneItemTransform;
+};
+
+export type ApiStreamerStudioTransformApplyResponse = ApiBaseResponse & {
+  data?: ObsStudioTransformApplyResult;
+};
+
 export type AdminItem = {
   id: number;
   name: string;

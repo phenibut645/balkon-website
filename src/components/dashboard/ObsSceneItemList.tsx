@@ -1,11 +1,20 @@
 import { DashboardText } from "@/lib/dashboardText";
-import { ObsStudioSceneItemView } from "@/lib/types";
+import { ObsStudioSceneItemTransform, ObsStudioSceneItemView } from "@/lib/types";
 
 type ObsSceneItemListProps = {
   t: DashboardText;
   items: ObsStudioSceneItemView[];
   selectedItemId: number | null;
+  selectedDraftTransform: ObsStudioSceneItemTransform | null;
+  dirtySelected: boolean;
+  canEdit: boolean;
+  applyLoading: boolean;
+  statusMessage: string | null;
+  statusError: boolean;
   onSelect: (sceneItemId: number) => void;
+  onUpdateDraftTransform: (patch: Partial<ObsStudioSceneItemTransform>) => void;
+  onApply: () => void;
+  onReset: () => void;
 };
 
 function formatTransform(item: ObsStudioSceneItemView): string {
@@ -15,7 +24,48 @@ function formatTransform(item: ObsStudioSceneItemView): string {
   return `x:${Math.round(t.positionX)} y:${Math.round(t.positionY)} sx:${t.scaleX.toFixed(2)} sy:${t.scaleY.toFixed(2)} r:${Math.round(t.rotation)}${w}${h}`;
 }
 
-export function ObsSceneItemList({ t, items, selectedItemId, onSelect }: ObsSceneItemListProps) {
+function parseNumberInput(value: string): number | null {
+  if (!value.trim().length) {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+export function ObsSceneItemList({
+  t,
+  items,
+  selectedItemId,
+  selectedDraftTransform,
+  dirtySelected,
+  canEdit,
+  applyLoading,
+  statusMessage,
+  statusError,
+  onSelect,
+  onUpdateDraftTransform,
+  onApply,
+  onReset,
+}: ObsSceneItemListProps) {
+  const selectedItem = selectedItemId === null ? null : items.find(item => item.sceneItemId === selectedItemId) ?? null;
+
+  const updateField = (
+    raw: string,
+    min: number,
+    max: number,
+    field: keyof ObsStudioSceneItemTransform,
+  ) => {
+    const parsed = parseNumberInput(raw);
+    if (parsed === null) {
+      return;
+    }
+    onUpdateDraftTransform({ [field]: clampNumber(parsed, min, max) });
+  };
+
   return (
     <section className="obs-scene-item-list">
       <div className="inventory-toolbar compact">
@@ -25,34 +75,102 @@ export function ObsSceneItemList({ t, items, selectedItemId, onSelect }: ObsScen
       {items.length === 0 ? (
         <p className="state-text state-empty">{t.streamerStudioNoItems}</p>
       ) : (
-        <div className="obs-scene-item-list-rows">
-          {items.map(item => (
-            <button
-              key={item.sceneItemId}
-              type="button"
-              className={[
-                "obs-scene-item-row",
-                selectedItemId === item.sceneItemId ? "selected" : "",
-                item.enabled ? "" : "disabled",
-              ].join(" ").trim()}
-              onClick={() => onSelect(item.sceneItemId)}
-              title={item.sourceName}
-            >
-              <div className="obs-scene-item-row-title">
-                <span className="obs-scene-item-row-name">{item.sourceName}</span>
-                <span className={`meta-badge ${item.enabled ? "ok" : "danger"}`}>
-                  {item.enabled ? t.streamerStudioEnabled : t.streamerStudioDisabled}
-                </span>
+        <>
+          <div className="obs-scene-item-list-rows">
+            {items.map(item => (
+              <button
+                key={item.sceneItemId}
+                type="button"
+                className={[
+                  "obs-scene-item-row",
+                  selectedItemId === item.sceneItemId ? "selected" : "",
+                  item.enabled ? "" : "disabled",
+                ].join(" ").trim()}
+                onClick={() => onSelect(item.sceneItemId)}
+                title={item.sourceName}
+              >
+                <div className="obs-scene-item-row-title">
+                  <span className="obs-scene-item-row-name">{item.sourceName}</span>
+                  <span className={`meta-badge ${item.enabled ? "ok" : "danger"}`}>
+                    {item.enabled ? t.streamerStudioEnabled : t.streamerStudioDisabled}
+                  </span>
+                </div>
+                <div className="obs-scene-item-row-meta">
+                  <span className="market-card-hint">
+                    {item.inputKind ? item.inputKind : t.streamerStudioUnknownInput}
+                  </span>
+                  <span className="market-card-hint mono">{formatTransform(item)}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {selectedItem && selectedDraftTransform ? (
+            <div className="streamer-transform-editor">
+              <div className="streamer-transform-grid">
+                <label className="streamer-transform-field">
+                  <span>{t.streamerStudioTransformX}</span>
+                  <input
+                    type="number"
+                    value={selectedDraftTransform.positionX}
+                    onChange={(event) => updateField(event.target.value, -10000, 10000, "positionX")}
+                  />
+                </label>
+                <label className="streamer-transform-field">
+                  <span>{t.streamerStudioTransformY}</span>
+                  <input
+                    type="number"
+                    value={selectedDraftTransform.positionY}
+                    onChange={(event) => updateField(event.target.value, -10000, 10000, "positionY")}
+                  />
+                </label>
+                <label className="streamer-transform-field">
+                  <span>{t.streamerStudioTransformScaleX}</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={selectedDraftTransform.scaleX}
+                    onChange={(event) => updateField(event.target.value, 0.05, 10, "scaleX")}
+                  />
+                </label>
+                <label className="streamer-transform-field">
+                  <span>{t.streamerStudioTransformScaleY}</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={selectedDraftTransform.scaleY}
+                    onChange={(event) => updateField(event.target.value, 0.05, 10, "scaleY")}
+                  />
+                </label>
+                <label className="streamer-transform-field">
+                  <span>{t.streamerStudioTransformRotation}</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={selectedDraftTransform.rotation}
+                    onChange={(event) => updateField(event.target.value, -360, 360, "rotation")}
+                  />
+                </label>
               </div>
-              <div className="obs-scene-item-row-meta">
-                <span className="market-card-hint">
-                  {item.inputKind ? item.inputKind : t.streamerStudioUnknownInput}
-                </span>
-                <span className="market-card-hint mono">{formatTransform(item)}</span>
+
+              <div className="streamer-transform-actions">
+                <button className="pagination-btn" type="button" disabled={!canEdit || !dirtySelected || applyLoading} onClick={onApply}>
+                  {t.streamerStudioApplyTransform}
+                </button>
+                <button className="pagination-btn ghost" type="button" disabled={!dirtySelected || applyLoading} onClick={onReset}>
+                  {t.streamerStudioResetTransform}
+                </button>
               </div>
-            </button>
-          ))}
-        </div>
+
+              {dirtySelected ? <p className="streamer-transform-status">{t.streamerStudioUnsavedChanges}</p> : null}
+              {statusMessage ? (
+                <p className={`streamer-transform-status ${statusError ? "state-error" : "state-ok"}`}>
+                  {statusMessage}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </>
       )}
     </section>
   );
