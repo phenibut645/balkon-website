@@ -9,12 +9,18 @@ type ObsSceneItemListProps = {
   dirtySelected: boolean;
   canEdit: boolean;
   applyLoading: boolean;
+  indexApplyLoading: boolean;
+  selectedNativeIndex: number | null;
+  maxNativeIndex: number;
   statusMessage: string | null;
   statusError: boolean;
+  indexStatusMessage: string | null;
+  indexStatusError: boolean;
   onSelect: (sceneItemId: number) => void;
   onUpdateDraftTransform: (patch: Partial<ObsStudioSceneItemTransform>) => void;
   onApply: () => void;
   onReset: () => void;
+  onApplyIndex: (targetIndex: number) => void;
 };
 
 function formatTransform(item: ObsStudioSceneItemView): string {
@@ -61,14 +67,22 @@ export function ObsSceneItemList({
   dirtySelected,
   canEdit,
   applyLoading,
+  indexApplyLoading,
+  selectedNativeIndex,
+  maxNativeIndex,
   statusMessage,
   statusError,
+  indexStatusMessage,
+  indexStatusError,
   onSelect,
   onUpdateDraftTransform,
   onApply,
   onReset,
+  onApplyIndex,
 }: ObsSceneItemListProps) {
   const selectedItem = selectedItemId === null ? null : items.find(item => item.sceneItemId === selectedItemId) ?? null;
+  const canMoveLayerUp = canEdit && selectedNativeIndex !== null && selectedNativeIndex < maxNativeIndex && !indexApplyLoading;
+  const canMoveLayerDown = canEdit && selectedNativeIndex !== null && selectedNativeIndex > 0 && !indexApplyLoading;
 
   const updateField = (
     raw: string,
@@ -153,6 +167,29 @@ export function ObsSceneItemList({
                         onChange={(event) => updateField(event.target.value, -360, 360, "rotation")}
                       />
                     </label>
+                  </div>
+
+                  <div className="streamer-layer-controls">
+                    <div className="streamer-layer-title">{t.streamerStudioLayerControlsTitle}</div>
+                    <div className="streamer-layer-actions">
+                      <button className="pagination-btn ghost" type="button" disabled={!canMoveLayerUp} onClick={() => selectedNativeIndex !== null ? onApplyIndex(selectedNativeIndex + 1) : undefined}>
+                        ↑ {t.streamerStudioMoveLayerUp}
+                      </button>
+                      <button className="pagination-btn ghost" type="button" disabled={!canMoveLayerDown} onClick={() => selectedNativeIndex !== null ? onApplyIndex(selectedNativeIndex - 1) : undefined}>
+                        ↓ {t.streamerStudioMoveLayerDown}
+                      </button>
+                      <button className="pagination-btn ghost" type="button" disabled={!canMoveLayerUp} onClick={() => onApplyIndex(maxNativeIndex)}>
+                        ⤒ {t.streamerStudioMoveLayerTop}
+                      </button>
+                      <button className="pagination-btn ghost" type="button" disabled={!canMoveLayerDown} onClick={() => onApplyIndex(0)}>
+                        ⤓ {t.streamerStudioMoveLayerBottom}
+                      </button>
+                    </div>
+                    {indexStatusMessage ? (
+                      <p className={`streamer-layer-status ${indexStatusError ? "state-error" : "state-ok"}`}>
+                        {indexStatusMessage}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="streamer-transform-actions">

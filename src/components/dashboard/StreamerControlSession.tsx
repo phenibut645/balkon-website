@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DashboardText } from "@/lib/dashboardText";
-import { applyStreamerStudioSceneItemTransform, listStreamerStudioSceneItems, listStreamerStudioScenes } from "@/lib/api";
+import { applyStreamerStudioSceneItemIndex, applyStreamerStudioSceneItemTransform, listStreamerStudioSceneItems, listStreamerStudioScenes } from "@/lib/api";
 import { ObsStudioSceneItemTransform, ObsStudioSceneItemView, ObsStudioSceneView, StreamerStudioAccessView } from "@/lib/types";
 import { ObsScenePreview } from "./ObsScenePreview";
 import { ObsSceneItemList } from "./ObsSceneItemList";
@@ -33,6 +33,15 @@ function transformsEqual(a: ObsStudioSceneItemTransform, b: ObsStudioSceneItemTr
     && a.scaleX === b.scaleX
     && a.scaleY === b.scaleY
     && a.rotation === b.rotation;
+}
+
+function withNativeIndexes(sceneItems: ObsStudioSceneItemView[]): ObsStudioSceneItemView[] {
+  return sceneItems
+    .map((item, index) => ({
+      ...item,
+      sceneItemIndex: Number.isInteger(item.sceneItemIndex) && item.sceneItemIndex! >= 0 ? item.sceneItemIndex : index,
+    }))
+    .sort((a, b) => (a.sceneItemIndex ?? 0) - (b.sceneItemIndex ?? 0));
 }
 
 function buildDraftMap(sceneItems: ObsStudioSceneItemView[]): Record<number, ObsStudioSceneItemTransform> {
@@ -81,7 +90,9 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [draftTransforms, setDraftTransforms] = useState<Record<number, ObsStudioSceneItemTransform>>({});
   const [applyLoading, setApplyLoading] = useState(false);
+  const [indexApplyLoading, setIndexApplyLoading] = useState(false);
   const [transformStatus, setTransformStatus] = useState<{ message: string; isError: boolean } | null>(null);
+  const [indexStatus, setIndexStatus] = useState<{ message: string; isError: boolean } | null>(null);
 
   const agentStatusText = useMemo(() => {
     if (!streamer.obsAgentConfigured) {
@@ -115,7 +126,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
     }
 
     if (response.ok && response.data) {
-      const nextItems = response.data.items || [];
+      const nextItems = withNativeIndexes(response.data.items || []);
       setItems(nextItems);
       setDraftTransforms(buildDraftMap(nextItems));
       setSelectedItemId((prev) => {
@@ -218,6 +229,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
 
   useEffect(() => {
     setTransformStatus(null);
+    setIndexStatus(null);
   }, [selectedItemId]);
 
   const canAttemptLoad = streamer.canControl;
@@ -233,6 +245,8 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
   );
   const dirtySelected = Boolean(selectedServerItem && selectedDraftTransform && !transformsEqual(selectedServerItem.transform, selectedDraftTransform));
   const dirtyItemId = dirtySelected && selectedServerItem ? selectedServerItem.sceneItemId : null;
+  const selectedNativeIndex = selectedServerItem?.sceneItemIndex ?? null;
+  const maxNativeIndex = items.length > 0 ? items.length - 1 : 0;
 
   const displayedItems = useMemo(
     () => items
@@ -289,6 +303,64 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
     }));
     setTransformStatus(null);
   }, [selectedServerItem]);
+
+  const applySelectedIndex = useCallback(async (targetIndex: number) => {
+    if (!selectedServerItem || !canEdit || !selectedSceneName.trim() || indexApplyLoading) {
+      return;
+    }
+
+    setIndexApplyLoading(true);
+    setIndexStatus(null);
+
+    const response = await applyStreamerStudioSceneItemIndex(streamer.streamerId, {
+      sceneName: selectedSceneName,
+      sceneItemId: selectedServerItem.sceneItemId,
+      sourceName: selectedServerItem.sourceName,
+      sceneItemIndex: targetIndex,
+    });
+
+    if (!response.ok || !response.data) {
+      setIndexApplyLoading(false);
+      setIndexStatus({
+        message: response.message || t.streamerStudioLayerApplyFailed,
+        isError: true,
+      });
+      return;
+    }
+
+    const returnedItems = response.data.items || [];
+    setItems(prev => {
+      if (returnedItems.length > 0) {
+        const indexMap = new Map(returnedItems.map(item => [item.sceneItemId, item]));
+        return withNativeIndexes(prev.map(item => {
+          const updated = indexMap.get(item.sceneItemId);
+          return updated
+            ? { ...item, sourceName: updated.sourceName || item.sourceName, sceneItemIndex: updated.sceneItemIndex }
+            : item;
+        }));
+      }
+
+      return withNativeIndexes(prev.map(item => (
+        item.sceneItemId === response.data!.sceneItemId
+          ? { ...item, sourceName: response.data!.sourceName || item.sourceName, sceneItemIndex: response.data!.sceneItemIndex }
+          : item
+      )));
+    });
+    setSelectedItemId(response.data.sceneItemId);
+    setIndexApplyLoading(false);
+    setIndexStatus({
+      message: t.streamerStudioLayerApplied,
+      isError: false,
+    });
+  }, [
+    canEdit,
+    indexApplyLoading,
+    selectedSceneName,
+    selectedServerItem,
+    streamer.streamerId,
+    t.streamerStudioLayerApplied,
+    t.streamerStudioLayerApplyFailed,
+  ]);
 
   const applySelectedTransform = useCallback(async () => {
     if (!selectedServerItem || !selectedDraftTransform || !canEdit || !selectedSceneName.trim()) {
@@ -430,8 +502,13 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
           dirtySelected={dirtySelected}
           canEdit={canEdit}
           applyLoading={applyLoading}
+          indexApplyLoading={indexApplyLoading}
+          selectedNativeIndex={selectedNativeIndex}
+          maxNativeIndex={maxNativeIndex}
           statusMessage={transformStatus?.message ?? null}
           statusError={Boolean(transformStatus?.isError)}
+          indexStatusMessage={indexStatus?.message ?? null}
+          indexStatusError={Boolean(indexStatus?.isError)}
           onSelect={setSelectedItemId}
           onUpdateDraftTransform={(patch) => {
             if (!selectedServerItem) {
@@ -441,6 +518,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
           }}
           onApply={() => void applySelectedTransform()}
           onReset={resetSelectedDraft}
+          onApplyIndex={(targetIndex) => void applySelectedIndex(targetIndex)}
         />
       </div>
     </div>

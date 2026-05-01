@@ -426,6 +426,7 @@ export type ObsStudioSceneItemView = {
   sourceName: string;
   inputKind: string | null;
   enabled: boolean;
+  sceneItemIndex?: number;
   transform: ObsStudioSceneItemTransform;
 };
 
@@ -464,6 +465,31 @@ export type ObsStudioTransformApplyResult = {
 
 export type ApiStreamerStudioTransformApplyResponse = ApiBaseResponse & {
   data?: ObsStudioTransformApplyResult;
+};
+
+export type ObsStudioSceneItemIndexListItem = {
+  sceneItemId: number;
+  sourceName: string;
+  sceneItemIndex: number;
+};
+
+export type ObsStudioSceneItemIndexApplyInput = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName?: string | null;
+  sceneItemIndex: number;
+};
+
+export type ObsStudioSceneItemIndexApplyResult = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName: string | null;
+  sceneItemIndex: number;
+  items: ObsStudioSceneItemIndexListItem[];
+};
+
+export type ApiStreamerStudioSceneItemIndexApplyResponse = ApiBaseResponse & {
+  data?: ObsStudioSceneItemIndexApplyResult;
 };
 
 export type AdminItem = {

@@ -430,6 +430,38 @@ body {
   box-shadow: 0 0 0 1px rgba(126, 146, 233, 0.22) inset;
 }
 
+.streamer-layer-controls {
+  border-top: 1px solid rgba(95, 116, 159, 0.24);
+  padding-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.streamer-layer-title {
+  color: #b8c6e4;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.streamer-layer-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.streamer-layer-actions .pagination-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 7px 9px;
+}
+
+.streamer-layer-status {
+  margin: 0;
+  font-size: 12px;
+  color: #aab8d6;
+}
+
 .streamer-transform-actions {
   display: flex;
   justify-content: space-between;
@@ -482,7 +514,39 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .streamer-transform-actions {
+  .streamer-layer-controls {
+  border-top: 1px solid rgba(95, 116, 159, 0.24);
+  padding-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.streamer-layer-title {
+  color: #b8c6e4;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.streamer-layer-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.streamer-layer-actions .pagination-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 7px 9px;
+}
+
+.streamer-layer-status {
+  margin: 0;
+  font-size: 12px;
+  color: #aab8d6;
+}
+
+.streamer-transform-actions {
     flex-direction: column;
     align-items: stretch;
   }

@@ -39,7 +39,9 @@ import {
   StreamerStudioMeResponse,
   ApiStreamerStudioSceneItemsListResponse,
   ApiStreamerStudioScenesListResponse,
+  ApiStreamerStudioSceneItemIndexApplyResponse,
   ApiStreamerStudioTransformApplyResponse,
+  ObsStudioSceneItemIndexApplyInput,
   ObsStudioTransformApplyInput,
 } from "./types";
 
@@ -1316,6 +1318,39 @@ export async function listStreamerStudioSceneItems(streamerId: number, sceneName
         ok: false,
         error: data?.error || "OBS_SCENE_COMMAND_FAILED",
         message: data?.message || "Failed to load scene items.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function applyStreamerStudioSceneItemIndex(
+  streamerId: number,
+  input: ObsStudioSceneItemIndexApplyInput,
+): Promise<ApiStreamerStudioSceneItemIndexApplyResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/control/scene-item/index`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerStudioSceneItemIndexApplyResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "OBS_INDEX_COMMAND_FAILED",
+        message: data?.message || "Failed to update layer order.",
       };
     }
 
