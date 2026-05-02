@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DashboardText } from "@/lib/dashboardText";
-import { applyStreamerStudioSceneItemIndex, applyStreamerStudioSceneItemTransform, createStreamerStudioBrowserSource, createStreamerStudioTextSource, listStreamerStudioSceneItems, listStreamerStudioScenes, removeStreamerStudioSceneItem, setStreamerStudioSceneItemVisibility, updateStreamerStudioBrowserSource, updateStreamerStudioTextSource } from "@/lib/api";
-import { ObsStudioBrowserSourceCreateInput, ObsStudioBrowserSourceUpdateInput, ObsStudioSceneItemTransform, ObsStudioSceneItemView, ObsStudioSceneView, ObsStudioTextSourceCreateInput, StreamerStudioAccessView } from "@/lib/types";
+import { applyStreamerStudioSceneItemIndex, applyStreamerStudioSceneItemTransform, createStreamerStudioBrowserSource, createStreamerStudioTextSource, getStreamerStudioSourceSettings, listStreamerStudioSceneItems, listStreamerStudioScenes, removeStreamerStudioSceneItem, setStreamerStudioSceneItemVisibility, updateStreamerStudioBrowserSource, updateStreamerStudioTextSource } from "@/lib/api";
+import { ObsStudioBrowserSourceCreateInput, ObsStudioBrowserSourceUpdateInput, ObsStudioSceneItemTransform, ObsStudioSceneItemView, ObsStudioSceneView, ObsStudioSourceSettingsGetResult, ObsStudioTextSourceCreateInput, StreamerStudioAccessView } from "@/lib/types";
 import { ObsScenePreview } from "./ObsScenePreview";
 import { ObsSceneItemList } from "./ObsSceneItemList";
 import { StreamerTrustedUsersPanel } from "./StreamerTrustedUsersPanel";
@@ -82,9 +82,52 @@ function pickPreferredSceneItemId(items: ObsStudioSceneItemView[], previousSelec
   return items[0]?.sceneItemId ?? null;
 }
 
+function isEditableStudioSourceKind(kind: string | null | undefined): boolean {
+  return kind === "browser_source"
+    || kind === "text_gdiplus_v2"
+    || kind === "text_gdiplus"
+    || kind === "text_ft2_source_v2"
+    || kind === "text_ft2_source";
+}
+
+function hasCachedSourceSettings(
+  item: ObsStudioSceneItemView | null,
+  settings: SceneItemSourceSettings | undefined,
+): boolean {
+  if (!item) {
+    return false;
+  }
+
+  if (item.inputKind === "browser_source") {
+    return typeof settings?.browserUrl === "string"
+      || Number.isFinite(settings?.browserWidth)
+      || Number.isFinite(settings?.browserHeight);
+  }
+
+  if (isEditableStudioSourceKind(item.inputKind)) {
+    return typeof settings?.text === "string";
+  }
+
+  return false;
+}
+
+function mergeSourceSettings(
+  existing: SceneItemSourceSettings | undefined,
+  result: ObsStudioSourceSettingsGetResult,
+): SceneItemSourceSettings {
+  return {
+    ...(existing ?? {}),
+    ...(typeof result.settings.text === "string" ? { text: result.settings.text } : {}),
+    ...(typeof result.settings.url === "string" ? { browserUrl: result.settings.url } : {}),
+    ...(Number.isFinite(result.settings.width) ? { browserWidth: result.settings.width } : {}),
+    ...(Number.isFinite(result.settings.height) ? { browserHeight: result.settings.height } : {}),
+  };
+}
+
 export function StreamerControlSession({ t, streamer, onBack }: StreamerControlSessionProps) {
   const scenesRequestSeqRef = useRef(0);
   const itemsRequestSeqRef = useRef(0);
+  const sourceSettingsRequestSeqRef = useRef(0);
   const skipNextSceneEffectRef = useRef<string | null>(null);
 
   const [scenesLoading, setScenesLoading] = useState(false);
@@ -111,6 +154,8 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
   const [browserUpdateLoading, setBrowserUpdateLoading] = useState(false);
   const [textUpdateStatus, setTextUpdateStatus] = useState<{ message: string; isError: boolean } | null>(null);
   const [browserUpdateStatus, setBrowserUpdateStatus] = useState<{ message: string; isError: boolean } | null>(null);
+  const [sourceSettingsLoading, setSourceSettingsLoading] = useState(false);
+  const [sourceSettingsLoadStatus, setSourceSettingsLoadStatus] = useState<{ message: string; isError: boolean } | null>(null);
 
   const agentStatusText = useMemo(() => {
     if (!streamer.obsAgentConfigured) {
@@ -251,6 +296,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
     setLifecycleStatus(null);
     setTextUpdateStatus(null);
     setBrowserUpdateStatus(null);
+    setSourceSettingsLoadStatus(null);
   }, [selectedItemId]);
 
   const canAttemptLoad = streamer.canControl;
@@ -281,6 +327,72 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
       .reverse(),
     [draftTransforms, items],
   );
+
+  useEffect(() => {
+    const requestId = ++sourceSettingsRequestSeqRef.current;
+    const sceneName = selectedSceneName.trim();
+    const selectedItem = selectedServerItem;
+    if (!canEdit || !sceneName || !selectedItem || !isEditableStudioSourceKind(selectedItem.inputKind)) {
+      setSourceSettingsLoading(false);
+      return;
+    }
+
+    if (hasCachedSourceSettings(selectedItem, sourceSettings[selectedItem.sceneItemId])) {
+      setSourceSettingsLoading(false);
+      return;
+    }
+
+    setSourceSettingsLoading(true);
+    setSourceSettingsLoadStatus({
+      message: t.streamerStudioSourceSettingsLoading,
+      isError: false,
+    });
+
+    void (async () => {
+      const response = await getStreamerStudioSourceSettings(streamer.streamerId, {
+        sceneName,
+        sceneItemId: selectedItem.sceneItemId,
+        sourceName: selectedItem.sourceName,
+      });
+
+      if (requestId !== sourceSettingsRequestSeqRef.current) {
+        return;
+      }
+
+      setSourceSettingsLoading(false);
+
+      if (!response.ok || !response.data) {
+        setSourceSettingsLoadStatus({
+          message: response.message || t.streamerStudioSourceSettingsLoadFailed,
+          isError: true,
+        });
+        return;
+      }
+
+      setSourceSettings(prev => ({
+        ...prev,
+        [response.data!.sceneItemId]: mergeSourceSettings(prev[response.data!.sceneItemId], response.data!),
+      }));
+      setItems(prev => prev.map(item => (
+        item.sceneItemId === response.data!.sceneItemId
+          ? {
+            ...item,
+            sourceName: response.data!.sourceName || item.sourceName,
+            inputKind: response.data!.inputKind ?? item.inputKind,
+          }
+          : item
+      )));
+      setSourceSettingsLoadStatus(null);
+    })();
+  }, [
+    canEdit,
+    selectedSceneName,
+    selectedServerItem,
+    sourceSettings,
+    streamer.streamerId,
+    t.streamerStudioSourceSettingsLoadFailed,
+    t.streamerStudioSourceSettingsLoading,
+  ]);
 
   const updateDraftTransform = useCallback((sceneItemId: number, patch: Partial<ObsStudioSceneItemTransform>) => {
     setDraftTransforms(prev => {
@@ -1043,6 +1155,9 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
           lifecycleStatusMessage={lifecycleStatus?.message ?? null}
           lifecycleStatusError={Boolean(lifecycleStatus?.isError)}
           sourceSettings={sourceSettings}
+          sourceSettingsLoading={sourceSettingsLoading}
+          sourceSettingsLoadStatusMessage={sourceSettingsLoadStatus?.message ?? null}
+          sourceSettingsLoadStatusError={Boolean(sourceSettingsLoadStatus?.isError)}
           textUpdateLoading={textUpdateLoading}
           textUpdateStatusMessage={textUpdateStatus?.message ?? null}
           textUpdateStatusError={Boolean(textUpdateStatus?.isError)}

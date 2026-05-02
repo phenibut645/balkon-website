@@ -48,6 +48,7 @@ import {
   ApiStreamerStudioTextSourceCreateResponse,
   ApiStreamerStudioTextSourceUpdateResponse,
   ApiStreamerStudioTransformApplyResponse,
+  ApiStreamerStudioSourceSettingsGetResponse,
   ObsStudioSceneItemIndexApplyInput,
   ObsStudioSceneItemVisibilityInput,
   ObsStudioSceneItemRemoveInput,
@@ -56,6 +57,7 @@ import {
   ObsStudioTransformApplyInput,
   ObsStudioBrowserSourceCreateInput,
   ObsStudioBrowserSourceUpdateInput,
+  ObsStudioSourceSettingsGetInput,
   ApiStreamerStudioBrowserSourceCreateResponse,
   ApiStreamerStudioBrowserSourceUpdateResponse,
 } from "./types";
@@ -117,6 +119,39 @@ export async function updateStreamerStudioBrowserSource(
         ok: false,
         error: data?.error || "OBS_BROWSER_SOURCE_UPDATE_COMMAND_FAILED",
         message: data?.message || "Failed to update browser source.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getStreamerStudioSourceSettings(
+  streamerId: number,
+  input: ObsStudioSourceSettingsGetInput,
+): Promise<ApiStreamerStudioSourceSettingsGetResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/control/source/settings`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerStudioSourceSettingsGetResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "OBS_SOURCE_SETTINGS_COMMAND_FAILED",
+        message: data?.message || "Failed to load source settings.",
       };
     }
 

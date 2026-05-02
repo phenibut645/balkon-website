@@ -35,6 +35,9 @@ type ObsSceneItemListProps = {
   onSetVisibility: (enabled: boolean) => void;
   onRemove: () => void;
   sourceSettings: SourceSettingsMap;
+  sourceSettingsLoading: boolean;
+  sourceSettingsLoadStatusMessage: string | null;
+  sourceSettingsLoadStatusError: boolean;
   textUpdateLoading: boolean;
   textUpdateStatusMessage: string | null;
   textUpdateStatusError: boolean;
@@ -107,6 +110,9 @@ export function ObsSceneItemList({
   lifecycleStatusMessage,
   lifecycleStatusError,
   sourceSettings,
+  sourceSettingsLoading,
+  sourceSettingsLoadStatusMessage,
+  sourceSettingsLoadStatusError,
   textUpdateLoading,
   textUpdateStatusMessage,
   textUpdateStatusError,
@@ -306,6 +312,16 @@ export function ObsSceneItemList({
                       <div className="streamer-source-settings-head">
                         <div className="streamer-lifecycle-title">{t.streamerStudioSourceSettingsTitle}</div>
                       </div>
+                      {sourceSettingsLoading ? (
+                        <p className="streamer-source-settings-feedback" aria-live="polite">
+                          {t.streamerStudioSourceSettingsLoading}
+                        </p>
+                      ) : null}
+                      {!sourceSettingsLoading && sourceSettingsLoadStatusMessage ? (
+                        <p className={`streamer-source-settings-feedback ${sourceSettingsLoadStatusError ? "state-error" : "state-ok"}`} aria-live="polite">
+                          {sourceSettingsLoadStatusMessage}
+                        </p>
+                      ) : null}
 
                       {canEditText ? (
                         <div className="streamer-source-settings-form">

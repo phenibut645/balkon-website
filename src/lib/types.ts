@@ -645,6 +645,29 @@ export type ApiStreamerStudioBrowserSourceUpdateResponse = ApiBaseResponse & {
   data?: ObsStudioBrowserSourceUpdateResult;
 };
 
+export type ObsStudioSourceSettingsGetInput = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName?: string | null;
+};
+
+export type ObsStudioSourceSettingsGetResult = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName: string;
+  inputKind: string | null;
+  settings: {
+    text?: string;
+    url?: string;
+    width?: number;
+    height?: number;
+  };
+};
+
+export type ApiStreamerStudioSourceSettingsGetResponse = ApiBaseResponse & {
+  data?: ObsStudioSourceSettingsGetResult;
+};
+
 export type AdminItem = {
   id: number;
   name: string;
