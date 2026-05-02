@@ -84,10 +84,47 @@ function pickPreferredSceneItemId(items: ObsStudioSceneItemView[], previousSelec
 
 function isEditableStudioSourceKind(kind: string | null | undefined): boolean {
   return kind === "browser_source"
+    || kind === "text_gdiplus_v3"
     || kind === "text_gdiplus_v2"
     || kind === "text_gdiplus"
     || kind === "text_ft2_source_v2"
     || kind === "text_ft2_source";
+}
+
+const CAPABILITY_TRANSFORM_SET = "obs.scene.item.transform.set";
+const CAPABILITY_INDEX_SET = "obs.scene.item.index.set";
+const CAPABILITY_VISIBILITY_SET = "obs.scene.item.visibility.set";
+const CAPABILITY_ITEM_REMOVE = "obs.scene.item.remove";
+const CAPABILITY_SOURCE_SETTINGS_GET = "obs.scene.source.settings.get";
+const CAPABILITY_TEXT_CREATE = "obs.scene.source.text.create";
+const CAPABILITY_TEXT_UPDATE = "obs.scene.source.text.update";
+const CAPABILITY_BROWSER_CREATE = "obs.scene.source.browser.create";
+const CAPABILITY_BROWSER_UPDATE = "obs.scene.source.browser.update";
+
+function getCapabilities(streamer: StreamerStudioAccessView): string[] {
+  return Array.isArray(streamer.obsAgentCapabilities) ? streamer.obsAgentCapabilities : [];
+}
+
+function hasKnownCapabilities(streamer: StreamerStudioAccessView): boolean {
+  return getCapabilities(streamer).length > 0;
+}
+
+function getBlockedReason(
+  t: DashboardText,
+  streamer: StreamerStudioAccessView,
+  capability: string,
+  allowWhenUnknown: boolean,
+): string | null {
+  if (streamer.obsConnected === false) {
+    return t.streamerStudioObsNotConnected;
+  }
+
+  const capabilities = getCapabilities(streamer);
+  if (!capabilities.length) {
+    return allowWhenUnknown ? null : t.streamerStudioCapabilitiesUnknown;
+  }
+
+  return capabilities.includes(capability) ? null : t.streamerStudioCapabilityUnsupported;
 }
 
 function hasCachedSourceSettings(
@@ -301,6 +338,24 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
 
   const canAttemptLoad = streamer.canControl;
   const canEdit = streamer.canControl && Boolean(streamer.obsAgentConfigured) && Boolean(streamer.obsAgentOnline);
+  const canApplyTransform = canEdit && !getBlockedReason(t, streamer, CAPABILITY_TRANSFORM_SET, true);
+  const canApplyIndex = canEdit && !getBlockedReason(t, streamer, CAPABILITY_INDEX_SET, true);
+  const canToggleVisibility = canEdit && !getBlockedReason(t, streamer, CAPABILITY_VISIBILITY_SET, false);
+  const canRemoveItem = canEdit && !getBlockedReason(t, streamer, CAPABILITY_ITEM_REMOVE, false);
+  const canLoadSourceSettings = canEdit && !getBlockedReason(t, streamer, CAPABILITY_SOURCE_SETTINGS_GET, false);
+  const canCreateText = canEdit && !getBlockedReason(t, streamer, CAPABILITY_TEXT_CREATE, true);
+  const canCreateBrowser = canEdit && !getBlockedReason(t, streamer, CAPABILITY_BROWSER_CREATE, false);
+  const textUpdateBlockedMessage = getBlockedReason(t, streamer, CAPABILITY_TEXT_UPDATE, true);
+  const browserUpdateBlockedMessage = getBlockedReason(t, streamer, CAPABILITY_BROWSER_UPDATE, false);
+  const createTextBlockedMessage = getBlockedReason(t, streamer, CAPABILITY_TEXT_CREATE, true);
+  const createBrowserBlockedMessage = getBlockedReason(t, streamer, CAPABILITY_BROWSER_CREATE, false);
+  const diagnosticsWarning = !streamer.obsAgentConfigured
+    ? null
+    : !hasKnownCapabilities(streamer)
+      ? t.streamerStudioCapabilitiesUnknown
+      : streamer.obsConnected === false
+        ? t.streamerStudioObsNotConnected
+        : null;
 
   const selectedServerItem = useMemo(
     () => (selectedItemId === null ? null : items.find(item => item.sceneItemId === selectedItemId) ?? null),
@@ -332,7 +387,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
     const requestId = ++sourceSettingsRequestSeqRef.current;
     const sceneName = selectedSceneName.trim();
     const selectedItem = selectedServerItem;
-    if (!canEdit || !sceneName || !selectedItem || !isEditableStudioSourceKind(selectedItem.inputKind)) {
+    if (!canLoadSourceSettings || !sceneName || !selectedItem || !isEditableStudioSourceKind(selectedItem.inputKind)) {
       setSourceSettingsLoading(false);
       return;
     }
@@ -385,7 +440,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
       setSourceSettingsLoadStatus(null);
     })();
   }, [
-    canEdit,
+    canLoadSourceSettings,
     selectedSceneName,
     selectedServerItem,
     sourceSettings,
@@ -438,7 +493,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
   }, [selectedServerItem]);
 
   const applySelectedIndex = useCallback(async (targetIndex: number) => {
-    if (!selectedServerItem || !canEdit || !selectedSceneName.trim() || indexApplyLoading) {
+    if (!selectedServerItem || !canApplyIndex || !selectedSceneName.trim() || indexApplyLoading) {
       return;
     }
 
@@ -496,7 +551,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
       isError: false,
     });
   }, [
-    canEdit,
+    canApplyIndex,
     indexApplyLoading,
     selectedSceneName,
     selectedServerItem,
@@ -507,7 +562,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
 
   const setSelectedItemVisibility = useCallback(async (enabled: boolean) => {
     const sceneName = selectedSceneName.trim();
-    if (!selectedServerItem || !sceneName || !canEdit || lifecycleLoading) {
+    if (!selectedServerItem || !sceneName || !canToggleVisibility || lifecycleLoading) {
       return;
     }
 
@@ -572,7 +627,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
     });
     setSelectedItemId(targetItemId);
   }, [
-    canEdit,
+    canToggleVisibility,
     lifecycleLoading,
     selectedSceneName,
     selectedServerItem,
@@ -583,7 +638,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
 
   const removeSelectedItem = useCallback(async () => {
     const sceneName = selectedSceneName.trim();
-    if (!selectedServerItem || !sceneName || !canEdit || lifecycleLoading) {
+    if (!selectedServerItem || !sceneName || !canRemoveItem || lifecycleLoading) {
       return;
     }
 
@@ -660,7 +715,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
     });
     setSelectedItemId(nextSelectedId);
   }, [
-    canEdit,
+    canRemoveItem,
     lifecycleLoading,
     selectedSceneName,
     selectedServerItem,
@@ -672,7 +727,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
 
   const createTextSource = useCallback(async (input: ObsStudioTextSourceCreateInput) => {
     const sceneName = selectedSceneName.trim();
-    if (!canEdit || !sceneName || sourceCreateLoading) {
+    if (!sceneName || !canCreateText || sourceCreateLoading) {
       return;
     }
 
@@ -744,11 +799,11 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
     }));
     setSelectedItemId(response.data.sceneItemId);
     setSourceCreateStatus({ message: t.streamerStudioCreateTextSuccess, isError: false });
-  }, [canEdit, selectedSceneName, sourceCreateLoading, streamer.streamerId, t.streamerStudioCreateTextFailed, t.streamerStudioCreateTextInvalid, t.streamerStudioCreateTextSuccess]);
+  }, [canCreateText, selectedSceneName, sourceCreateLoading, streamer.streamerId, t.streamerStudioCreateTextFailed, t.streamerStudioCreateTextInvalid, t.streamerStudioCreateTextSuccess]);
 
   const createBrowserSource = useCallback(async (input: ObsStudioBrowserSourceCreateInput) => {
     const sceneName = selectedSceneName.trim();
-    if (!canEdit || !sceneName || sourceCreateLoading) {
+    if (!sceneName || !canCreateBrowser || sourceCreateLoading) {
       return;
     }
 
@@ -824,12 +879,18 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
     }));
     setSelectedItemId(response.data.sceneItemId);
     setSourceCreateStatus({ message: t.streamerStudioCreateBrowserSuccess, isError: false });
-  }, [canEdit, selectedSceneName, sourceCreateLoading, streamer.streamerId, t.streamerStudioCreateBrowserFailed, t.streamerStudioCreateBrowserInvalid, t.streamerStudioCreateBrowserSuccess]);
+  }, [canCreateBrowser, selectedSceneName, sourceCreateLoading, streamer.streamerId, t.streamerStudioCreateBrowserFailed, t.streamerStudioCreateBrowserInvalid, t.streamerStudioCreateBrowserSuccess]);
 
   const updateTextSource = useCallback(async (value: string) => {
     const sceneName = selectedSceneName.trim();
     const text = value.trim();
-    if (!selectedServerItem || !sceneName || !canEdit) {
+    if (!selectedServerItem || !sceneName || textUpdateBlockedMessage) {
+      if (textUpdateBlockedMessage) {
+        setTextUpdateStatus({
+          message: textUpdateBlockedMessage,
+          isError: true,
+        });
+      }
       return;
     }
 
@@ -883,10 +944,10 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
       isError: false,
     });
   }, [
-    canEdit,
     selectedSceneName,
     selectedServerItem,
     streamer.streamerId,
+    textUpdateBlockedMessage,
     t.streamerStudioTextSettingsFailed,
     t.streamerStudioTextSettingsInvalid,
     t.streamerStudioTextSettingsSuccess,
@@ -894,7 +955,13 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
 
   const updateBrowserSource = useCallback(async (input: { url: string; width: string; height: string }) => {
     const sceneName = selectedSceneName.trim();
-    if (!selectedServerItem || !sceneName || !canEdit) {
+    if (!selectedServerItem || !sceneName || browserUpdateBlockedMessage) {
+      if (browserUpdateBlockedMessage) {
+        setBrowserUpdateStatus({
+          message: browserUpdateBlockedMessage,
+          isError: true,
+        });
+      }
       return;
     }
 
@@ -979,17 +1046,17 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
       isError: false,
     });
   }, [
-    canEdit,
     selectedSceneName,
     selectedServerItem,
     streamer.streamerId,
+    browserUpdateBlockedMessage,
     t.streamerStudioBrowserSettingsFailed,
     t.streamerStudioBrowserSettingsInvalid,
     t.streamerStudioBrowserSettingsSuccess,
   ]);
 
   const applySelectedTransform = useCallback(async () => {
-    if (!selectedServerItem || !selectedDraftTransform || !canEdit || !selectedSceneName.trim()) {
+    if (!selectedServerItem || !selectedDraftTransform || !canApplyTransform || !selectedSceneName.trim()) {
       return;
     }
     setApplyLoading(true);
@@ -1033,7 +1100,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
       isError: false,
     });
   }, [
-    canEdit,
+    canApplyTransform,
     selectedDraftTransform,
     selectedSceneName,
     selectedServerItem,
@@ -1052,6 +1119,16 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
           <div>
             <h3 className="section-title">{streamer.nickname}</h3>
             <p className="market-card-hint">{agentStatusText}</p>
+            {streamer.obsAgentConfigured ? (
+              <p className="market-card-hint">
+                {t.streamerStudioAgentVersionLabel}: {streamer.obsAgentVersion ?? "-"} · {t.streamerStudioRelayProtocolLabel}: {streamer.obsRelayProtocolVersion ?? "-"} · {t.streamerStudioObsStatusLabel}: {streamer.obsConnected === false ? t.streamerStudioObsDisconnected : t.streamerStudioObsConnected}
+              </p>
+            ) : null}
+            {streamer.obsAgentConfigured && (streamer.obsVersion || streamer.obsWebsocketVersion) ? (
+              <p className="market-card-hint">
+                {t.streamerStudioObsVersionLabel}: {streamer.obsVersion ?? "-"} · {t.streamerStudioObsWebsocketVersionLabel}: {streamer.obsWebsocketVersion ?? "-"}
+              </p>
+            ) : null}
           </div>
         </div>
 
@@ -1083,6 +1160,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
       {streamer.obsAgentConfigured && !streamer.obsAgentOnline ? (
         <p className="state-text">{t.streamerStudioAgentOffline}</p>
       ) : null}
+      {diagnosticsWarning ? <p className="state-text state-error">{diagnosticsWarning}</p> : null}
       {scenesError ? <p className="state-text state-error">{scenesError}</p> : null}
 
       {streamer.canManage ? (
@@ -1093,9 +1171,13 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
         <StreamerSourceCreatePanel
           t={t}
           canEdit={canEdit}
+          canCreateText={canCreateText}
+          canCreateBrowser={canCreateBrowser}
           hasSelectedScene={Boolean(selectedSceneName.trim())}
           submitting={sourceCreateLoading}
           feedback={sourceCreateStatus}
+          createTextBlockedMessage={createTextBlockedMessage}
+          createBrowserBlockedMessage={createBrowserBlockedMessage}
           onCreateText={(input) => void createTextSource(input)}
           onCreateBrowser={(input) => void createBrowserSource(input)}
         />
@@ -1143,7 +1225,9 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
           selectedDraftTransform={selectedDraftTransform}
           dirtySelected={dirtySelected}
           canEdit={canEdit}
+          canApplyTransform={canApplyTransform}
           applyLoading={applyLoading}
+          canApplyIndex={canApplyIndex}
           indexApplyLoading={indexApplyLoading}
           selectedNativeIndex={selectedNativeIndex}
           maxNativeIndex={maxNativeIndex}
@@ -1154,13 +1238,18 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
           lifecycleLoading={lifecycleLoading}
           lifecycleStatusMessage={lifecycleStatus?.message ?? null}
           lifecycleStatusError={Boolean(lifecycleStatus?.isError)}
+          canToggleVisibility={canToggleVisibility}
+          canRemoveItem={canRemoveItem}
           sourceSettings={sourceSettings}
+          canLoadSourceSettings={canLoadSourceSettings}
           sourceSettingsLoading={sourceSettingsLoading}
           sourceSettingsLoadStatusMessage={sourceSettingsLoadStatus?.message ?? null}
           sourceSettingsLoadStatusError={Boolean(sourceSettingsLoadStatus?.isError)}
+          textUpdateBlockedMessage={textUpdateBlockedMessage}
           textUpdateLoading={textUpdateLoading}
           textUpdateStatusMessage={textUpdateStatus?.message ?? null}
           textUpdateStatusError={Boolean(textUpdateStatus?.isError)}
+          browserUpdateBlockedMessage={browserUpdateBlockedMessage}
           browserUpdateLoading={browserUpdateLoading}
           browserUpdateStatusMessage={browserUpdateStatus?.message ?? null}
           browserUpdateStatusError={Boolean(browserUpdateStatus?.isError)}

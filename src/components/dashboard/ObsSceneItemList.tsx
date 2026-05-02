@@ -16,7 +16,9 @@ type ObsSceneItemListProps = {
   selectedDraftTransform: ObsStudioSceneItemTransform | null;
   dirtySelected: boolean;
   canEdit: boolean;
+  canApplyTransform: boolean;
   applyLoading: boolean;
+  canApplyIndex: boolean;
   indexApplyLoading: boolean;
   selectedNativeIndex: number | null;
   maxNativeIndex: number;
@@ -27,6 +29,8 @@ type ObsSceneItemListProps = {
   lifecycleLoading: boolean;
   lifecycleStatusMessage: string | null;
   lifecycleStatusError: boolean;
+  canToggleVisibility: boolean;
+  canRemoveItem: boolean;
   onSelect: (sceneItemId: number) => void;
   onUpdateDraftTransform: (patch: Partial<ObsStudioSceneItemTransform>) => void;
   onApply: () => void;
@@ -35,12 +39,15 @@ type ObsSceneItemListProps = {
   onSetVisibility: (enabled: boolean) => void;
   onRemove: () => void;
   sourceSettings: SourceSettingsMap;
+  canLoadSourceSettings: boolean;
   sourceSettingsLoading: boolean;
   sourceSettingsLoadStatusMessage: string | null;
   sourceSettingsLoadStatusError: boolean;
+  textUpdateBlockedMessage: string | null;
   textUpdateLoading: boolean;
   textUpdateStatusMessage: string | null;
   textUpdateStatusError: boolean;
+  browserUpdateBlockedMessage: string | null;
   browserUpdateLoading: boolean;
   browserUpdateStatusMessage: string | null;
   browserUpdateStatusError: boolean;
@@ -85,7 +92,8 @@ function clampNumber(value: number, min: number, max: number): number {
 }
 
 function isEditableTextKind(kind: string | null | undefined): boolean {
-  return kind === "text_gdiplus_v2"
+  return kind === "text_gdiplus_v3"
+    || kind === "text_gdiplus_v2"
     || kind === "text_gdiplus"
     || kind === "text_ft2_source_v2"
     || kind === "text_ft2_source";
@@ -98,7 +106,9 @@ export function ObsSceneItemList({
   selectedDraftTransform,
   dirtySelected,
   canEdit,
+  canApplyTransform,
   applyLoading,
+  canApplyIndex,
   indexApplyLoading,
   selectedNativeIndex,
   maxNativeIndex,
@@ -109,13 +119,18 @@ export function ObsSceneItemList({
   lifecycleLoading,
   lifecycleStatusMessage,
   lifecycleStatusError,
+  canToggleVisibility,
+  canRemoveItem,
   sourceSettings,
+  canLoadSourceSettings,
   sourceSettingsLoading,
   sourceSettingsLoadStatusMessage,
   sourceSettingsLoadStatusError,
+  textUpdateBlockedMessage,
   textUpdateLoading,
   textUpdateStatusMessage,
   textUpdateStatusError,
+  browserUpdateBlockedMessage,
   browserUpdateLoading,
   browserUpdateStatusMessage,
   browserUpdateStatusError,
@@ -131,13 +146,12 @@ export function ObsSceneItemList({
 }: ObsSceneItemListProps) {
   const selectedItem = selectedItemId === null ? null : items.find(item => item.sceneItemId === selectedItemId) ?? null;
   const selectedSettings = selectedItem ? sourceSettings[selectedItem.sceneItemId] ?? {} : {};
-  const canMoveLayerUp = canEdit && selectedNativeIndex !== null && selectedNativeIndex < maxNativeIndex && !indexApplyLoading;
-  const canMoveLayerDown = canEdit && selectedNativeIndex !== null && selectedNativeIndex > 0 && !indexApplyLoading;
+  const canMoveLayerUp = canApplyIndex && selectedNativeIndex !== null && selectedNativeIndex < maxNativeIndex && !indexApplyLoading;
+  const canMoveLayerDown = canApplyIndex && selectedNativeIndex !== null && selectedNativeIndex > 0 && !indexApplyLoading;
   const canEditText = Boolean(selectedItem && isEditableTextKind(selectedItem.inputKind));
   const canEditBrowser = Boolean(selectedItem && selectedItem.inputKind === "browser_source");
-
-  const canToggleVisibility = Boolean(selectedItem && canEdit && !lifecycleLoading);
-  const canRemoveItem = Boolean(selectedItem && canEdit && !lifecycleLoading);
+  const canToggleSelectedVisibility = Boolean(selectedItem && canToggleVisibility && !lifecycleLoading);
+  const canRemoveSelectedItem = Boolean(selectedItem && canRemoveItem && !lifecycleLoading);
   const [textValue, setTextValue] = useState("");
   const [browserUrlValue, setBrowserUrlValue] = useState("");
   const [browserWidthValue, setBrowserWidthValue] = useState("800");
@@ -285,7 +299,7 @@ export function ObsSceneItemList({
                       <button
                         className="pagination-btn"
                         type="button"
-                        disabled={!canToggleVisibility}
+                        disabled={!canToggleSelectedVisibility}
                         onClick={() => selectedItem ? onSetVisibility(!selectedItem.enabled) : undefined}
                       >
                         {selectedItem?.enabled ? t.streamerStudioHideItem : t.streamerStudioShowItem}
@@ -293,7 +307,7 @@ export function ObsSceneItemList({
                       <button
                         className="pagination-btn streamer-danger-button"
                         type="button"
-                        disabled={!canRemoveItem}
+                        disabled={!canRemoveSelectedItem}
                         onClick={() => selectedItem ? onRemove() : undefined}
                       >
                         {t.streamerStudioRemoveItem}
@@ -312,12 +326,17 @@ export function ObsSceneItemList({
                       <div className="streamer-source-settings-head">
                         <div className="streamer-lifecycle-title">{t.streamerStudioSourceSettingsTitle}</div>
                       </div>
-                      {sourceSettingsLoading ? (
+                      {!canLoadSourceSettings && (canEditText || canEditBrowser) ? (
+                        <p className="streamer-source-settings-feedback state-error" aria-live="polite">
+                          {canEditBrowser ? browserUpdateBlockedMessage : textUpdateBlockedMessage}
+                        </p>
+                      ) : null}
+                      {canLoadSourceSettings && sourceSettingsLoading ? (
                         <p className="streamer-source-settings-feedback" aria-live="polite">
                           {t.streamerStudioSourceSettingsLoading}
                         </p>
                       ) : null}
-                      {!sourceSettingsLoading && sourceSettingsLoadStatusMessage ? (
+                      {canLoadSourceSettings && !sourceSettingsLoading && sourceSettingsLoadStatusMessage ? (
                         <p className={`streamer-source-settings-feedback ${sourceSettingsLoadStatusError ? "state-error" : "state-ok"}`} aria-live="polite">
                           {sourceSettingsLoadStatusMessage}
                         </p>
@@ -335,18 +354,24 @@ export function ObsSceneItemList({
                               placeholder={t.streamerStudioTextSettingsPlaceholder}
                               onChange={(event) => setTextValue(event.target.value)}
                               rows={4}
+                              disabled={Boolean(textUpdateBlockedMessage)}
                             />
                           </label>
                           <div className="streamer-source-settings-actions">
                             <button
                               className="pagination-btn"
                               type="button"
-                              disabled={textUpdateLoading}
+                              disabled={textUpdateLoading || Boolean(textUpdateBlockedMessage)}
                               onClick={() => onUpdateTextSource(textValue)}
                             >
                               {t.streamerStudioTextSettingsUpdate}
                             </button>
                           </div>
+                          {textUpdateBlockedMessage ? (
+                            <p className="streamer-source-settings-feedback state-error" aria-live="polite">
+                              {textUpdateBlockedMessage}
+                            </p>
+                          ) : null}
                           {textUpdateStatusMessage ? (
                             <p className={`streamer-source-settings-feedback ${textUpdateStatusError ? "state-error" : "state-ok"}`} aria-live="polite">
                               {textUpdateStatusMessage}
@@ -368,6 +393,7 @@ export function ObsSceneItemList({
                                 value={browserUrlValue}
                                 placeholder={t.streamerStudioBrowserSettingsUrlPlaceholder}
                                 onChange={(event) => setBrowserUrlValue(event.target.value)}
+                                disabled={Boolean(browserUpdateBlockedMessage)}
                               />
                             </label>
                             <label className="streamer-transform-field">
@@ -376,6 +402,7 @@ export function ObsSceneItemList({
                                 type="number"
                                 value={browserWidthValue}
                                 onChange={(event) => setBrowserWidthValue(event.target.value)}
+                                disabled={Boolean(browserUpdateBlockedMessage)}
                               />
                             </label>
                             <label className="streamer-transform-field">
@@ -384,6 +411,7 @@ export function ObsSceneItemList({
                                 type="number"
                                 value={browserHeightValue}
                                 onChange={(event) => setBrowserHeightValue(event.target.value)}
+                                disabled={Boolean(browserUpdateBlockedMessage)}
                               />
                             </label>
                           </div>
@@ -391,7 +419,7 @@ export function ObsSceneItemList({
                             <button
                               className="pagination-btn"
                               type="button"
-                              disabled={browserUpdateLoading}
+                              disabled={browserUpdateLoading || Boolean(browserUpdateBlockedMessage)}
                               onClick={() => onUpdateBrowserSource({
                                 url: browserUrlValue,
                                 width: browserWidthValue,
@@ -401,6 +429,11 @@ export function ObsSceneItemList({
                               {t.streamerStudioBrowserSettingsUpdate}
                             </button>
                           </div>
+                          {browserUpdateBlockedMessage ? (
+                            <p className="streamer-source-settings-feedback state-error" aria-live="polite">
+                              {browserUpdateBlockedMessage}
+                            </p>
+                          ) : null}
                           {browserUpdateStatusMessage ? (
                             <p className={`streamer-source-settings-feedback ${browserUpdateStatusError ? "state-error" : "state-ok"}`} aria-live="polite">
                               {browserUpdateStatusMessage}
@@ -413,7 +446,7 @@ export function ObsSceneItemList({
 
                   <div className="streamer-transform-actions">
                     <div className="streamer-transform-action-buttons">
-                      <button className="pagination-btn" type="button" disabled={!canEdit || !dirtySelected || applyLoading} onClick={onApply}>
+                      <button className="pagination-btn" type="button" disabled={!canApplyTransform || !dirtySelected || applyLoading} onClick={onApply}>
                         {t.streamerStudioApplyTransform}
                       </button>
                       <button className="pagination-btn ghost" type="button" disabled={!dirtySelected || applyLoading} onClick={onReset}>

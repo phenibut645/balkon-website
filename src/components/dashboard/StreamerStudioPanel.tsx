@@ -58,6 +58,19 @@ export function StreamerStudioPanel({ t, active }: StreamerStudioPanelProps) {
     }
   }, [active, loaded, load, loading]);
 
+  useEffect(() => {
+    if (!selectedStreamer) {
+      return;
+    }
+
+    const refreshed = streamers.find(streamer => streamer.streamerId === selectedStreamer.streamerId) ?? null;
+    if (!refreshed) {
+      return;
+    }
+
+    setSelectedStreamer(refreshed);
+  }, [selectedStreamer, streamers]);
+
   return (
     <div className="streamer-studio-panel">
       <div className="inventory-toolbar">

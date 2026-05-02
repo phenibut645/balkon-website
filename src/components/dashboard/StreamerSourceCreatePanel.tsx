@@ -7,9 +7,13 @@ type SourceType = "text" | "browser";
 type StreamerSourceCreatePanelProps = {
   t: DashboardText;
   canEdit: boolean;
+  canCreateText: boolean;
+  canCreateBrowser: boolean;
   hasSelectedScene: boolean;
   submitting: boolean;
   feedback: { message: string; isError: boolean } | null;
+  createTextBlockedMessage?: string | null;
+  createBrowserBlockedMessage?: string | null;
   onCreateText: (input: ObsStudioTextSourceCreateInput) => void;
   onCreateBrowser: (input: ObsStudioBrowserSourceCreateInput) => void;
 };
@@ -17,9 +21,13 @@ type StreamerSourceCreatePanelProps = {
 export function StreamerSourceCreatePanel({
   t,
   canEdit,
+  canCreateText,
+  canCreateBrowser,
   hasSelectedScene,
   submitting,
   feedback,
+  createTextBlockedMessage,
+  createBrowserBlockedMessage,
   onCreateText,
   onCreateBrowser,
 }: StreamerSourceCreatePanelProps) {
@@ -147,7 +155,7 @@ export function StreamerSourceCreatePanel({
                   rows={3}
                   value={text}
                   onChange={(event) => setText(event.target.value.slice(0, 500))}
-                  disabled={!canEdit || submitting}
+                  disabled={!canEdit || !canCreateText || submitting}
                 />
               </label>
               <label className="streamer-transform-field">
@@ -158,7 +166,7 @@ export function StreamerSourceCreatePanel({
                   placeholder={t.streamerStudioCreateTextSourceNamePlaceholder}
                   value={textSourceName}
                   onChange={(event) => setTextSourceName(event.target.value.slice(0, 160))}
-                  disabled={!canEdit || submitting}
+                  disabled={!canEdit || !canCreateText || submitting}
                 />
               </label>
               <div className="streamer-source-create-actions">
@@ -166,7 +174,7 @@ export function StreamerSourceCreatePanel({
                   className="pagination-btn"
                   type="button"
                   onClick={submitText}
-                  disabled={!canEdit || !hasSelectedScene || submitting || textInvalid}
+                  disabled={!canEdit || !canCreateText || !hasSelectedScene || submitting || textInvalid}
                 >
                   {t.streamerStudioCreateTextButton}
                 </button>
@@ -177,6 +185,9 @@ export function StreamerSourceCreatePanel({
                 ) : null}
                 {textInvalid && text.length > 0 ? (
                   <p className="streamer-source-create-feedback state-error">{t.streamerStudioCreateTextInvalid}</p>
+                ) : null}
+                {!textInvalid && createTextBlockedMessage ? (
+                  <p className="streamer-source-create-feedback state-error">{createTextBlockedMessage}</p>
                 ) : null}
               </div>
             </>
@@ -191,7 +202,7 @@ export function StreamerSourceCreatePanel({
                   placeholder={t.streamerStudioCreateBrowserUrlPlaceholder}
                   value={url}
                   onChange={(event) => setUrl(event.target.value.slice(0, 1000))}
-                  disabled={!canEdit || submitting}
+                  disabled={!canEdit || !canCreateBrowser || submitting}
                 />
               </label>
               <label className="streamer-transform-field">
@@ -202,7 +213,7 @@ export function StreamerSourceCreatePanel({
                   placeholder={t.streamerStudioCreateTextSourceNamePlaceholder}
                   value={browserSourceName}
                   onChange={(event) => setBrowserSourceName(event.target.value.slice(0, 160))}
-                  disabled={!canEdit || submitting}
+                  disabled={!canEdit || !canCreateBrowser || submitting}
                 />
               </label>
               <div className="streamer-source-create-dimensions">
@@ -214,7 +225,7 @@ export function StreamerSourceCreatePanel({
                     max={3840}
                     value={width}
                     onChange={(event) => handleNumberInput(event.target.value, setWidth)}
-                    disabled={!canEdit || submitting}
+                    disabled={!canEdit || !canCreateBrowser || submitting}
                   />
                 </label>
                 <label className="streamer-transform-field compact">
@@ -225,7 +236,7 @@ export function StreamerSourceCreatePanel({
                     max={2160}
                     value={height}
                     onChange={(event) => handleNumberInput(event.target.value, setHeight)}
-                    disabled={!canEdit || submitting}
+                    disabled={!canEdit || !canCreateBrowser || submitting}
                   />
                 </label>
               </div>
@@ -234,7 +245,7 @@ export function StreamerSourceCreatePanel({
                   className="pagination-btn"
                   type="button"
                   onClick={submitBrowser}
-                  disabled={!canEdit || !hasSelectedScene || submitting || browserInvalid}
+                  disabled={!canEdit || !canCreateBrowser || !hasSelectedScene || submitting || browserInvalid}
                 >
                   {t.streamerStudioCreateBrowserButton}
                 </button>
@@ -245,6 +256,9 @@ export function StreamerSourceCreatePanel({
                 ) : null}
                 {urlInvalid && url.length > 0 ? (
                   <p className="streamer-source-create-feedback state-error">{t.streamerStudioCreateBrowserInvalid}</p>
+                ) : null}
+                {!urlInvalid && createBrowserBlockedMessage ? (
+                  <p className="streamer-source-create-feedback state-error">{createBrowserBlockedMessage}</p>
                 ) : null}
               </div>
             </>

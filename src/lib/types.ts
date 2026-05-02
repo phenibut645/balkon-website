@@ -378,6 +378,12 @@ export type StreamerStudioAccessView = {
   canControl: boolean;
   obsAgentConfigured?: boolean;
   obsAgentOnline?: boolean;
+  obsAgentVersion?: string | null;
+  obsRelayProtocolVersion?: number | null;
+  obsAgentCapabilities?: string[];
+  obsConnected?: boolean | null;
+  obsVersion?: string | null;
+  obsWebsocketVersion?: string | null;
 };
 
 export type StreamerStudioMeResponse = ApiBaseResponse & {

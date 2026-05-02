@@ -29,6 +29,23 @@ function agentStatusKind(streamer: StreamerStudioAccessView): "online" | "offlin
   return streamer.obsAgentOnline ? "online" : "offline";
 }
 
+function agentDiagnostics(t: DashboardText, streamer: StreamerStudioAccessView): string | null {
+  if (!streamer.obsAgentConfigured) {
+    return null;
+  }
+
+  const details = [
+    `${t.streamerStudioAgentVersionLabel}: ${streamer.obsAgentVersion ?? "-"}`,
+    `${t.streamerStudioObsStatusLabel}: ${streamer.obsConnected === false ? t.streamerStudioObsDisconnected : t.streamerStudioObsConnected}`,
+  ];
+
+  if (streamer.obsVersion) {
+    details.push(`${t.streamerStudioObsVersionLabel}: ${streamer.obsVersion}`);
+  }
+
+  return details.join(" · ");
+}
+
 export function StreamerStudioHome({ t, streamers, onOpenControl }: StreamerStudioHomeProps) {
   return (
     <div className="streamer-studio-grid">
@@ -50,6 +67,7 @@ export function StreamerStudioHome({ t, streamers, onOpenControl }: StreamerStud
             {streamer.canControl ? <span className="meta-badge ok">{t.streamerStudioCanControl}</span> : null}
             {streamer.canManage ? <span className="meta-badge neutral">{t.streamerStudioCanManage}</span> : null}
           </div>
+          {agentDiagnostics(t, streamer) ? <p className="market-card-hint">{agentDiagnostics(t, streamer)}</p> : null}
 
           <button
             className="pagination-btn"
