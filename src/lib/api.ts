@@ -43,9 +43,13 @@ import {
   ApiStreamerStudioSceneItemsListResponse,
   ApiStreamerStudioScenesListResponse,
   ApiStreamerStudioSceneItemIndexApplyResponse,
+  ApiStreamerStudioSceneItemVisibilityResponse,
+  ApiStreamerStudioSceneItemRemoveResponse,
   ApiStreamerStudioTextSourceCreateResponse,
   ApiStreamerStudioTransformApplyResponse,
   ObsStudioSceneItemIndexApplyInput,
+  ObsStudioSceneItemVisibilityInput,
+  ObsStudioSceneItemRemoveInput,
   ObsStudioTextSourceCreateInput,
   ObsStudioTransformApplyInput,
   ObsStudioBrowserSourceCreateInput,
@@ -1516,6 +1520,72 @@ export async function createStreamerStudioBrowserSource(
         ok: false,
         error: data?.error || "OBS_BROWSER_SOURCE_COMMAND_FAILED",
         message: data?.message || "Failed to create browser source.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function setStreamerStudioSceneItemVisibility(
+  streamerId: number,
+  input: ObsStudioSceneItemVisibilityInput,
+): Promise<ApiStreamerStudioSceneItemVisibilityResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/control/scene-item/visibility`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerStudioSceneItemVisibilityResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "OBS_VISIBILITY_COMMAND_FAILED",
+        message: data?.message || "Failed to update visibility.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function removeStreamerStudioSceneItem(
+  streamerId: number,
+  input: ObsStudioSceneItemRemoveInput,
+): Promise<ApiStreamerStudioSceneItemRemoveResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/control/scene-item`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerStudioSceneItemRemoveResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "OBS_REMOVE_COMMAND_FAILED",
+        message: data?.message || "Failed to remove scene item.",
       };
     }
 

@@ -487,6 +487,7 @@ export type ObsStudioSceneItemIndexListItem = {
   sceneItemId: number;
   sourceName: string;
   sceneItemIndex: number;
+  enabled?: boolean;
 };
 
 export type ObsStudioSceneItemIndexApplyInput = {
@@ -506,6 +507,43 @@ export type ObsStudioSceneItemIndexApplyResult = {
 
 export type ApiStreamerStudioSceneItemIndexApplyResponse = ApiBaseResponse & {
   data?: ObsStudioSceneItemIndexApplyResult;
+};
+
+export type ObsStudioSceneItemVisibilityInput = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName?: string | null;
+  enabled: boolean;
+};
+
+export type ObsStudioSceneItemVisibilityResult = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName: string | null;
+  enabled: boolean;
+  items: ObsStudioSceneItemIndexListItem[];
+};
+
+export type ApiStreamerStudioSceneItemVisibilityResponse = ApiBaseResponse & {
+  data?: ObsStudioSceneItemVisibilityResult;
+};
+
+export type ObsStudioSceneItemRemoveInput = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName?: string | null;
+};
+
+export type ObsStudioSceneItemRemoveResult = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName: string | null;
+  removed: boolean;
+  items: ObsStudioSceneItemIndexListItem[];
+};
+
+export type ApiStreamerStudioSceneItemRemoveResponse = ApiBaseResponse & {
+  data?: ObsStudioSceneItemRemoveResult;
 };
 
 export type ObsStudioTextSourceCreateInput = {

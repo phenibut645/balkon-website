@@ -16,11 +16,16 @@ type ObsSceneItemListProps = {
   statusError: boolean;
   indexStatusMessage: string | null;
   indexStatusError: boolean;
+  lifecycleLoading: boolean;
+  lifecycleStatusMessage: string | null;
+  lifecycleStatusError: boolean;
   onSelect: (sceneItemId: number) => void;
   onUpdateDraftTransform: (patch: Partial<ObsStudioSceneItemTransform>) => void;
   onApply: () => void;
   onReset: () => void;
   onApplyIndex: (targetIndex: number) => void;
+  onSetVisibility: (enabled: boolean) => void;
+  onRemove: () => void;
 };
 
 function formatTransform(item: ObsStudioSceneItemView): string {
@@ -74,15 +79,23 @@ export function ObsSceneItemList({
   statusError,
   indexStatusMessage,
   indexStatusError,
+  lifecycleLoading,
+  lifecycleStatusMessage,
+  lifecycleStatusError,
   onSelect,
   onUpdateDraftTransform,
   onApply,
   onReset,
   onApplyIndex,
+  onSetVisibility,
+  onRemove,
 }: ObsSceneItemListProps) {
   const selectedItem = selectedItemId === null ? null : items.find(item => item.sceneItemId === selectedItemId) ?? null;
   const canMoveLayerUp = canEdit && selectedNativeIndex !== null && selectedNativeIndex < maxNativeIndex && !indexApplyLoading;
   const canMoveLayerDown = canEdit && selectedNativeIndex !== null && selectedNativeIndex > 0 && !indexApplyLoading;
+
+  const canToggleVisibility = Boolean(selectedItem && canEdit && !lifecycleLoading);
+  const canRemoveItem = Boolean(selectedItem && canEdit && !lifecycleLoading);
 
   const updateField = (
     raw: string,
@@ -192,6 +205,34 @@ export function ObsSceneItemList({
                     ) : null}
                   </div>
 
+                  <div className="streamer-lifecycle-controls">
+                    <div className="streamer-lifecycle-title">{t.streamerStudioVisibilityControlsTitle}</div>
+                    <div className="streamer-lifecycle-actions">
+                      <button
+                        className="pagination-btn"
+                        type="button"
+                        disabled={!canToggleVisibility}
+                        onClick={() => selectedItem ? onSetVisibility(!selectedItem.enabled) : undefined}
+                      >
+                        {selectedItem?.enabled ? t.streamerStudioHideItem : t.streamerStudioShowItem}
+                      </button>
+                      <button
+                        className="pagination-btn streamer-danger-button"
+                        type="button"
+                        disabled={!canRemoveItem}
+                        onClick={() => selectedItem ? onRemove() : undefined}
+                      >
+                        {t.streamerStudioRemoveItem}
+                      </button>
+                    </div>
+                    <p className="streamer-lifecycle-hint">{t.streamerStudioRemoveHint}</p>
+                    {lifecycleStatusMessage ? (
+                      <p className={`streamer-lifecycle-status ${lifecycleStatusError ? "state-error" : "state-ok"}`} aria-live="polite">
+                        {lifecycleStatusMessage}
+                      </p>
+                    ) : null}
+                  </div>
+
                   <div className="streamer-transform-actions">
                     <div className="streamer-transform-action-buttons">
                       <button className="pagination-btn" type="button" disabled={!canEdit || !dirtySelected || applyLoading} onClick={onApply}>
@@ -214,6 +255,11 @@ export function ObsSceneItemList({
               ) : (
                 <div className="streamer-transform-editor">
                   <p className="state-text state-empty">{t.noItemSelected}</p>
+                  {lifecycleStatusMessage ? (
+                    <p className={`streamer-lifecycle-status ${lifecycleStatusError ? "state-error" : "state-ok"}`} aria-live="polite">
+                      {lifecycleStatusMessage}
+                    </p>
+                  ) : null}
                 </div>
               )}
             </div>

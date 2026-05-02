@@ -719,6 +719,70 @@ body {
   color: #aab8d6;
 }
 
+.streamer-lifecycle-controls {
+  border-top: 1px solid rgba(95, 116, 159, 0.24);
+  padding-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.streamer-lifecycle-title {
+  color: #b8c6e4;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.streamer-lifecycle-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.streamer-lifecycle-actions .pagination-btn {
+  min-width: 120px;
+  justify-content: center;
+  padding: 7px 12px;
+}
+
+.streamer-danger-button {
+  background: linear-gradient(145deg, rgba(86, 24, 42, 0.55), rgba(54, 16, 26, 0.72));
+  border: 1px solid rgba(217, 94, 120, 0.42);
+  color: #ffd5dc;
+  box-shadow: 0 0 12px rgba(215, 78, 116, 0.18);
+}
+
+.streamer-danger-button:hover:not(:disabled) {
+  background: linear-gradient(145deg, rgba(112, 36, 56, 0.66), rgba(60, 18, 30, 0.78));
+  color: #ffe6eb;
+  box-shadow: 0 0 16px rgba(217, 94, 120, 0.28);
+}
+
+.streamer-danger-button:disabled {
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.streamer-lifecycle-hint {
+  margin: 0;
+  font-size: 11px;
+  color: #94a3c6;
+}
+
+.streamer-lifecycle-status {
+  margin: 0;
+  font-size: 12px;
+  color: #b5bfd6;
+}
+
+.streamer-lifecycle-status.state-ok {
+  color: #9de7b6;
+}
+
+.streamer-lifecycle-status.state-error {
+  color: #ffb4c1;
+}
+
 .streamer-transform-actions {
   display: flex;
   justify-content: space-between;

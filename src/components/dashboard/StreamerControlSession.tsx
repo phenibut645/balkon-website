@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DashboardText } from "@/lib/dashboardText";
-import { applyStreamerStudioSceneItemIndex, applyStreamerStudioSceneItemTransform, createStreamerStudioBrowserSource, createStreamerStudioTextSource, listStreamerStudioSceneItems, listStreamerStudioScenes } from "@/lib/api";
+import { applyStreamerStudioSceneItemIndex, applyStreamerStudioSceneItemTransform, createStreamerStudioBrowserSource, createStreamerStudioTextSource, listStreamerStudioSceneItems, listStreamerStudioScenes, removeStreamerStudioSceneItem, setStreamerStudioSceneItemVisibility } from "@/lib/api";
 import { ObsStudioBrowserSourceCreateInput, ObsStudioSceneItemTransform, ObsStudioSceneItemView, ObsStudioSceneView, ObsStudioTextSourceCreateInput, StreamerStudioAccessView } from "@/lib/types";
 import { ObsScenePreview } from "./ObsScenePreview";
 import { ObsSceneItemList } from "./ObsSceneItemList";
@@ -97,6 +97,8 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
   const [sourceCreateStatus, setSourceCreateStatus] = useState<{ message: string; isError: boolean } | null>(null);
   const [transformStatus, setTransformStatus] = useState<{ message: string; isError: boolean } | null>(null);
   const [indexStatus, setIndexStatus] = useState<{ message: string; isError: boolean } | null>(null);
+  const [lifecycleLoading, setLifecycleLoading] = useState(false);
+  const [lifecycleStatus, setLifecycleStatus] = useState<{ message: string; isError: boolean } | null>(null);
 
   const agentStatusText = useMemo(() => {
     if (!streamer.obsAgentConfigured) {
@@ -234,6 +236,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
   useEffect(() => {
     setTransformStatus(null);
     setIndexStatus(null);
+    setLifecycleStatus(null);
   }, [selectedItemId]);
 
   const canAttemptLoad = streamer.canControl;
@@ -339,14 +342,24 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
         return withNativeIndexes(prev.map(item => {
           const updated = indexMap.get(item.sceneItemId);
           return updated
-            ? { ...item, sourceName: updated.sourceName || item.sourceName, sceneItemIndex: updated.sceneItemIndex }
+            ? {
+              ...item,
+              sourceName: updated.sourceName || item.sourceName,
+              sceneItemIndex: updated.sceneItemIndex,
+              enabled: typeof updated.enabled === "boolean" ? updated.enabled : item.enabled,
+            }
             : item;
         }));
       }
 
       return withNativeIndexes(prev.map(item => (
         item.sceneItemId === response.data!.sceneItemId
-          ? { ...item, sourceName: response.data!.sourceName || item.sourceName, sceneItemIndex: response.data!.sceneItemIndex }
+          ? {
+            ...item,
+            sourceName: response.data!.sourceName || item.sourceName,
+            sceneItemIndex: response.data!.sceneItemIndex,
+            enabled: item.enabled,
+          }
           : item
       )));
     });
@@ -364,6 +377,171 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
     streamer.streamerId,
     t.streamerStudioLayerApplied,
     t.streamerStudioLayerApplyFailed,
+  ]);
+
+  const setSelectedItemVisibility = useCallback(async (enabled: boolean) => {
+    const sceneName = selectedSceneName.trim();
+    if (!selectedServerItem || !sceneName || !canEdit || lifecycleLoading) {
+      return;
+    }
+
+    setLifecycleLoading(true);
+    setLifecycleStatus(null);
+
+    const response = await setStreamerStudioSceneItemVisibility(streamer.streamerId, {
+      sceneName,
+      sceneItemId: selectedServerItem.sceneItemId,
+      sourceName: selectedServerItem.sourceName,
+      enabled,
+    });
+
+    if (!response.ok || !response.data) {
+      setLifecycleLoading(false);
+      setLifecycleStatus({
+        message: response.message || t.streamerStudioVisibilityApplyFailed,
+        isError: true,
+      });
+      return;
+    }
+
+    const { data } = response;
+    const targetItemId = data.sceneItemId;
+    const targetSourceName = data.sourceName;
+    const targetEnabled = data.enabled;
+    const returnedItems = data.items || [];
+
+    setItems(prev => {
+      const indexMap = new Map(returnedItems.map(item => [item.sceneItemId, item]));
+      const next = prev.map(item => {
+        const updated = indexMap.get(item.sceneItemId);
+        if (updated) {
+          return {
+            ...item,
+            sourceName: updated.sourceName || item.sourceName,
+            sceneItemIndex: updated.sceneItemIndex,
+            enabled: typeof updated.enabled === "boolean"
+              ? updated.enabled
+              : (item.sceneItemId === targetItemId ? targetEnabled : item.enabled),
+          };
+        }
+
+        if (item.sceneItemId === targetItemId) {
+          return {
+            ...item,
+            sourceName: targetSourceName || item.sourceName,
+            enabled: targetEnabled,
+          };
+        }
+
+        return item;
+      });
+
+      return withNativeIndexes(next);
+    });
+
+    setLifecycleLoading(false);
+    setLifecycleStatus({
+      message: t.streamerStudioVisibilityApplied,
+      isError: false,
+    });
+    setSelectedItemId(targetItemId);
+  }, [
+    canEdit,
+    lifecycleLoading,
+    selectedSceneName,
+    selectedServerItem,
+    streamer.streamerId,
+    t.streamerStudioVisibilityApplied,
+    t.streamerStudioVisibilityApplyFailed,
+  ]);
+
+  const removeSelectedItem = useCallback(async () => {
+    const sceneName = selectedSceneName.trim();
+    if (!selectedServerItem || !sceneName || !canEdit || lifecycleLoading) {
+      return;
+    }
+
+    const confirmed = window.confirm(t.streamerStudioRemoveConfirm);
+    if (!confirmed) {
+      return;
+    }
+
+    setLifecycleLoading(true);
+    setLifecycleStatus(null);
+
+    const response = await removeStreamerStudioSceneItem(streamer.streamerId, {
+      sceneName,
+      sceneItemId: selectedServerItem.sceneItemId,
+      sourceName: selectedServerItem.sourceName,
+    });
+
+    if (!response.ok || !response.data) {
+      setLifecycleLoading(false);
+      setLifecycleStatus({
+        message: response.message || t.streamerStudioRemoveFailed,
+        isError: true,
+      });
+      return;
+    }
+
+    const removedId = response.data.sceneItemId;
+    const returnedItems = response.data.items || [];
+    let nextSelectedId: number | null = null;
+
+    setItems(prev => {
+      const filtered = prev.filter(item => item.sceneItemId !== removedId);
+      if (returnedItems.length > 0) {
+        const indexMap = new Map(returnedItems.map(item => [item.sceneItemId, item]));
+        const mapped = filtered.map(item => {
+          const updated = indexMap.get(item.sceneItemId);
+          if (!updated) {
+            return item;
+          }
+
+          return {
+            ...item,
+            sourceName: updated.sourceName || item.sourceName,
+            sceneItemIndex: updated.sceneItemIndex,
+            enabled: typeof updated.enabled === "boolean" ? updated.enabled : item.enabled,
+          };
+        });
+        const normalized = withNativeIndexes(mapped);
+        nextSelectedId = normalized.find(item => item.enabled)?.sceneItemId
+          ?? normalized[0]?.sceneItemId
+          ?? null;
+        return normalized;
+      }
+
+      const normalized = withNativeIndexes(filtered);
+      nextSelectedId = normalized.find(item => item.enabled)?.sceneItemId
+        ?? normalized[0]?.sceneItemId
+        ?? null;
+      return normalized;
+    });
+
+    setDraftTransforms(prev => {
+      if (!(removedId in prev)) {
+        return prev;
+      }
+      const { [removedId]: _removed, ...rest } = prev;
+      return rest;
+    });
+
+    setLifecycleLoading(false);
+    setLifecycleStatus({
+      message: t.streamerStudioRemoveApplied,
+      isError: false,
+    });
+    setSelectedItemId(nextSelectedId);
+  }, [
+    canEdit,
+    lifecycleLoading,
+    selectedSceneName,
+    selectedServerItem,
+    streamer.streamerId,
+    t.streamerStudioRemoveApplied,
+    t.streamerStudioRemoveConfirm,
+    t.streamerStudioRemoveFailed,
   ]);
 
   const createTextSource = useCallback(async (input: ObsStudioTextSourceCreateInput) => {
@@ -669,6 +847,9 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
           statusError={Boolean(transformStatus?.isError)}
           indexStatusMessage={indexStatus?.message ?? null}
           indexStatusError={Boolean(indexStatus?.isError)}
+          lifecycleLoading={lifecycleLoading}
+          lifecycleStatusMessage={lifecycleStatus?.message ?? null}
+          lifecycleStatusError={Boolean(lifecycleStatus?.isError)}
           onSelect={setSelectedItemId}
           onUpdateDraftTransform={(patch) => {
             if (!selectedServerItem) {
@@ -679,6 +860,8 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
           onApply={() => void applySelectedTransform()}
           onReset={resetSelectedDraft}
           onApplyIndex={(targetIndex) => void applySelectedIndex(targetIndex)}
+          onSetVisibility={(value: boolean) => { void setSelectedItemVisibility(value); }}
+          onRemove={() => { void removeSelectedItem(); }}
         />
       </div>
     </div>
