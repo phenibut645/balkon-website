@@ -570,6 +570,25 @@ export type ApiStreamerStudioTextSourceCreateResponse = ApiBaseResponse & {
   data?: ObsStudioTextSourceCreateResult;
 };
 
+export type ObsStudioTextSourceUpdateInput = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName?: string | null;
+  text: string;
+};
+
+export type ObsStudioTextSourceUpdateResult = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName: string;
+  inputKind: string | null;
+  text: string;
+};
+
+export type ApiStreamerStudioTextSourceUpdateResponse = ApiBaseResponse & {
+  data?: ObsStudioTextSourceUpdateResult;
+};
+
 export type ObsStudioBrowserSourceCreateInput = {
   sceneName: string;
   sourceName?: string | null;
@@ -601,6 +620,29 @@ export type ObsStudioBrowserSourceCreateResult = {
 
 export type ApiStreamerStudioBrowserSourceCreateResponse = ApiBaseResponse & {
   data?: ObsStudioBrowserSourceCreateResult;
+};
+
+export type ObsStudioBrowserSourceUpdateInput = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName?: string | null;
+  url?: string;
+  width?: number;
+  height?: number;
+};
+
+export type ObsStudioBrowserSourceUpdateResult = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName: string;
+  inputKind: string;
+  url?: string;
+  width?: number;
+  height?: number;
+};
+
+export type ApiStreamerStudioBrowserSourceUpdateResponse = ApiBaseResponse & {
+  data?: ObsStudioBrowserSourceUpdateResult;
 };
 
 export type AdminItem = {

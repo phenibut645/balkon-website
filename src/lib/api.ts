@@ -46,20 +46,90 @@ import {
   ApiStreamerStudioSceneItemVisibilityResponse,
   ApiStreamerStudioSceneItemRemoveResponse,
   ApiStreamerStudioTextSourceCreateResponse,
+  ApiStreamerStudioTextSourceUpdateResponse,
   ApiStreamerStudioTransformApplyResponse,
   ObsStudioSceneItemIndexApplyInput,
   ObsStudioSceneItemVisibilityInput,
   ObsStudioSceneItemRemoveInput,
   ObsStudioTextSourceCreateInput,
+  ObsStudioTextSourceUpdateInput,
   ObsStudioTransformApplyInput,
   ObsStudioBrowserSourceCreateInput,
+  ObsStudioBrowserSourceUpdateInput,
   ApiStreamerStudioBrowserSourceCreateResponse,
+  ApiStreamerStudioBrowserSourceUpdateResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
 export function getDiscordLoginUrl(): string {
   return `${API_BASE_URL}/api/auth/discord`;
+}
+
+export async function updateStreamerStudioTextSource(
+  streamerId: number,
+  input: ObsStudioTextSourceUpdateInput,
+): Promise<ApiStreamerStudioTextSourceUpdateResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/control/source/text`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerStudioTextSourceUpdateResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "OBS_TEXT_SOURCE_UPDATE_COMMAND_FAILED",
+        message: data?.message || "Failed to update text source.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function updateStreamerStudioBrowserSource(
+  streamerId: number,
+  input: ObsStudioBrowserSourceUpdateInput,
+): Promise<ApiStreamerStudioBrowserSourceUpdateResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/control/source/browser`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerStudioBrowserSourceUpdateResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "OBS_BROWSER_SOURCE_UPDATE_COMMAND_FAILED",
+        message: data?.message || "Failed to update browser source.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
 }
 
 export async function getMe(): Promise<ApiMeResponse> {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DashboardText } from "@/lib/dashboardText";
-import { applyStreamerStudioSceneItemIndex, applyStreamerStudioSceneItemTransform, createStreamerStudioBrowserSource, createStreamerStudioTextSource, listStreamerStudioSceneItems, listStreamerStudioScenes, removeStreamerStudioSceneItem, setStreamerStudioSceneItemVisibility } from "@/lib/api";
-import { ObsStudioBrowserSourceCreateInput, ObsStudioSceneItemTransform, ObsStudioSceneItemView, ObsStudioSceneView, ObsStudioTextSourceCreateInput, StreamerStudioAccessView } from "@/lib/types";
+import { applyStreamerStudioSceneItemIndex, applyStreamerStudioSceneItemTransform, createStreamerStudioBrowserSource, createStreamerStudioTextSource, listStreamerStudioSceneItems, listStreamerStudioScenes, removeStreamerStudioSceneItem, setStreamerStudioSceneItemVisibility, updateStreamerStudioBrowserSource, updateStreamerStudioTextSource } from "@/lib/api";
+import { ObsStudioBrowserSourceCreateInput, ObsStudioBrowserSourceUpdateInput, ObsStudioSceneItemTransform, ObsStudioSceneItemView, ObsStudioSceneView, ObsStudioTextSourceCreateInput, StreamerStudioAccessView } from "@/lib/types";
 import { ObsScenePreview } from "./ObsScenePreview";
 import { ObsSceneItemList } from "./ObsSceneItemList";
 import { StreamerTrustedUsersPanel } from "./StreamerTrustedUsersPanel";
@@ -11,6 +11,13 @@ type StreamerControlSessionProps = {
   t: DashboardText;
   streamer: StreamerStudioAccessView;
   onBack: () => void;
+};
+
+type SceneItemSourceSettings = {
+  text?: string;
+  browserUrl?: string;
+  browserWidth?: number;
+  browserHeight?: number;
 };
 
 function clampNumber(value: number, min: number, max: number): number {
@@ -95,10 +102,15 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
   const [indexApplyLoading, setIndexApplyLoading] = useState(false);
   const [sourceCreateLoading, setSourceCreateLoading] = useState(false);
   const [sourceCreateStatus, setSourceCreateStatus] = useState<{ message: string; isError: boolean } | null>(null);
+  const [sourceSettings, setSourceSettings] = useState<Record<number, SceneItemSourceSettings>>({});
   const [transformStatus, setTransformStatus] = useState<{ message: string; isError: boolean } | null>(null);
   const [indexStatus, setIndexStatus] = useState<{ message: string; isError: boolean } | null>(null);
   const [lifecycleLoading, setLifecycleLoading] = useState(false);
   const [lifecycleStatus, setLifecycleStatus] = useState<{ message: string; isError: boolean } | null>(null);
+  const [textUpdateLoading, setTextUpdateLoading] = useState(false);
+  const [browserUpdateLoading, setBrowserUpdateLoading] = useState(false);
+  const [textUpdateStatus, setTextUpdateStatus] = useState<{ message: string; isError: boolean } | null>(null);
+  const [browserUpdateStatus, setBrowserUpdateStatus] = useState<{ message: string; isError: boolean } | null>(null);
 
   const agentStatusText = useMemo(() => {
     if (!streamer.obsAgentConfigured) {

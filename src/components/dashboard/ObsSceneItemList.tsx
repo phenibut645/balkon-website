@@ -1,5 +1,13 @@
+import { useEffect, useState } from "react";
 import { DashboardText } from "@/lib/dashboardText";
 import { ObsStudioSceneItemTransform, ObsStudioSceneItemView } from "@/lib/types";
+
+type SourceSettingsMap = Record<number, {
+  text?: string;
+  browserUrl?: string;
+  browserWidth?: number;
+  browserHeight?: number;
+}>;
 
 type ObsSceneItemListProps = {
   t: DashboardText;
@@ -26,6 +34,15 @@ type ObsSceneItemListProps = {
   onApplyIndex: (targetIndex: number) => void;
   onSetVisibility: (enabled: boolean) => void;
   onRemove: () => void;
+  sourceSettings: SourceSettingsMap;
+  textUpdateLoading: boolean;
+  textUpdateStatusMessage: string | null;
+  textUpdateStatusError: boolean;
+  browserUpdateLoading: boolean;
+  browserUpdateStatusMessage: string | null;
+  browserUpdateStatusError: boolean;
+  onUpdateTextSource: (value: string) => void;
+  onUpdateBrowserSource: (input: { url: string; width: string; height: string }) => void;
 };
 
 function formatTransform(item: ObsStudioSceneItemView): string {
