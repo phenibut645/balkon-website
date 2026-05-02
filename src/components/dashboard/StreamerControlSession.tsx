@@ -249,6 +249,8 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
     setTransformStatus(null);
     setIndexStatus(null);
     setLifecycleStatus(null);
+    setTextUpdateStatus(null);
+    setBrowserUpdateStatus(null);
   }, [selectedItemId]);
 
   const canAttemptLoad = streamer.canControl;
@@ -621,6 +623,13 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
       ...prev,
       [response.data!.sceneItemId]: createdTransform,
     }));
+    setSourceSettings(prev => ({
+      ...prev,
+      [response.data!.sceneItemId]: {
+        ...(prev[response.data!.sceneItemId] ?? {}),
+        text,
+      },
+    }));
     setSelectedItemId(response.data.sceneItemId);
     setSourceCreateStatus({ message: t.streamerStudioCreateTextSuccess, isError: false });
   }, [canEdit, selectedSceneName, sourceCreateLoading, streamer.streamerId, t.streamerStudioCreateTextFailed, t.streamerStudioCreateTextInvalid, t.streamerStudioCreateTextSuccess]);
@@ -692,9 +701,180 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
       ...prev,
       [response.data!.sceneItemId]: createdTransform,
     }));
+    setSourceSettings(prev => ({
+      ...prev,
+      [response.data!.sceneItemId]: {
+        ...(prev[response.data!.sceneItemId] ?? {}),
+        browserUrl: url,
+        browserWidth: input.width ?? 800,
+        browserHeight: input.height ?? 450,
+      },
+    }));
     setSelectedItemId(response.data.sceneItemId);
     setSourceCreateStatus({ message: t.streamerStudioCreateBrowserSuccess, isError: false });
   }, [canEdit, selectedSceneName, sourceCreateLoading, streamer.streamerId, t.streamerStudioCreateBrowserFailed, t.streamerStudioCreateBrowserInvalid, t.streamerStudioCreateBrowserSuccess]);
+
+  const updateTextSource = useCallback(async (value: string) => {
+    const sceneName = selectedSceneName.trim();
+    const text = value.trim();
+    if (!selectedServerItem || !sceneName || !canEdit) {
+      return;
+    }
+
+    if (!text.length || text.length > 500) {
+      setTextUpdateStatus({
+        message: t.streamerStudioTextSettingsInvalid,
+        isError: true,
+      });
+      return;
+    }
+
+    setTextUpdateLoading(true);
+    setTextUpdateStatus(null);
+
+    const response = await updateStreamerStudioTextSource(streamer.streamerId, {
+      sceneName,
+      sceneItemId: selectedServerItem.sceneItemId,
+      sourceName: selectedServerItem.sourceName,
+      text,
+    });
+
+    setTextUpdateLoading(false);
+
+    if (!response.ok || !response.data) {
+      setTextUpdateStatus({
+        message: response.message || t.streamerStudioTextSettingsFailed,
+        isError: true,
+      });
+      return;
+    }
+
+    setSourceSettings(prev => ({
+      ...prev,
+      [response.data!.sceneItemId]: {
+        ...(prev[response.data!.sceneItemId] ?? {}),
+        text: response.data!.text,
+      },
+    }));
+    setItems(prev => prev.map(item => (
+      item.sceneItemId === response.data!.sceneItemId
+        ? {
+          ...item,
+          sourceName: response.data!.sourceName || item.sourceName,
+          inputKind: response.data!.inputKind ?? item.inputKind,
+        }
+        : item
+    )));
+    setSelectedItemId(response.data.sceneItemId);
+    setTextUpdateStatus({
+      message: t.streamerStudioTextSettingsSuccess,
+      isError: false,
+    });
+  }, [
+    canEdit,
+    selectedSceneName,
+    selectedServerItem,
+    streamer.streamerId,
+    t.streamerStudioTextSettingsFailed,
+    t.streamerStudioTextSettingsInvalid,
+    t.streamerStudioTextSettingsSuccess,
+  ]);
+
+  const updateBrowserSource = useCallback(async (input: { url: string; width: string; height: string }) => {
+    const sceneName = selectedSceneName.trim();
+    if (!selectedServerItem || !sceneName || !canEdit) {
+      return;
+    }
+
+    const trimmedUrl = input.url.trim();
+    const hasUrl = trimmedUrl.length > 0;
+    const hasWidth = input.width.trim().length > 0;
+    const hasHeight = input.height.trim().length > 0;
+
+    if (!hasUrl && !hasWidth && !hasHeight) {
+      setBrowserUpdateStatus({
+        message: t.streamerStudioBrowserSettingsInvalid,
+        isError: true,
+      });
+      return;
+    }
+
+    if (hasUrl && (!/^https?:\/\//i.test(trimmedUrl) || trimmedUrl.length > 1000)) {
+      setBrowserUpdateStatus({
+        message: t.streamerStudioBrowserSettingsInvalid,
+        isError: true,
+      });
+      return;
+    }
+
+    const parsedWidth = hasWidth ? Number(input.width) : null;
+    const parsedHeight = hasHeight ? Number(input.height) : null;
+
+    if ((hasWidth && !Number.isFinite(parsedWidth)) || (hasHeight && !Number.isFinite(parsedHeight))) {
+      setBrowserUpdateStatus({
+        message: t.streamerStudioBrowserSettingsInvalid,
+        isError: true,
+      });
+      return;
+    }
+
+    const width = parsedWidth === null ? undefined : clampNumber(parsedWidth, 64, 3840);
+    const height = parsedHeight === null ? undefined : clampNumber(parsedHeight, 64, 2160);
+
+    setBrowserUpdateLoading(true);
+    setBrowserUpdateStatus(null);
+
+    const response = await updateStreamerStudioBrowserSource(streamer.streamerId, {
+      sceneName,
+      sceneItemId: selectedServerItem.sceneItemId,
+      sourceName: selectedServerItem.sourceName,
+      url: hasUrl ? trimmedUrl : undefined,
+      width,
+      height,
+    });
+
+    setBrowserUpdateLoading(false);
+
+    if (!response.ok || !response.data) {
+      setBrowserUpdateStatus({
+        message: response.message || t.streamerStudioBrowserSettingsFailed,
+        isError: true,
+      });
+      return;
+    }
+
+    setSourceSettings(prev => ({
+      ...prev,
+      [response.data!.sceneItemId]: {
+        ...(prev[response.data!.sceneItemId] ?? {}),
+        ...(response.data!.url !== undefined ? { browserUrl: response.data!.url } : {}),
+        ...(response.data!.width !== undefined ? { browserWidth: response.data!.width } : {}),
+        ...(response.data!.height !== undefined ? { browserHeight: response.data!.height } : {}),
+      },
+    }));
+    setItems(prev => prev.map(item => (
+      item.sceneItemId === response.data!.sceneItemId
+        ? {
+          ...item,
+          sourceName: response.data!.sourceName || item.sourceName,
+          inputKind: response.data!.inputKind || item.inputKind,
+        }
+        : item
+    )));
+    setSelectedItemId(response.data.sceneItemId);
+    setBrowserUpdateStatus({
+      message: t.streamerStudioBrowserSettingsSuccess,
+      isError: false,
+    });
+  }, [
+    canEdit,
+    selectedSceneName,
+    selectedServerItem,
+    streamer.streamerId,
+    t.streamerStudioBrowserSettingsFailed,
+    t.streamerStudioBrowserSettingsInvalid,
+    t.streamerStudioBrowserSettingsSuccess,
+  ]);
 
   const applySelectedTransform = useCallback(async () => {
     if (!selectedServerItem || !selectedDraftTransform || !canEdit || !selectedSceneName.trim()) {
@@ -862,6 +1042,13 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
           lifecycleLoading={lifecycleLoading}
           lifecycleStatusMessage={lifecycleStatus?.message ?? null}
           lifecycleStatusError={Boolean(lifecycleStatus?.isError)}
+          sourceSettings={sourceSettings}
+          textUpdateLoading={textUpdateLoading}
+          textUpdateStatusMessage={textUpdateStatus?.message ?? null}
+          textUpdateStatusError={Boolean(textUpdateStatus?.isError)}
+          browserUpdateLoading={browserUpdateLoading}
+          browserUpdateStatusMessage={browserUpdateStatus?.message ?? null}
+          browserUpdateStatusError={Boolean(browserUpdateStatus?.isError)}
           onSelect={setSelectedItemId}
           onUpdateDraftTransform={(patch) => {
             if (!selectedServerItem) {
@@ -874,6 +1061,8 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
           onApplyIndex={(targetIndex) => void applySelectedIndex(targetIndex)}
           onSetVisibility={(value: boolean) => { void setSelectedItemVisibility(value); }}
           onRemove={() => { void removeSelectedItem(); }}
+          onUpdateTextSource={(value) => { void updateTextSource(value); }}
+          onUpdateBrowserSource={(input) => { void updateBrowserSource(input); }}
         />
       </div>
     </div>

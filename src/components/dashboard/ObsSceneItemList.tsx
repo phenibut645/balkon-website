@@ -81,6 +81,13 @@ function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function isEditableTextKind(kind: string | null | undefined): boolean {
+  return kind === "text_gdiplus_v2"
+    || kind === "text_gdiplus"
+    || kind === "text_ft2_source_v2"
+    || kind === "text_ft2_source";
+}
+
 export function ObsSceneItemList({
   t,
   items,
@@ -99,6 +106,13 @@ export function ObsSceneItemList({
   lifecycleLoading,
   lifecycleStatusMessage,
   lifecycleStatusError,
+  sourceSettings,
+  textUpdateLoading,
+  textUpdateStatusMessage,
+  textUpdateStatusError,
+  browserUpdateLoading,
+  browserUpdateStatusMessage,
+  browserUpdateStatusError,
   onSelect,
   onUpdateDraftTransform,
   onApply,
@@ -106,13 +120,50 @@ export function ObsSceneItemList({
   onApplyIndex,
   onSetVisibility,
   onRemove,
+  onUpdateTextSource,
+  onUpdateBrowserSource,
 }: ObsSceneItemListProps) {
   const selectedItem = selectedItemId === null ? null : items.find(item => item.sceneItemId === selectedItemId) ?? null;
+  const selectedSettings = selectedItem ? sourceSettings[selectedItem.sceneItemId] ?? {} : {};
   const canMoveLayerUp = canEdit && selectedNativeIndex !== null && selectedNativeIndex < maxNativeIndex && !indexApplyLoading;
   const canMoveLayerDown = canEdit && selectedNativeIndex !== null && selectedNativeIndex > 0 && !indexApplyLoading;
+  const canEditText = Boolean(selectedItem && isEditableTextKind(selectedItem.inputKind));
+  const canEditBrowser = Boolean(selectedItem && selectedItem.inputKind === "browser_source");
 
   const canToggleVisibility = Boolean(selectedItem && canEdit && !lifecycleLoading);
   const canRemoveItem = Boolean(selectedItem && canEdit && !lifecycleLoading);
+  const [textValue, setTextValue] = useState("");
+  const [browserUrlValue, setBrowserUrlValue] = useState("");
+  const [browserWidthValue, setBrowserWidthValue] = useState("800");
+  const [browserHeightValue, setBrowserHeightValue] = useState("450");
+
+  useEffect(() => {
+    if (!selectedItem || !canEditText) {
+      setTextValue("");
+      return;
+    }
+
+    setTextValue(selectedSettings.text ?? "");
+  }, [canEditText, selectedItem, selectedSettings.text]);
+
+  useEffect(() => {
+    if (!selectedItem || !canEditBrowser) {
+      setBrowserUrlValue("");
+      setBrowserWidthValue("800");
+      setBrowserHeightValue("450");
+      return;
+    }
+
+    setBrowserUrlValue(selectedSettings.browserUrl ?? "");
+    setBrowserWidthValue(String(selectedSettings.browserWidth ?? 800));
+    setBrowserHeightValue(String(selectedSettings.browserHeight ?? 450));
+  }, [
+    canEditBrowser,
+    selectedItem,
+    selectedSettings.browserHeight,
+    selectedSettings.browserUrl,
+    selectedSettings.browserWidth,
+  ]);
 
   const updateField = (
     raw: string,
@@ -249,6 +300,100 @@ export function ObsSceneItemList({
                       </p>
                     ) : null}
                   </div>
+
+                  {canEdit && (canEditText || canEditBrowser) ? (
+                    <div className="streamer-source-settings">
+                      <div className="streamer-source-settings-head">
+                        <div className="streamer-lifecycle-title">{t.streamerStudioSourceSettingsTitle}</div>
+                      </div>
+
+                      {canEditText ? (
+                        <div className="streamer-source-settings-form">
+                          <div className="streamer-source-settings-head">
+                            <span className="market-card-hint">{t.streamerStudioTextSettingsTitle}</span>
+                          </div>
+                          <label className="streamer-transform-field">
+                            <span>{t.streamerStudioTextSettingsContent}</span>
+                            <textarea
+                              value={textValue}
+                              placeholder={t.streamerStudioTextSettingsPlaceholder}
+                              onChange={(event) => setTextValue(event.target.value)}
+                              rows={4}
+                            />
+                          </label>
+                          <div className="streamer-source-settings-actions">
+                            <button
+                              className="pagination-btn"
+                              type="button"
+                              disabled={textUpdateLoading}
+                              onClick={() => onUpdateTextSource(textValue)}
+                            >
+                              {t.streamerStudioTextSettingsUpdate}
+                            </button>
+                          </div>
+                          {textUpdateStatusMessage ? (
+                            <p className={`streamer-source-settings-feedback ${textUpdateStatusError ? "state-error" : "state-ok"}`} aria-live="polite">
+                              {textUpdateStatusMessage}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {canEditBrowser ? (
+                        <div className="streamer-source-settings-form">
+                          <div className="streamer-source-settings-head">
+                            <span className="market-card-hint">{t.streamerStudioBrowserSettingsTitle}</span>
+                          </div>
+                          <div className="streamer-source-settings-grid">
+                            <label className="streamer-transform-field streamer-source-settings-wide">
+                              <span>{t.streamerStudioBrowserSettingsUrl}</span>
+                              <input
+                                type="url"
+                                value={browserUrlValue}
+                                placeholder={t.streamerStudioBrowserSettingsUrlPlaceholder}
+                                onChange={(event) => setBrowserUrlValue(event.target.value)}
+                              />
+                            </label>
+                            <label className="streamer-transform-field">
+                              <span>{t.streamerStudioBrowserSettingsWidth}</span>
+                              <input
+                                type="number"
+                                value={browserWidthValue}
+                                onChange={(event) => setBrowserWidthValue(event.target.value)}
+                              />
+                            </label>
+                            <label className="streamer-transform-field">
+                              <span>{t.streamerStudioBrowserSettingsHeight}</span>
+                              <input
+                                type="number"
+                                value={browserHeightValue}
+                                onChange={(event) => setBrowserHeightValue(event.target.value)}
+                              />
+                            </label>
+                          </div>
+                          <div className="streamer-source-settings-actions">
+                            <button
+                              className="pagination-btn"
+                              type="button"
+                              disabled={browserUpdateLoading}
+                              onClick={() => onUpdateBrowserSource({
+                                url: browserUrlValue,
+                                width: browserWidthValue,
+                                height: browserHeightValue,
+                              })}
+                            >
+                              {t.streamerStudioBrowserSettingsUpdate}
+                            </button>
+                          </div>
+                          {browserUpdateStatusMessage ? (
+                            <p className={`streamer-source-settings-feedback ${browserUpdateStatusError ? "state-error" : "state-ok"}`} aria-live="polite">
+                              {browserUpdateStatusMessage}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
 
                   <div className="streamer-transform-actions">
                     <div className="streamer-transform-action-buttons">
