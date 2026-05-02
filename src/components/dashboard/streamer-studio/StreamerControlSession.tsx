@@ -4,6 +4,7 @@ import { ObsScenePreview } from "../ObsScenePreview";
 import { StreamerSourceCreatePanel } from "../StreamerSourceCreatePanel";
 import { StreamerTrustedUsersPanel } from "../StreamerTrustedUsersPanel";
 import { AgentDiagnostics } from "./components/AgentDiagnostics";
+import { AgentSetupCard } from "./components/AgentSetupCard";
 import { SceneToolbar } from "./components/SceneToolbar";
 import { ObsSceneItemList } from "./ObsSceneItemList";
 import { useStreamerControlSession } from "./hooks/useStreamerControlSession";
@@ -57,6 +58,10 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
       ) : null}
       {session.diagnosticsWarning ? <p className="state-text state-error">{session.diagnosticsWarning}</p> : null}
       {session.scenes.scenesError ? <p className="state-text state-error">{session.scenes.scenesError}</p> : null}
+
+      {streamer.canManage ? (
+        <AgentSetupCard t={t} streamer={streamer} />
+      ) : null}
 
       {streamer.canManage ? (
         <StreamerTrustedUsersPanel t={t} streamerId={streamer.streamerId} />

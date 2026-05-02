@@ -1,4 +1,8 @@
 import {
+  ApiStreamerStudioAgentBindResponse,
+  ApiStreamerStudioAgentClearResponse,
+  ApiStreamerStudioAgentProvisionResponse,
+  ApiStreamerStudioAgentSetupResponse,
   ApiStreamerStudioBrowserSourceCreateResponse,
   ApiStreamerStudioBrowserSourceUpdateResponse,
   ApiStreamerStudioSceneItemIndexApplyResponse,
@@ -27,6 +31,132 @@ import {
 } from "@/lib/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+
+export async function getStreamerStudioAgentSetup(streamerId: number): Promise<ApiStreamerStudioAgentSetupResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/agent/setup`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerStudioAgentSetupResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_STUDIO_AGENT_SETUP_FAILED",
+        message: data?.message || "Failed to load OBS agent setup.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function provisionStreamerStudioAgent(
+  streamerId: number,
+  agentId?: string | null,
+): Promise<ApiStreamerStudioAgentProvisionResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/agent/provision`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ agentId: agentId?.trim() || null }),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerStudioAgentProvisionResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_STUDIO_AGENT_PROVISION_FAILED",
+        message: data?.message || "Failed to generate OBS agent token.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function bindStreamerStudioAgent(
+  streamerId: number,
+  agentId: string,
+  agentToken: string,
+): Promise<ApiStreamerStudioAgentBindResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/agent/bind`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agentId: agentId.trim(),
+        agentToken: agentToken.trim(),
+      }),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerStudioAgentBindResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_STUDIO_AGENT_BIND_FAILED",
+        message: data?.message || "Failed to bind OBS agent.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function clearStreamerStudioAgent(streamerId: number): Promise<ApiStreamerStudioAgentClearResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/agent`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerStudioAgentClearResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_STUDIO_AGENT_CLEAR_FAILED",
+        message: data?.message || "Failed to clear OBS agent binding.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
 
 export async function getStreamerStudioMe(): Promise<StreamerStudioMeResponse> {
   try {

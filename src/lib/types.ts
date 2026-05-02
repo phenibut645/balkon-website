@@ -424,6 +424,57 @@ export type StreamerStudioTrustedUserInput = {
   role?: StreamerStudioTrustedUserRole;
 };
 
+export type StreamerStudioAgentSetupView = {
+  streamerId: number;
+  configured: boolean;
+  agentId: string | null;
+  tokenPresent: boolean;
+  online: boolean;
+  lastSeenAt: string | null;
+  agentVersion: string | null;
+  relayProtocolVersion: number | null;
+  capabilities: string[];
+  obsConnected: boolean | null;
+  obsVersion: string | null;
+  obsWebsocketVersion: string | null;
+  relayUrl: string | null;
+};
+
+export type StreamerStudioAgentProvisionResult = {
+  streamerId: number;
+  agentId: string;
+  agentToken: string;
+  tokenShownOnce: true;
+};
+
+export type StreamerStudioAgentBindResult = {
+  streamerId: number;
+  agentId: string;
+  configured: true;
+  tokenPresent: true;
+};
+
+export type StreamerStudioAgentClearResult = {
+  streamerId: number;
+  cleared: true;
+};
+
+export type ApiStreamerStudioAgentSetupResponse = ApiBaseResponse & {
+  data?: StreamerStudioAgentSetupView;
+};
+
+export type ApiStreamerStudioAgentProvisionResponse = ApiBaseResponse & {
+  data?: StreamerStudioAgentProvisionResult;
+};
+
+export type ApiStreamerStudioAgentBindResponse = ApiBaseResponse & {
+  data?: StreamerStudioAgentBindResult;
+};
+
+export type ApiStreamerStudioAgentClearResponse = ApiBaseResponse & {
+  data?: StreamerStudioAgentClearResult;
+};
+
 export type ObsStudioSceneView = {
   name: string;
 };

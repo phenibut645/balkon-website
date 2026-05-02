@@ -335,27 +335,189 @@ body {
   gap: 10px;
 }
 
-@media (max-width: 760px) {
-  .streamer-source-create-head {
-    display: grid;
-  }
+.agent-setup-card {
+  border: 1px solid rgba(95, 116, 159, 0.22);
+  border-radius: 14px;
+  background: rgba(10, 14, 24, 0.55);
+  backdrop-filter: blur(14px);
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
 }
 
-@media (max-width: 760px) {
-  .streamer-trusted-head,
-  .streamer-trusted-head-actions,
-  .streamer-trusted-form,
-  .streamer-trusted-row {
-    grid-template-columns: 1fr;
-  }
+.agent-setup-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
 
-  .streamer-trusted-head {
-    display: grid;
-  }
+.agent-setup-head-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
 
-  .streamer-trusted-head-actions {
-    display: grid;
-  }
+.agent-setup-head-copy .section-title,
+.agent-setup-head-copy .market-card-hint {
+  margin: 0;
+}
+
+.agent-setup-head-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.agent-setup-feedback {
+  margin: 0;
+  font-size: 12px;
+}
+
+.agent-setup-feedback.state-ok {
+  color: #9de7b6;
+}
+
+.agent-setup-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.agent-setup-status-item,
+.agent-setup-info-card,
+.agent-setup-action-card {
+  border: 1px solid rgba(95, 116, 159, 0.18);
+  border-radius: 12px;
+  background: rgba(13, 19, 31, 0.52);
+  padding: 10px;
+  min-width: 0;
+}
+
+.agent-setup-status-item {
+  display: grid;
+  gap: 4px;
+}
+
+.agent-setup-status-item span,
+.agent-setup-inline-field span,
+.agent-setup-subtitle {
+  color: #9eb0d4;
+  font-size: 11px;
+}
+
+.agent-setup-status-item strong,
+.agent-setup-inline-field strong {
+  color: #edf3ff;
+  font-size: 13px;
+}
+
+.agent-setup-meta-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.agent-setup-diagnostics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px 12px;
+}
+
+.agent-setup-diagnostics-grid .market-card-hint {
+  margin: 0;
+}
+
+.agent-setup-info-grid,
+.agent-setup-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.agent-setup-info-card,
+.agent-setup-action-card {
+  display: grid;
+  gap: 10px;
+}
+
+.agent-setup-subtitle {
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.agent-setup-instructions {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  color: #d6def1;
+  font-size: 12px;
+}
+
+.agent-setup-inline-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.agent-setup-inline-value {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.agent-setup-inline-value strong,
+.agent-setup-inline-field strong {
+  overflow-wrap: anywhere;
+}
+
+.agent-setup-bind-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.agent-setup-token-box {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(225, 187, 94, 0.38);
+  border-radius: 12px;
+  background: rgba(60, 48, 14, 0.36);
+  padding: 10px;
+}
+
+.agent-setup-token-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.agent-setup-token-box strong {
+  color: #ffe39f;
+}
+
+.agent-setup-token-box code {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(8, 12, 22, 0.74);
+  border: 1px solid rgba(138, 162, 215, 0.16);
+  color: #fff2bf;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.agent-setup-token-box .market-card-hint {
+  margin: 0;
 }
 
 .streamer-scene-toolbar {
