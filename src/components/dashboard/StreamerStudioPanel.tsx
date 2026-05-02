@@ -3,7 +3,7 @@ import { DashboardText } from "@/lib/dashboardText";
 import { getStreamerStudioAccessible } from "@/lib/api";
 import { StreamerStudioAccessView } from "@/lib/types";
 import { StreamerStudioHome } from "./StreamerStudioHome";
-import { StreamerControlSession } from "./StreamerControlSession";
+import { StreamerControlSession } from "./streamer-studio/StreamerControlSession";
 
 type StreamerStudioPanelProps = {
   t: DashboardText;
