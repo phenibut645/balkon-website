@@ -289,6 +289,52 @@ body {
   font-size: 12px;
 }
 
+/* Type selector segmented buttons */
+.streamer-source-create-type-selector {
+  display: flex;
+  gap: 6px;
+  padding: 2px;
+  background: rgba(10, 14, 24, 0.6);
+  border-radius: 10px;
+  border: 1px solid rgba(95, 116, 159, 0.18);
+}
+
+.streamer-source-type-btn {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8ea4c8;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.streamer-source-type-btn:hover:not(:disabled) {
+  color: #dce6ff;
+  background: rgba(110, 140, 200, 0.12);
+}
+
+.streamer-source-type-btn.active {
+  color: #fff;
+  background: rgba(110, 140, 200, 0.35);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.streamer-source-type-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Browser source dimensions row */
+.streamer-source-create-dimensions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
 @media (max-width: 760px) {
   .streamer-source-create-head {
     display: grid;

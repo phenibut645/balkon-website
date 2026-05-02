@@ -532,6 +532,39 @@ export type ApiStreamerStudioTextSourceCreateResponse = ApiBaseResponse & {
   data?: ObsStudioTextSourceCreateResult;
 };
 
+export type ObsStudioBrowserSourceCreateInput = {
+  sceneName: string;
+  sourceName?: string | null;
+  url: string;
+  width?: number;
+  height?: number;
+  positionX?: number;
+  positionY?: number;
+  scaleX?: number;
+  scaleY?: number;
+  rotation?: number;
+};
+
+export type ObsStudioBrowserSourceCreateResult = {
+  sceneName: string;
+  sceneItemId: number;
+  sourceName: string;
+  inputKind: "browser_source";
+  url: string;
+  width: number;
+  height: number;
+  transform: ObsStudioSceneItemTransform;
+  items: Array<{
+    sceneItemId: number;
+    sourceName: string;
+    sceneItemIndex: number;
+  }>;
+};
+
+export type ApiStreamerStudioBrowserSourceCreateResponse = ApiBaseResponse & {
+  data?: ObsStudioBrowserSourceCreateResult;
+};
+
 export type AdminItem = {
   id: number;
   name: string;

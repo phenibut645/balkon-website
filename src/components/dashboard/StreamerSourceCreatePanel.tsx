@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { DashboardText } from "@/lib/dashboardText";
-import { ObsStudioTextSourceCreateInput } from "@/lib/types";
+import { ObsStudioTextSourceCreateInput, ObsStudioBrowserSourceCreateInput } from "@/lib/types";
+
+type SourceType = "text" | "browser";
 
 type StreamerSourceCreatePanelProps = {
   t: DashboardText;
@@ -9,6 +11,7 @@ type StreamerSourceCreatePanelProps = {
   submitting: boolean;
   feedback: { message: string; isError: boolean } | null;
   onCreateText: (input: ObsStudioTextSourceCreateInput) => void;
+  onCreateBrowser: (input: ObsStudioBrowserSourceCreateInput) => void;
 };
 
 export function StreamerSourceCreatePanel({
@@ -18,22 +21,38 @@ export function StreamerSourceCreatePanel({
   submitting,
   feedback,
   onCreateText,
+  onCreateBrowser,
 }: StreamerSourceCreatePanelProps) {
   const [expanded, setExpanded] = useState(false);
-  const [text, setText] = useState("");
-  const [sourceName, setSourceName] = useState("");
-  const normalizedText = text.trim();
-  const normalizedSourceName = sourceName.trim();
-  const invalid = !normalizedText.length || normalizedText.length > 500 || normalizedSourceName.length > 160;
+  const [sourceType, setSourceType] = useState<SourceType>("text");
 
-  const submit = () => {
-    if (invalid || !canEdit || !hasSelectedScene || submitting) {
+  // Text source state
+  const [text, setText] = useState("");
+  const [textSourceName, setTextSourceName] = useState("");
+
+  // Browser source state
+  const [url, setUrl] = useState("");
+  const [browserSourceName, setBrowserSourceName] = useState("");
+  const [width, setWidth] = useState<number | "">(800);
+  const [height, setHeight] = useState<number | "">(450);
+
+  const normalizedText = text.trim();
+  const normalizedTextSourceName = textSourceName.trim();
+  const textInvalid = !normalizedText.length || normalizedText.length > 500 || normalizedTextSourceName.length > 160;
+
+  const normalizedUrl = url.trim();
+  const normalizedBrowserSourceName = browserSourceName.trim();
+  const urlInvalid = !normalizedUrl.length || normalizedUrl.length > 1000 || !/^https?:\/\//i.test(normalizedUrl);
+  const browserInvalid = urlInvalid || normalizedBrowserSourceName.length > 160;
+
+  const submitText = () => {
+    if (textInvalid || !canEdit || !hasSelectedScene || submitting) {
       return;
     }
 
     onCreateText({
       sceneName: "",
-      sourceName: normalizedSourceName || null,
+      sourceName: normalizedTextSourceName || null,
       text: normalizedText,
       positionX: 100,
       positionY: 100,
@@ -42,7 +61,44 @@ export function StreamerSourceCreatePanel({
       rotation: 0,
     });
     setText("");
-    setSourceName("");
+    setTextSourceName("");
+  };
+
+  const submitBrowser = () => {
+    if (browserInvalid || !canEdit || !hasSelectedScene || submitting) {
+      return;
+    }
+
+    const parsedWidth = typeof width === "number" && Number.isFinite(width) ? Math.round(width) : 800;
+    const parsedHeight = typeof height === "number" && Number.isFinite(height) ? Math.round(height) : 450;
+
+    onCreateBrowser({
+      sceneName: "",
+      sourceName: normalizedBrowserSourceName || null,
+      url: normalizedUrl,
+      width: Math.max(64, Math.min(3840, parsedWidth)),
+      height: Math.max(64, Math.min(2160, parsedHeight)),
+      positionX: 100,
+      positionY: 100,
+      scaleX: 1,
+      scaleY: 1,
+      rotation: 0,
+    });
+    setUrl("");
+    setBrowserSourceName("");
+    setWidth(800);
+    setHeight(450);
+  };
+
+  const handleNumberInput = (value: string, setter: (val: number | "") => void) => {
+    if (value === "") {
+      setter("");
+      return;
+    }
+    const num = Number(value);
+    if (Number.isFinite(num)) {
+      setter(num);
+    }
   };
 
   return (
@@ -50,7 +106,9 @@ export function StreamerSourceCreatePanel({
       <div className="streamer-source-create-head">
         <div>
           <h3 className="section-title small">{t.streamerStudioCreateSourceTitle}</h3>
-          <p className="market-card-hint">{t.streamerStudioCreateTextSubtitle}</p>
+          <p className="market-card-hint">
+            {sourceType === "text" ? t.streamerStudioCreateTextSubtitle : t.streamerStudioCreateBrowserSubtitle}
+          </p>
         </div>
         <button className="pagination-btn ghost" type="button" onClick={() => setExpanded(prev => !prev)}>
           {expanded ? t.streamerStudioCreateTextCollapse : t.streamerStudioCreateTextOpen}
@@ -59,46 +117,138 @@ export function StreamerSourceCreatePanel({
 
       {expanded ? (
         <div className="streamer-source-create-form">
-          <div className="streamer-source-create-form-title">{t.streamerStudioCreateTextTitle}</div>
-          <label className="streamer-transform-field">
-            <span>{t.streamerStudioCreateTextContent}</span>
-            <textarea
-              maxLength={500}
-              rows={3}
-              value={text}
-              onChange={(event) => setText(event.target.value.slice(0, 500))}
-              disabled={!canEdit || submitting}
-            />
-          </label>
-          <label className="streamer-transform-field">
-            <span>{t.streamerStudioCreateTextSourceName}</span>
-            <input
-              type="text"
-              maxLength={160}
-              placeholder={t.streamerStudioCreateTextSourceNamePlaceholder}
-              value={sourceName}
-              onChange={(event) => setSourceName(event.target.value.slice(0, 160))}
-              disabled={!canEdit || submitting}
-            />
-          </label>
-          <div className="streamer-source-create-actions">
+          {/* Type selector */}
+          <div className="streamer-source-create-type-selector">
             <button
-              className="pagination-btn"
               type="button"
-              onClick={submit}
-              disabled={!canEdit || !hasSelectedScene || submitting || invalid}
+              className={`streamer-source-type-btn ${sourceType === "text" ? "active" : ""}`}
+              onClick={() => setSourceType("text")}
+              disabled={submitting}
             >
-              {t.streamerStudioCreateTextButton}
+              {t.streamerStudioCreateSourceTypeText}
             </button>
-            {feedback ? (
-              <p className={`streamer-source-create-feedback ${feedback.isError ? "state-error" : "state-ok"}`}>
-                {feedback.message}
-              </p>
-            ) : null}
-            {invalid && text.length > 0 ? (
-              <p className="streamer-source-create-feedback state-error">{t.streamerStudioCreateTextInvalid}</p>
-            ) : null}
+            <button
+              type="button"
+              className={`streamer-source-type-btn ${sourceType === "browser" ? "active" : ""}`}
+              onClick={() => setSourceType("browser")}
+              disabled={submitting}
+            >
+              {t.streamerStudioCreateSourceTypeBrowser}
+            </button>
           </div>
+
+          {sourceType === "text" ? (
+            <>
+              <div className="streamer-source-create-form-title">{t.streamerStudioCreateTextTitle}</div>
+              <label className="streamer-transform-field">
+                <span>{t.streamerStudioCreateTextContent}</span>
+                <textarea
+                  maxLength={500}
+                  rows={3}
+                  value={text}
+                  onChange={(event) => setText(event.target.value.slice(0, 500))}
+                  disabled={!canEdit || submitting}
+                />
+              </label>
+              <label className="streamer-transform-field">
+                <span>{t.streamerStudioCreateTextSourceName}</span>
+                <input
+                  type="text"
+                  maxLength={160}
+                  placeholder={t.streamerStudioCreateTextSourceNamePlaceholder}
+                  value={textSourceName}
+                  onChange={(event) => setTextSourceName(event.target.value.slice(0, 160))}
+                  disabled={!canEdit || submitting}
+                />
+              </label>
+              <div className="streamer-source-create-actions">
+                <button
+                  className="pagination-btn"
+                  type="button"
+                  onClick={submitText}
+                  disabled={!canEdit || !hasSelectedScene || submitting || textInvalid}
+                >
+                  {t.streamerStudioCreateTextButton}
+                </button>
+                {feedback ? (
+                  <p className={`streamer-source-create-feedback ${feedback.isError ? "state-error" : "state-ok"}`}>
+                    {feedback.message}
+                  </p>
+                ) : null}
+                {textInvalid && text.length > 0 ? (
+                  <p className="streamer-source-create-feedback state-error">{t.streamerStudioCreateTextInvalid}</p>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="streamer-source-create-form-title">{t.streamerStudioCreateBrowserTitle}</div>
+              <label className="streamer-transform-field">
+                <span>{t.streamerStudioCreateBrowserUrl}</span>
+                <input
+                  type="text"
+                  maxLength={1000}
+                  placeholder={t.streamerStudioCreateBrowserUrlPlaceholder}
+                  value={url}
+                  onChange={(event) => setUrl(event.target.value.slice(0, 1000))}
+                  disabled={!canEdit || submitting}
+                />
+              </label>
+              <label className="streamer-transform-field">
+                <span>{t.streamerStudioCreateTextSourceName}</span>
+                <input
+                  type="text"
+                  maxLength={160}
+                  placeholder={t.streamerStudioCreateTextSourceNamePlaceholder}
+                  value={browserSourceName}
+                  onChange={(event) => setBrowserSourceName(event.target.value.slice(0, 160))}
+                  disabled={!canEdit || submitting}
+                />
+              </label>
+              <div className="streamer-source-create-dimensions">
+                <label className="streamer-transform-field compact">
+                  <span>{t.streamerStudioCreateBrowserWidth}</span>
+                  <input
+                    type="number"
+                    min={64}
+                    max={3840}
+                    value={width}
+                    onChange={(event) => handleNumberInput(event.target.value, setWidth)}
+                    disabled={!canEdit || submitting}
+                  />
+                </label>
+                <label className="streamer-transform-field compact">
+                  <span>{t.streamerStudioCreateBrowserHeight}</span>
+                  <input
+                    type="number"
+                    min={64}
+                    max={2160}
+                    value={height}
+                    onChange={(event) => handleNumberInput(event.target.value, setHeight)}
+                    disabled={!canEdit || submitting}
+                  />
+                </label>
+              </div>
+              <div className="streamer-source-create-actions">
+                <button
+                  className="pagination-btn"
+                  type="button"
+                  onClick={submitBrowser}
+                  disabled={!canEdit || !hasSelectedScene || submitting || browserInvalid}
+                >
+                  {t.streamerStudioCreateBrowserButton}
+                </button>
+                {feedback ? (
+                  <p className={`streamer-source-create-feedback ${feedback.isError ? "state-error" : "state-ok"}`}>
+                    {feedback.message}
+                  </p>
+                ) : null}
+                {urlInvalid && url.length > 0 ? (
+                  <p className="streamer-source-create-feedback state-error">{t.streamerStudioCreateBrowserInvalid}</p>
+                ) : null}
+              </div>
+            </>
+          )}
         </div>
       ) : null}
     </section>

@@ -48,6 +48,8 @@ import {
   ObsStudioSceneItemIndexApplyInput,
   ObsStudioTextSourceCreateInput,
   ObsStudioTransformApplyInput,
+  ObsStudioBrowserSourceCreateInput,
+  ApiStreamerStudioBrowserSourceCreateResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
@@ -1481,6 +1483,39 @@ export async function createStreamerStudioTextSource(
         ok: false,
         error: data?.error || "OBS_TEXT_SOURCE_COMMAND_FAILED",
         message: data?.message || "Failed to create text source.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function createStreamerStudioBrowserSource(
+  streamerId: number,
+  input: ObsStudioBrowserSourceCreateInput,
+): Promise<ApiStreamerStudioBrowserSourceCreateResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/control/source/browser`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerStudioBrowserSourceCreateResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "OBS_BROWSER_SOURCE_COMMAND_FAILED",
+        message: data?.message || "Failed to create browser source.",
       };
     }
 
