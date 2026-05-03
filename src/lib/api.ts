@@ -60,7 +60,9 @@ import {
   ObsStudioSourceSettingsGetInput,
   ApiStreamerStudioBrowserSourceCreateResponse,
   ApiStreamerStudioBrowserSourceUpdateResponse,
+  ApiStreamerServiceCatalogResponse,
   ApiStreamerServiceDeleteResponse,
+  ApiStreamerServicePurchaseResponse,
   ApiStreamerServiceResponse,
   ApiStreamerServicesResponse,
   CreateStreamerServiceInput,
@@ -86,6 +88,64 @@ export async function listStreamerServices(streamerId: number): Promise<ApiStrea
         ok: false,
         error: data?.error || "STREAMER_SERVICE_LOAD_FAILED",
         message: data?.message || "Failed to load streamer services.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function listStreamerServiceCatalog(streamerId: number): Promise<ApiStreamerServiceCatalogResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/services/catalog`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerServiceCatalogResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_SERVICE_LOAD_FAILED",
+        message: data?.message || "Failed to load streamer service catalog.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function purchaseStreamerService(streamerId: number, serviceId: number): Promise<ApiStreamerServicePurchaseResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/services/${encodeURIComponent(String(serviceId))}/purchase`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerServicePurchaseResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_SERVICE_PURCHASE_FAILED",
+        message: data?.message || "Failed to purchase streamer service.",
       };
     }
 

@@ -52,6 +52,22 @@ body {
   min-width: 0;
 }
 
+.streamer-service-catalog-panel {
+  border: 1px solid rgba(95, 116, 159, 0.22);
+  border-radius: 14px;
+  background: rgba(10, 14, 24, 0.55);
+  backdrop-filter: blur(14px);
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.streamer-service-catalog-panel.collapsed {
+  padding: 9px 12px;
+  gap: 4px;
+}
+
 .streamer-card-status {
   display: flex;
   flex-wrap: wrap;
@@ -331,6 +347,39 @@ body {
   min-width: 0;
 }
 
+.streamer-service-catalog-list {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.streamer-service-catalog-card {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) minmax(0, 1fr);
+  gap: 10px;
+  border: 1px solid rgba(95, 116, 159, 0.18);
+  border-radius: 12px;
+  background: rgba(13, 19, 31, 0.52);
+  padding: 10px;
+  min-width: 0;
+}
+
+.streamer-service-catalog-preview {
+  min-height: 110px;
+  border-radius: 10px;
+  border: 1px solid rgba(138, 162, 215, 0.16);
+  background-color: rgba(8, 12, 22, 0.74);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.streamer-service-catalog-body {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
 .streamer-services-card {
   display: grid;
   gap: 10px;
@@ -412,6 +461,10 @@ body {
 
 @media (max-width: 700px) {
   .streamer-services-form {
+    grid-template-columns: 1fr;
+  }
+
+  .streamer-service-catalog-card {
     grid-template-columns: 1fr;
   }
 

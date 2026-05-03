@@ -2353,7 +2353,13 @@ export default function HomePage() {
             ) : null}
 
             {activeTab === "streamerStudio" ? (
-              <StreamerStudioPanel t={t} active />
+              <StreamerStudioPanel
+                t={t}
+                active
+                onBalanceRefresh={async () => {
+                  await loadBalance({ silent: true });
+                }}
+              />
             ) : null}
 
                 </div>

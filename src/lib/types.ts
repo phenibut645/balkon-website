@@ -555,6 +555,36 @@ export type ApiStreamerServiceDeleteResponse = ApiBaseResponse & {
   disabled?: boolean;
 };
 
+export type StreamerServiceCatalogItem = {
+  id: number;
+  streamerId: number;
+  serviceKey: string;
+  title: string;
+  description: string | null;
+  serviceType: StreamerServiceType;
+  mediaKind: StreamerServiceMediaKind | null;
+  mediaUrl: string | null;
+  durationMs: number | null;
+  price: number;
+};
+
+export type StreamerServicePurchaseResult = {
+  streamerId: number;
+  serviceId: number;
+  serviceKey: string;
+  priceOdm: number;
+  balanceAfter: number;
+  commandId?: string;
+};
+
+export type ApiStreamerServiceCatalogResponse = ApiBaseResponse & {
+  services?: StreamerServiceCatalogItem[];
+};
+
+export type ApiStreamerServicePurchaseResponse = ApiBaseResponse & {
+  data?: StreamerServicePurchaseResult;
+};
+
 export type CreateStreamerServiceInput = {
   serviceKey: string;
   title: string;

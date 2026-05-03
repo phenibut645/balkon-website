@@ -6,6 +6,7 @@ import { StreamerTrustedUsersPanel } from "../StreamerTrustedUsersPanel";
 import { AgentDiagnostics } from "./components/AgentDiagnostics";
 import { AgentSetupCard } from "./components/AgentSetupCard";
 import { SceneToolbar } from "./components/SceneToolbar";
+import { StreamerServiceCatalogPanel } from "./components/StreamerServiceCatalogPanel";
 import { StreamerServicesPanel } from "./components/StreamerServicesPanel";
 import { ObsSceneItemList } from "./ObsSceneItemList";
 import { useStreamerControlSession } from "./hooks/useStreamerControlSession";
@@ -13,10 +14,11 @@ import { useStreamerControlSession } from "./hooks/useStreamerControlSession";
 type StreamerControlSessionProps = {
   t: DashboardText;
   streamer: StreamerStudioAccessView;
+  onBalanceRefresh?: () => Promise<void> | void;
   onBack: () => void;
 };
 
-export function StreamerControlSession({ t, streamer, onBack }: StreamerControlSessionProps) {
+export function StreamerControlSession({ t, streamer, onBalanceRefresh, onBack }: StreamerControlSessionProps) {
   const session = useStreamerControlSession(t, streamer);
 
   return (
@@ -59,6 +61,12 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
       ) : null}
       {session.diagnosticsWarning ? <p className="state-text state-error">{session.diagnosticsWarning}</p> : null}
       {session.scenes.scenesError ? <p className="state-text state-error">{session.scenes.scenesError}</p> : null}
+
+      <StreamerServiceCatalogPanel
+        t={t}
+        streamerId={streamer.streamerId}
+        onPurchaseSuccess={onBalanceRefresh}
+      />
 
       {streamer.canManage ? (
         <AgentSetupCard t={t} streamer={streamer} />

@@ -8,9 +8,10 @@ import { StreamerControlSession } from "./streamer-studio/StreamerControlSession
 type StreamerStudioPanelProps = {
   t: DashboardText;
   active: boolean;
+  onBalanceRefresh?: () => Promise<void> | void;
 };
 
-export function StreamerStudioPanel({ t, active }: StreamerStudioPanelProps) {
+export function StreamerStudioPanel({ t, active, onBalanceRefresh }: StreamerStudioPanelProps) {
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,6 +101,7 @@ export function StreamerStudioPanel({ t, active }: StreamerStudioPanelProps) {
         <StreamerControlSession
           t={t}
           streamer={selectedStreamer}
+          onBalanceRefresh={onBalanceRefresh}
           onBack={() => setSelectedStreamer(null)}
         />
       )}
