@@ -2,6 +2,8 @@ import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from
 import { DashboardText, formatDashboardDate } from "@/lib/dashboardText";
 import { InventoryItem } from "@/lib/types";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { ItemBadgeRow } from "./items/ItemBadgeRow";
+import { ItemMedia } from "./items/ItemMedia";
 
 type InventoryFilter = "all" | "materials" | "sellable" | "tradeable";
 
@@ -432,58 +434,47 @@ export function InventoryPanel({
                     {paginatedInventory.map(item => {
                       const rarityAccent = item.rarityColorHex || "#44506d";
                       const isSelected = selectedItem?.inventoryItemId === item.inventoryItemId;
+                      const compactBadges = [
+                        <span key="rarity" className="meta-badge rarity-badge" style={{ borderColor: `${rarityAccent}66` }}>
+                          {item.rarityName}
+                        </span>,
+                        <span key="type" className="meta-badge">{item.itemType}</span>,
+                        <span key="instance" className="meta-badge">{instanceLabel} #{item.inventoryItemId}</span>,
+                        item.botSellPrice !== null ? (
+                          <span key="botSell" className="meta-badge price">{botShortLabel}: {item.botSellPrice} ODM</span>
+                        ) : null,
+                      ];
 
                       return (
                         <button
                           key={item.inventoryItemId}
                           type="button"
-                          className={`inventory-card compact ${isSelected ? "selected" : ""}`}
+                          className={`item-card inventory-card compact ${isSelected ? "selected" : ""}`}
                           style={{
                             borderColor: `${rarityAccent}66`,
                           }}
                           onClick={() => handleSelectItem(item)}
                           aria-pressed={isSelected}
                         >
-                          <div
+                          <ItemMedia
+                            name={item.name}
+                            imageUrl={item.imageUrl}
+                            emoji={item.emoji}
+                            accentColor={rarityAccent}
                             className="inventory-media compact"
-                            style={{ background: `linear-gradient(145deg, ${rarityAccent}2d, #1d2437)` }}
-                          >
-                            {item.imageUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={item.imageUrl}
-                                alt={item.name}
-                                className="inventory-image"
-                                onLoad={event => {
-                                  (event.currentTarget as HTMLImageElement).style.display = "block";
-                                }}
-                                onError={event => {
-                                  const target = event.currentTarget;
-                                  target.style.display = "none";
-                                  const fallback = target.parentElement?.querySelector<HTMLElement>(".inventory-emoji-fallback");
-                                  if (fallback) fallback.style.display = "grid";
-                                }}
-                              />
-                            ) : null}
-                            <div className="inventory-emoji-fallback" style={{ display: item.imageUrl ? "none" : "grid" }}>
-                              {item.emoji || "📦"}
-                            </div>
-                            <span className="inventory-tier-badge">{t.tier} {item.tier}</span>
-                            {isSelected ? <span className="inventory-selected-dot" aria-hidden="true" /> : null}
-                          </div>
+                            imageClassName="inventory-image"
+                            fallbackClassName="inventory-emoji-fallback"
+                            overlay={(
+                              <>
+                                <span className="inventory-tier-badge">{t.tier} {item.tier}</span>
+                                {isSelected ? <span className="inventory-selected-dot" aria-hidden="true" /> : null}
+                              </>
+                            )}
+                          />
 
-                          <div className="inventory-content compact">
-                            <h3 className="inventory-title">{item.name}</h3>
-                            <div className="inventory-meta compact">
-                              <span className="meta-badge rarity-badge" style={{ borderColor: `${rarityAccent}66` }}>
-                                {item.rarityName}
-                              </span>
-                              <span className="meta-badge">{item.itemType}</span>
-                              <span className="meta-badge">{instanceLabel} #{item.inventoryItemId}</span>
-                              {item.botSellPrice !== null ? (
-                                <span className="meta-badge price">{botShortLabel}: {item.botSellPrice} ODM</span>
-                              ) : null}
-                            </div>
+                          <div className="item-card-content inventory-content compact">
+                            <h3 className="item-card-title inventory-title">{item.name}</h3>
+                            <ItemBadgeRow badges={compactBadges} className="inventory-meta compact" />
                           </div>
                         </button>
                       );
@@ -512,54 +503,41 @@ export function InventoryPanel({
                   </div>
 
                   <div className="inventory-details-scroll">
-                    <div
+                    <ItemMedia
+                      name={selectedItem.name}
+                      imageUrl={selectedItem.imageUrl}
+                      emoji={selectedItem.emoji}
+                      accentColor={selectedRarityAccent}
                       className="inventory-details-media"
-                      style={{ background: `linear-gradient(145deg, ${selectedRarityAccent}2e, #1d2437)` }}
-                    >
-                      {selectedItem.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={selectedItem.imageUrl}
-                          alt={selectedItem.name}
-                          className="inventory-details-image"
-                          onLoad={event => {
-                            (event.currentTarget as HTMLImageElement).style.display = "block";
-                          }}
-                          onError={event => {
-                            const target = event.currentTarget;
-                            target.style.display = "none";
-                            const fallback = target.parentElement?.querySelector<HTMLElement>(".inventory-details-emoji");
-                            if (fallback) fallback.style.display = "grid";
-                          }}
-                        />
-                      ) : null}
-                      <div className="inventory-details-emoji" style={{ display: selectedItem.imageUrl ? "none" : "grid" }}>
-                        {selectedItem.emoji || "📦"}
-                      </div>
-                    </div>
+                      imageClassName="inventory-details-image"
+                      fallbackClassName="inventory-details-emoji"
+                    />
 
                     <div className="inventory-details-body">
-                      <h3 className="inventory-title">{selectedItem.name}</h3>
-                      <p className="inventory-description details">{selectedItem.description}</p>
+                      <h3 className="item-card-title inventory-title">{selectedItem.name}</h3>
+                      <p className="item-card-description inventory-description details">{selectedItem.description}</p>
 
-                      <div className="inventory-meta">
-                        <span className="meta-badge rarity-badge" style={{ borderColor: `${selectedRarityAccent}66` }}>
-                          {t.rarity}: {selectedItem.rarityName}
-                        </span>
-                        <span className="meta-badge">{t.type}: {selectedItem.itemType}</span>
-                        <span className="meta-badge">{t.tier}: {selectedItem.tier}</span>
-                        <span className="meta-badge">{t.itemId}: #{selectedItem.inventoryItemId}</span>
-                        <span className="meta-badge">{t.templateId}: #{selectedItem.itemTemplateId}</span>
-                        <span className={`meta-badge ${selectedItem.tradeable ? "ok" : "muted"}`}>
-                          {selectedItem.tradeable ? t.tradeableYes : t.tradeableNo}
-                        </span>
-                        <span className={`meta-badge ${selectedItem.sellable ? "ok" : "muted"}`}>
-                          {selectedItem.sellable ? t.sellableYes : t.sellableNo}
-                        </span>
-                        {selectedItem.botSellPrice !== null ? (
-                          <span className="meta-badge price">{t.botSellPrice}: {selectedItem.botSellPrice} ODM</span>
-                        ) : null}
-                      </div>
+                      <ItemBadgeRow
+                        className="inventory-meta"
+                        badges={[
+                          <span key="rarity" className="meta-badge rarity-badge" style={{ borderColor: `${selectedRarityAccent}66` }}>
+                            {t.rarity}: {selectedItem.rarityName}
+                          </span>,
+                          <span key="type" className="meta-badge">{t.type}: {selectedItem.itemType}</span>,
+                          <span key="tier" className="meta-badge">{t.tier}: {selectedItem.tier}</span>,
+                          <span key="itemId" className="meta-badge">{t.itemId}: #{selectedItem.inventoryItemId}</span>,
+                          <span key="templateId" className="meta-badge">{t.templateId}: #{selectedItem.itemTemplateId}</span>,
+                          <span key="tradeable" className={`meta-badge ${selectedItem.tradeable ? "ok" : "muted"}`}>
+                            {selectedItem.tradeable ? t.tradeableYes : t.tradeableNo}
+                          </span>,
+                          <span key="sellable" className={`meta-badge ${selectedItem.sellable ? "ok" : "muted"}`}>
+                            {selectedItem.sellable ? t.sellableYes : t.sellableNo}
+                          </span>,
+                          selectedItem.botSellPrice !== null ? (
+                            <span key="botSell" className="meta-badge price">{t.botSellPrice}: {selectedItem.botSellPrice} ODM</span>
+                          ) : null,
+                        ]}
+                      />
 
                       <div className="inventory-details-meta">
                         <p><strong>{t.obtained}:</strong> {formatDashboardDate(selectedItem.obtainedAt, dateLocale, t.unknownDate)}</p>
@@ -569,15 +547,15 @@ export function InventoryPanel({
                         ) : null}
                       </div>
 
-                      {selectedCanSellToBot || selectedCanListOnMarket ? (
-                        <div className="inventory-details-actions">
+                      {selectedCanSellToBot || selectedCanListOnMarket || (selectedItem.tradeable && selectedIsListedOnMarket) ? (
+                        <div className="inventory-details-actions item-card-actions">
                           {selectedInventoryActionFeedback ? (
                             <p className="state-text state-success">{selectedInventoryActionFeedback}</p>
                           ) : null}
                           {selectedInventoryActionError ? (
                             <p className="state-text state-error">{selectedInventoryActionError}</p>
                           ) : null}
-                          <div className="inventory-actions-row">
+                          <div className="inventory-actions-row item-card-actions-row">
                             {selectedCanSellToBot ? (
                               <button
                                 type="button"

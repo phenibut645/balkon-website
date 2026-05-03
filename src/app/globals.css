@@ -2830,6 +2830,7 @@ body {
     0 10px 24px rgba(0, 0, 0, 0.22);
 }
 
+.item-card,
 .market-card {
   position: relative;
   border: 1px solid rgba(80, 97, 132, 0.45);
@@ -2840,19 +2841,14 @@ body {
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
+.item-card:hover,
 .market-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
 }
 
 .botshop-card {
-  position: relative;
-  border: 1px solid rgba(80, 97, 132, 0.45);
-  border-radius: 14px;
-  overflow: hidden;
-  background: rgba(15, 21, 33, 0.7);
-  backdrop-filter: blur(10px);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  min-height: 100%;
 }
 
 .botshop-card:hover {
@@ -2961,6 +2957,7 @@ body {
   gap: 6px;
 }
 
+.item-card-media,
 .inventory-media {
   height: 128px;
   border-bottom: 1px solid rgba(83, 98, 128, 0.32);
@@ -2970,15 +2967,7 @@ body {
   padding: 8px;
 }
 
-.market-media {
-  height: 128px;
-  border-bottom: 1px solid rgba(83, 98, 128, 0.32);
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  padding: 8px;
-}
-
+.market-media,
 .botshop-media {
   height: 128px;
   border-bottom: 1px solid rgba(83, 98, 128, 0.32);
@@ -2988,6 +2977,7 @@ body {
   padding: 8px;
 }
 
+.item-card-image,
 .inventory-image {
   width: 100%;
   height: 100%;
@@ -2996,14 +2986,7 @@ body {
   border-radius: 10px;
 }
 
-.market-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
-  border-radius: 10px;
-}
-
+.market-image,
 .botshop-image {
   width: 100%;
   height: 100%;
@@ -3012,40 +2995,43 @@ body {
   border-radius: 10px;
 }
 
+.item-card-emoji-fallback,
 .inventory-emoji-fallback {
   width: 100%;
   height: 100%;
+  display: grid;
   place-items: center;
   font-size: 44px;
 }
 
-.market-emoji-fallback {
-  width: 100%;
-  height: 100%;
-  place-items: center;
-  font-size: 44px;
-}
-
+.market-emoji-fallback,
 .botshop-emoji-fallback {
   width: 100%;
   height: 100%;
+  display: grid;
   place-items: center;
   font-size: 44px;
 }
 
+.item-card-content,
 .inventory-content {
   padding: 10px;
   min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 8px;
 }
 
-.market-content {
-  padding: 10px;
-}
-
+.market-content,
 .botshop-content {
   padding: 10px;
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 8px;
 }
 
+.item-card-title,
 .inventory-title {
   margin: 0;
   font-size: 15px;
@@ -3056,18 +3042,15 @@ body {
   text-overflow: ellipsis;
 }
 
-.market-title {
-  margin: 0;
-  font-size: 15px;
-  color: #f4f7ff;
-}
-
+.market-title,
 .botshop-title {
   margin: 0;
   font-size: 15px;
+  line-height: 1.15;
   color: #f4f7ff;
 }
 
+.item-card-description,
 .inventory-description {
   margin: 7px 0 8px;
   min-height: 30px;
@@ -3076,14 +3059,7 @@ body {
   color: #b0bdd8;
 }
 
-.market-description {
-  margin: 7px 0 8px;
-  min-height: 30px;
-  font-size: 12px;
-  line-height: 1.4;
-  color: #b0bdd8;
-}
-
+.market-description,
 .botshop-description {
   margin: 7px 0 8px;
   min-height: 30px;
@@ -3092,23 +3068,35 @@ body {
   color: #b0bdd8;
 }
 
+.item-card-meta,
 .inventory-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  align-items: flex-start;
   margin-top: 8px;
 }
 
-.market-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
+.market-meta,
 .botshop-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  align-items: flex-start;
+}
+
+.item-card-supporting-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.item-card-label {
+  margin: 0;
+  font-size: 12px;
+  color: #9eb0d4;
+  font-weight: 600;
 }
 
 .meta-badge {
@@ -3473,9 +3461,31 @@ body {
 
 .inventory-list-on-market-summary {
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(99, 116, 155, 0.45);
+  background: rgba(24, 31, 47, 0.74);
+  font-weight: 600;
   font-size: 13px;
-  color: #dce7ff;
-  list-style-position: outside;
+  color: #dde7ff;
+  list-style: none;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.inventory-list-on-market-summary:hover {
+  background: rgba(51, 63, 90, 0.74);
+}
+
+.inventory-list-on-market-summary::-webkit-details-marker {
+  display: none;
+}
+
+.inventory-list-on-market-details[open] .inventory-list-on-market-summary {
+  border-color: rgba(121, 140, 186, 0.62);
 }
 
 .inventory-list-on-market-fields {
@@ -3498,6 +3508,7 @@ body {
   font-size: 13px;
 }
 
+.item-card-actions,
 .market-card-actions {
   margin-top: 10px;
   padding-top: 10px;
@@ -3506,6 +3517,7 @@ body {
   gap: 8px;
 }
 
+.item-card-actions-row,
 .market-card-actions-row {
   display: flex;
   flex-wrap: wrap;

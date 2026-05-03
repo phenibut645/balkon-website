@@ -3,6 +3,8 @@ import { DashboardText } from "@/lib/dashboardText";
 import { MarketListing } from "@/lib/types";
 import { UserIdentity } from "./UserIdentity";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { ItemBadgeRow } from "./items/ItemBadgeRow";
+import { ItemMedia } from "./items/ItemMedia";
 
 function parsePositiveFinitePrice(raw: string): number | null {
   const trimmed = raw.trim().replace(",", ".");
@@ -235,65 +237,59 @@ export function MarketListingsPanel({
             return (
               <article
                 key={listing.listingId}
-                className="market-card"
+                className="item-card market-card"
                 style={{ borderColor: `${rarityAccent}66`, boxShadow: `0 0 0 1px ${rarityAccent}22 inset` }}
               >
-                <div className="market-media" style={{ background: `linear-gradient(145deg, ${rarityAccent}2d, #1d2437)` }}>
-                  {listing.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={listing.imageUrl}
-                      alt={listing.name}
-                      className="market-image"
-                      onError={event => {
-                        const target = event.currentTarget;
-                        target.style.display = "none";
-                        const fallback = target.parentElement?.querySelector<HTMLElement>(".market-emoji-fallback");
-                        if (fallback) fallback.style.display = "grid";
+                <ItemMedia
+                  name={listing.name}
+                  imageUrl={listing.imageUrl}
+                  emoji={listing.emoji}
+                  accentColor={rarityAccent}
+                  className="market-media"
+                  imageClassName="market-image"
+                  fallbackClassName="market-emoji-fallback"
+                />
+
+                <div className="item-card-content market-content">
+                  <h3 className="item-card-title market-title">{listing.name}</h3>
+                  <p className="item-card-description market-description">{listing.description}</p>
+
+                  <ItemBadgeRow
+                    className="market-meta"
+                    badges={[
+                      <span key="rarity" className="meta-badge rarity-badge" style={{ borderColor: `${rarityAccent}66` }}>
+                        {listing.rarityName}
+                      </span>,
+                      <span key="type" className="meta-badge">{listing.itemType}</span>,
+                      <span key="tier" className="meta-badge">Tier {listing.tier}</span>,
+                      <span key="listingId" className="meta-badge">{t.marketListingId} #{listing.listingId}</span>,
+                      <span key="inventoryId" className="meta-badge">{t.marketInventoryItemId} #{listing.inventoryItemId}</span>,
+                      <span key="price" className="meta-badge price">{t.marketPrice}: {listing.price} ODM</span>,
+                      <span key="tradeable" className={`meta-badge ${listing.tradeable ? "ok" : "muted"}`}>
+                        {listing.tradeable ? t.tradeableYes : t.tradeableNo}
+                      </span>,
+                      <span key="sellable" className={`meta-badge ${listing.sellable ? "ok" : "muted"}`}>
+                        {listing.sellable ? t.sellableYes : t.sellableNo}
+                      </span>,
+                    ]}
+                  />
+
+                  <div className="item-card-supporting-row market-seller-chip">
+                    <span className="item-card-label market-card-label">{t.marketSeller}</span>
+                    <UserIdentity
+                      user={{
+                        discordId: listing.sellerDiscordId,
+                        username: null,
+                        globalName: null,
+                        avatarUrl: null,
                       }}
+                      size="sm"
+                      showAvatar={false}
+                      mode={streamerMode ? "streamer" : "normal"}
                     />
-                  ) : null}
-                  <div className="market-emoji-fallback" style={{ display: listing.imageUrl ? "none" : "grid" }}>
-                    {listing.emoji || "📦"}
-                  </div>
-                </div>
-
-                <div className="market-content">
-                  <h3 className="market-title">{listing.name}</h3>
-                  <p className="market-description">{listing.description}</p>
-
-                  <div className="market-meta">
-                    <span className="meta-badge rarity-badge" style={{ borderColor: `${rarityAccent}66` }}>
-                      {listing.rarityName}
-                    </span>
-                    <span className="meta-badge">{listing.itemType}</span>
-                    <span className="meta-badge">Tier {listing.tier}</span>
-                    <span className="meta-badge">{t.marketListingId} #{listing.listingId}</span>
-                    <span className="meta-badge">{t.marketInventoryItemId} #{listing.inventoryItemId}</span>
-                    <span className="meta-badge price">{t.marketPrice}: {listing.price} ODM</span>
-                    <div className="market-seller-chip">
-                      <span className="market-card-label">{t.marketSeller}</span>
-                      <UserIdentity
-                        user={{
-                          discordId: listing.sellerDiscordId,
-                          username: null,
-                          globalName: null,
-                          avatarUrl: null,
-                        }}
-                        size="sm"
-                        showAvatar={false}
-                        mode={streamerMode ? "streamer" : "normal"}
-                      />
-                    </div>
-                    <span className={`meta-badge ${listing.tradeable ? "ok" : "muted"}`}>
-                      {listing.tradeable ? t.tradeableYes : t.tradeableNo}
-                    </span>
-                    <span className={`meta-badge ${listing.sellable ? "ok" : "muted"}`}>
-                      {listing.sellable ? t.sellableYes : t.sellableNo}
-                    </span>
                   </div>
 
-                  <div className="market-card-actions">
+                  <div className="market-card-actions item-card-actions">
                     {listingFeedback ? (
                       <p className="state-text state-success">{listingFeedback}</p>
                     ) : null}
@@ -304,7 +300,7 @@ export function MarketListingsPanel({
                     {isMine ? (
                       <>
                         <div className="market-listing-price-row">
-                          <span className="market-card-label">{t.listingOfferPriceLabel}</span>
+                          <span className="item-card-label market-card-label">{t.listingOfferPriceLabel}</span>
                           <input
                             type="text"
                             inputMode="decimal"
@@ -386,7 +382,7 @@ export function MarketListingsPanel({
                         ) : null}
                       </>
                     ) : (
-                      <div className="market-card-actions-row">
+                      <div className="market-card-actions-row item-card-actions-row">
                         <button
                           type="button"
                           className="pagination-btn"

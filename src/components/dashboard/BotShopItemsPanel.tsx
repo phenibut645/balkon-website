@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { DashboardText } from "@/lib/dashboardText";
 import { BotShopListing, UserBalance } from "@/lib/types";
+import { ItemBadgeRow } from "./items/ItemBadgeRow";
+import { ItemMedia } from "./items/ItemMedia";
 
 type BotShopItemsPanelProps = {
   t: DashboardText;
@@ -78,53 +80,46 @@ export function BotShopItemsPanel({
             return (
               <article
                 key={listing.listingId}
-                className="botshop-card"
+                className="item-card botshop-card"
                 style={{ borderColor: `${rarityAccent}66`, boxShadow: `0 0 0 1px ${rarityAccent}22 inset` }}
               >
-                <div className="botshop-media" style={{ background: `linear-gradient(145deg, ${rarityAccent}2d, #1d2437)` }}>
-                  {listing.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={listing.imageUrl}
-                      alt={listing.name}
-                      className="botshop-image"
-                      onError={event => {
-                        const target = event.currentTarget;
-                        target.style.display = "none";
-                        const fallback = target.parentElement?.querySelector<HTMLElement>(".botshop-emoji-fallback");
-                        if (fallback) fallback.style.display = "grid";
-                      }}
-                    />
-                  ) : null}
-                  <div className="botshop-emoji-fallback" style={{ display: listing.imageUrl ? "none" : "grid" }}>
-                    {listing.emoji || "📦"}
-                  </div>
-                </div>
+                <ItemMedia
+                  name={listing.name}
+                  imageUrl={listing.imageUrl}
+                  emoji={listing.emoji}
+                  accentColor={rarityAccent}
+                  className="botshop-media"
+                  imageClassName="botshop-image"
+                  fallbackClassName="botshop-emoji-fallback"
+                />
 
-                <div className="botshop-content">
-                  <h3 className="botshop-title">{listing.name}</h3>
-                  <p className="botshop-description">{listing.description}</p>
+                <div className="item-card-content botshop-content">
+                  <h3 className="item-card-title botshop-title">{listing.name}</h3>
+                  <p className="item-card-description botshop-description">{listing.description}</p>
 
-                  <div className="botshop-meta">
-                    <span className="meta-badge rarity-badge" style={{ borderColor: `${rarityAccent}66` }}>
-                      {listing.rarityName}
-                    </span>
-                    <span className="meta-badge">{listing.itemType}</span>
-                    <span className="meta-badge price">{t.botShopPrice}: {listing.price} ODM</span>
-                    <span className={`meta-badge ${listing.tradeable ? "ok" : "muted"}`}>
-                      {listing.tradeable ? t.tradeableYes : t.tradeableNo}
-                    </span>
-                    <span className={`meta-badge ${listing.sellable ? "ok" : "muted"}`}>
-                      {listing.sellable ? t.sellableYes : t.sellableNo}
-                    </span>
-                    {listing.botSellPrice !== null ? (
-                      <span className="meta-badge">{t.botSell}: {listing.botSellPrice}</span>
-                    ) : null}
-                  </div>
+                  <ItemBadgeRow
+                    className="botshop-meta"
+                    badges={[
+                      <span key="rarity" className="meta-badge rarity-badge" style={{ borderColor: `${rarityAccent}66` }}>
+                        {listing.rarityName}
+                      </span>,
+                      <span key="type" className="meta-badge">{listing.itemType}</span>,
+                      <span key="price" className="meta-badge price">{t.botShopPrice}: {listing.price} ODM</span>,
+                      <span key="tradeable" className={`meta-badge ${listing.tradeable ? "ok" : "muted"}`}>
+                        {listing.tradeable ? t.tradeableYes : t.tradeableNo}
+                      </span>,
+                      <span key="sellable" className={`meta-badge ${listing.sellable ? "ok" : "muted"}`}>
+                        {listing.sellable ? t.sellableYes : t.sellableNo}
+                      </span>,
+                      listing.botSellPrice !== null ? (
+                        <span key="botSell" className="meta-badge">{t.botSell}: {listing.botSellPrice}</span>
+                      ) : null,
+                    ]}
+                  />
 
-                  <div className="botshop-buy-row">
+                  <div className="botshop-buy-row item-card-actions">
                     <div className="botshop-qty-block">
-                      <label className="botshop-amount-label">{t.amount}</label>
+                      <label className="botshop-amount-label item-card-label">{t.amount}</label>
                       <div className="botshop-qty-controls">
                         <div className="botshop-stepper" role="group" aria-label={t.amount}>
                           <button
