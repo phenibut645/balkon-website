@@ -1,6 +1,7 @@
 import type {
   ApiInventoryMarketListingResponse,
   ApiInventorySellToBotResponse,
+  ApiInventoryUseServiceResponse,
   ApiMarketListingBuyResponse,
   ApiMarketListingCancelResponse,
   ApiMarketListingUpdatePriceResponse,
@@ -55,6 +56,40 @@ export async function sellInventoryItemToBot(inventoryItemId: number): Promise<A
         ok: false,
         error: data?.error || "SELL_TO_BOT_FAILED",
         message: data?.message || "Failed to sell item to bot.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function useInventoryServiceItem(
+  inventoryItemId: number,
+  streamerId?: number,
+): Promise<ApiInventoryUseServiceResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/inventory/${encodeURIComponent(String(inventoryItemId))}/use-service`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(streamerId ? { streamerId } : {}),
+    });
+
+    const data = await response.json().catch(() => null) as ApiInventoryUseServiceResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "INVENTORY_SERVICE_USE_FAILED",
+        message: data?.message || "Failed to use service item.",
       };
     }
 

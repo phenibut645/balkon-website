@@ -83,6 +83,15 @@ export type ApiInventorySellToBotResponse = ApiBaseResponse & {
   };
 };
 
+export type ApiInventoryUseServiceResponse = ApiBaseResponse & {
+  data?: {
+    inventoryItemId: number;
+    consumed: boolean;
+    actionType: string;
+    streamerId?: number;
+  };
+};
+
 export type ApiMarketListingBuyResponse = ApiBaseResponse & {
   data?: {
     listingId: number;

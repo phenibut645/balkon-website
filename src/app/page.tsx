@@ -29,11 +29,13 @@ import {
   markNotificationRead,
   purchaseObsMedia,
   sellInventoryItemToBot,
+  getStreamerStudioAccessible,
   updateMarketListingPrice,
   updateMyProfile,
+  useInventoryServiceItem,
 } from "@/lib/api";
 import { AdminTab, DashboardMode, DashboardSearchResult, DashboardTab, normalizeDashboardSearchValue, MarketSubTab, UserTab } from "@/lib/dashboardSearch";
-import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, GuildOverview, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, NotificationItem, ObsMediaProduct, ObsShopStreamer, OverviewSummary, ShopSubTab, UserBalance, UserGuild, UserPublicProfile } from "@/lib/types";
+import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, GuildOverview, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, NotificationItem, ObsMediaProduct, ObsShopStreamer, OverviewSummary, ShopSubTab, StreamerStudioAccessView, UserBalance, UserGuild, UserPublicProfile } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
 import { AppHeader } from "@/components/dashboard/AppHeader";
 import { NotificationBell } from "@/components/dashboard/NotificationBell";
@@ -119,6 +121,7 @@ export default function HomePage() {
   const [buyErrors, setBuyErrors] = useState<Record<number, string>>({});
   const [inventorySellingId, setInventorySellingId] = useState<number | null>(null);
   const [inventoryListingId, setInventoryListingId] = useState<number | null>(null);
+  const [inventoryUsingServiceId, setInventoryUsingServiceId] = useState<number | null>(null);
   const [inventoryActionFeedbackById, setInventoryActionFeedbackById] = useState<Record<number, string>>({});
   const [inventoryActionErrorById, setInventoryActionErrorById] = useState<Record<number, string>>({});
   const [marketBuyingListingId, setMarketBuyingListingId] = useState<number | null>(null);
@@ -184,6 +187,10 @@ export default function HomePage() {
   const [buyingObsProductId, setBuyingObsProductId] = useState<string | null>(null);
   const [obsBuyFeedback, setObsBuyFeedback] = useState<Record<string, string>>({});
   const [obsBuyErrors, setObsBuyErrors] = useState<Record<string, string>>({});
+  const [accessibleServiceStreamers, setAccessibleServiceStreamers] = useState<StreamerStudioAccessView[]>([]);
+  const [accessibleServiceStreamersLoaded, setAccessibleServiceStreamersLoaded] = useState(false);
+  const [accessibleServiceStreamersLoading, setAccessibleServiceStreamersLoading] = useState(false);
+  const [accessibleServiceStreamersError, setAccessibleServiceStreamersError] = useState<string | null>(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const marketLastLoadedAtRef = useRef(0);
@@ -568,10 +575,11 @@ export default function HomePage() {
     setIsLoggingOut(true);
     await logout();
     setActiveTab("overview");
-    setInventory([]);
-    setInventoryLoaded(false);
-    setInventoryLoading(false);
-    setInventoryError(null);
+    setInventorySellingId(null);
+    setInventoryListingId(null);
+    setInventoryUsingServiceId(null);
+    setInventoryActionFeedbackById({});
+    setInventoryActionErrorById({});
     setMarketListings([]);
     setMarketLoaded(false);
     setMarketLoading(false);
@@ -632,6 +640,10 @@ export default function HomePage() {
     setBuyingObsProductId(null);
     setObsBuyFeedback({});
     setObsBuyErrors({});
+    setAccessibleServiceStreamers([]);
+    setAccessibleServiceStreamersLoaded(false);
+    setAccessibleServiceStreamersLoading(false);
+    setAccessibleServiceStreamersError(null);
     notificationsSummaryLoadingRef.current = false;
     notificationsSummaryLastLoadedAtRef.current = 0;
     overviewLoadingRef.current = false;
@@ -878,6 +890,36 @@ export default function HomePage() {
       setObsShopStreamerDetailsError(response.message || response.error || t.shopObsError);
     }
   }, [obsShopStreamerDetailsLoading, t.shopObsError]);
+
+  const loadAccessibleServiceStreamers = useCallback(async (options: LoadOptions = {}): Promise<void> => {
+    const silent = options.silent === true;
+    if (accessibleServiceStreamersLoading) {
+      return;
+    }
+
+    if (!silent) {
+      setAccessibleServiceStreamersLoading(true);
+      setAccessibleServiceStreamersError(null);
+    }
+
+    const response = await getStreamerStudioAccessible();
+    if (response.ok && Array.isArray(response.data)) {
+      const nextStreamers = response.data.filter(streamer => streamer.canControl);
+      setAccessibleServiceStreamers(prev => (areJsonEqual(prev, nextStreamers) ? prev : nextStreamers));
+      setAccessibleServiceStreamersLoaded(true);
+      setAccessibleServiceStreamersError(null);
+      if (!silent) {
+        setAccessibleServiceStreamersLoading(false);
+      }
+      return;
+    }
+
+    if (!silent) {
+      setAccessibleServiceStreamersLoaded(true);
+      setAccessibleServiceStreamersLoading(false);
+      setAccessibleServiceStreamersError(response.message || response.error || t.streamerStudioError);
+    }
+  }, [accessibleServiceStreamersLoading, t.streamerStudioError]);
 
   const loadMarketForbes = useCallback(async (options: LoadOptions = {}): Promise<void> => {
     const silent = options.silent === true;
@@ -1352,6 +1394,28 @@ export default function HomePage() {
         .replace("{price}", String(price)),
     });
   }, [handleClearInventoryItemMessage, inventory, loadInventory, loadMarket, t.marketListToast, t.marketMutationFailed]);
+
+  const handleUseInventoryServiceItem = useCallback(async (inventoryItemId: number, streamerId: number): Promise<void> => {
+    handleClearInventoryItemMessage(inventoryItemId);
+    setInventoryUsingServiceId(inventoryItemId);
+
+    const response = await useInventoryServiceItem(inventoryItemId, streamerId);
+    setInventoryUsingServiceId(null);
+
+    if (!response.ok) {
+      const message = [response.message, response.error].filter(Boolean).join(" — ") || t.marketMutationFailed;
+      setInventoryActionErrorById(prev => ({ ...prev, [inventoryItemId]: message }));
+      return;
+    }
+
+    const consumed = response.data?.consumed === true;
+    setInventoryActionFeedbackById(prev => ({
+      ...prev,
+      [inventoryItemId]: consumed ? t.inventoryServiceUseSuccessConsumed : t.inventoryServiceUseSuccess,
+    }));
+
+    await loadInventory({ silent: true, force: true });
+  }, [handleClearInventoryItemMessage, loadInventory, t.inventoryServiceUseSuccess, t.inventoryServiceUseSuccessConsumed, t.marketMutationFailed]);
 
   const handleBuyMarketListing = useCallback(async (listingId: number): Promise<void> => {
     handleClearMarketListingMessage(listingId);
@@ -2012,14 +2076,26 @@ export default function HomePage() {
                 dateLocale={dateLocale}
                 sellingInventoryId={inventorySellingId}
                 listingInventoryId={inventoryListingId}
+                usingServiceInventoryId={inventoryUsingServiceId}
                 listedInventoryItemIds={listedInventoryItemIds}
                 inventoryActionFeedbackById={inventoryActionFeedbackById}
                 inventoryActionErrorById={inventoryActionErrorById}
+                accessibleServiceStreamers={accessibleServiceStreamers}
+                accessibleServiceStreamersLoading={accessibleServiceStreamersLoading}
+                accessibleServiceStreamersError={accessibleServiceStreamersError}
                 onSellToBot={(id) => {
                   void handleSellInventoryToBot(id);
                 }}
                 onListOnMarket={(id, price) => {
                   void handleListInventoryOnMarket(id, price);
+                }}
+                onUseServiceItem={(id, streamerId) => {
+                  void handleUseInventoryServiceItem(id, streamerId);
+                }}
+                onLoadAccessibleServiceStreamers={() => {
+                  if (!accessibleServiceStreamersLoaded) {
+                    void loadAccessibleServiceStreamers();
+                  }
                 }}
                 onClearInventoryItemMessage={handleClearInventoryItemMessage}
               />
