@@ -1154,6 +1154,57 @@ body {
   padding: 0 0 10px;
 }
 
+.dashboard-toast-stack {
+  position: fixed;
+  top: 88px;
+  right: clamp(16px, 3vw, 34px);
+  z-index: 140;
+  display: grid;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.dashboard-toast {
+  min-width: min(360px, calc(100vw - 32px));
+  max-width: min(420px, calc(100vw - 32px));
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(109, 140, 194, 0.34);
+  background: rgba(10, 16, 28, 0.92);
+  box-shadow:
+    0 22px 42px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(158, 182, 230, 0.12) inset;
+  backdrop-filter: blur(14px);
+  color: #edf4ff;
+  pointer-events: auto;
+}
+
+.dashboard-toast-success {
+  border-color: rgba(97, 196, 133, 0.42);
+  box-shadow:
+    0 22px 42px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(115, 214, 150, 0.15) inset;
+}
+
+.dashboard-toast-close {
+  border: 0;
+  background: transparent;
+  color: #d9e6ff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.dashboard-toast-close:hover {
+  color: #ffffff;
+}
+
 .dashboard-topbar {
   background: rgba(8, 14, 28, 0.78);
   border-bottom: 1px solid rgba(88, 107, 149, 0.42);
@@ -3401,6 +3452,19 @@ body {
   flex-wrap: wrap;
   gap: 8px;
   align-items: flex-start;
+}
+
+.inventory-market-state-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(104, 155, 232, 0.34);
+  background: rgba(31, 48, 80, 0.46);
+  color: #cfe0ff;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .inventory-list-on-market-details {

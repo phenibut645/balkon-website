@@ -19,10 +19,12 @@ type InventoryPanelProps = {
   dateLocale: string;
   sellingInventoryId: number | null;
   listingInventoryId: number | null;
-  inventoryActionFeedback: string | null;
-  inventoryActionError: string | null;
+  listedInventoryItemIds: Set<number>;
+  inventoryActionFeedbackById: Record<number, string>;
+  inventoryActionErrorById: Record<number, string>;
   onSellToBot: (inventoryItemId: number) => void | Promise<void>;
   onListOnMarket: (inventoryItemId: number, price: number) => void | Promise<void>;
+  onClearInventoryItemMessage: (inventoryItemId: number) => void;
 };
 
 function parsePositiveFinitePrice(raw: string): number | null {
@@ -66,10 +68,12 @@ export function InventoryPanel({
   dateLocale,
   sellingInventoryId,
   listingInventoryId,
-  inventoryActionFeedback,
-  inventoryActionError,
+  listedInventoryItemIds,
+  inventoryActionFeedbackById,
+  inventoryActionErrorById,
   onSellToBot,
   onListOnMarket,
+  onClearInventoryItemMessage,
 }: InventoryPanelProps) {
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [confirmSellItem, setConfirmSellItem] = useState<InventoryItem | null>(null);
@@ -272,7 +276,32 @@ export function InventoryPanel({
   const selectedCanSellToBot = Boolean(
     selectedItem?.sellable && selectedItem.botSellPrice !== null,
   );
-  const selectedCanListOnMarket = Boolean(selectedItem?.tradeable);
+  const selectedIsListedOnMarket = Boolean(
+    selectedItem && listedInventoryItemIds.has(selectedItem.inventoryItemId),
+  );
+  const selectedCanListOnMarket = Boolean(selectedItem?.tradeable) && !selectedIsListedOnMarket;
+  const selectedInventoryActionFeedback = selectedItem
+    ? inventoryActionFeedbackById[selectedItem.inventoryItemId] ?? null
+    : null;
+  const selectedInventoryActionError = selectedItem
+    ? inventoryActionErrorById[selectedItem.inventoryItemId] ?? null
+    : null;
+
+  useEffect(() => {
+    if (!selectedItem) {
+      return;
+    }
+
+    if (!selectedInventoryActionError || !selectedIsListedOnMarket) {
+      return;
+    }
+
+    if (!selectedInventoryActionError.includes("INVENTORY_ITEM_ALREADY_LISTED")) {
+      return;
+    }
+
+    onClearInventoryItemMessage(selectedItem.inventoryItemId);
+  }, [onClearInventoryItemMessage, selectedInventoryActionError, selectedIsListedOnMarket, selectedItem]);
 
   const handleConfirmSellToBot = useCallback(async () => {
     const item = confirmSellItem;
@@ -542,11 +571,11 @@ export function InventoryPanel({
 
                       {selectedCanSellToBot || selectedCanListOnMarket ? (
                         <div className="inventory-details-actions">
-                          {inventoryActionFeedback ? (
-                            <p className="state-text state-success">{inventoryActionFeedback}</p>
+                          {selectedInventoryActionFeedback ? (
+                            <p className="state-text state-success">{selectedInventoryActionFeedback}</p>
                           ) : null}
-                          {inventoryActionError ? (
-                            <p className="state-text state-error">{inventoryActionError}</p>
+                          {selectedInventoryActionError ? (
+                            <p className="state-text state-error">{selectedInventoryActionError}</p>
                           ) : null}
                           <div className="inventory-actions-row">
                             {selectedCanSellToBot ? (
@@ -558,6 +587,9 @@ export function InventoryPanel({
                               >
                                 {sellingInventoryId === selectedItem.inventoryItemId ? t.sellingToBot : t.sellToBot}
                               </button>
+                            ) : null}
+                            {selectedItem.tradeable && selectedIsListedOnMarket ? (
+                              <span className="inventory-market-state-badge">{t.inventoryAlreadyListedOnMarket}</span>
                             ) : null}
                             {selectedCanListOnMarket ? (
                               <details className="inventory-list-on-market-details">

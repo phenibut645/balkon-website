@@ -117,13 +117,14 @@ export default function HomePage() {
   const [buyErrors, setBuyErrors] = useState<Record<number, string>>({});
   const [inventorySellingId, setInventorySellingId] = useState<number | null>(null);
   const [inventoryListingId, setInventoryListingId] = useState<number | null>(null);
-  const [inventoryActionFeedback, setInventoryActionFeedback] = useState<string | null>(null);
-  const [inventoryActionError, setInventoryActionError] = useState<string | null>(null);
+  const [inventoryActionFeedbackById, setInventoryActionFeedbackById] = useState<Record<number, string>>({});
+  const [inventoryActionErrorById, setInventoryActionErrorById] = useState<Record<number, string>>({});
   const [marketBuyingListingId, setMarketBuyingListingId] = useState<number | null>(null);
   const [marketUpdatingListingId, setMarketUpdatingListingId] = useState<number | null>(null);
   const [marketCancellingListingId, setMarketCancellingListingId] = useState<number | null>(null);
   const [marketListingFeedbackById, setMarketListingFeedbackById] = useState<Record<number, string>>({});
   const [marketListingErrorById, setMarketListingErrorById] = useState<Record<number, string>>({});
+  const [inventoryToast, setInventoryToast] = useState<{ id: number; message: string } | null>(null);
   const [craftRecipes, setCraftRecipes] = useState<CraftRecipe[]>([]);
   const [craftLoaded, setCraftLoaded] = useState(false);
   const [craftLoading, setCraftLoading] = useState(false);
@@ -210,6 +211,10 @@ export default function HomePage() {
     { id: "sellable" as const, label: t.inventoryFilterSellable },
     { id: "tradeable" as const, label: t.inventoryFilterTradeable },
   ]), [t]);
+
+  const listedInventoryItemIds = useMemo(() => {
+    return new Set(marketListings.map(listing => listing.inventoryItemId));
+  }, [marketListings]);
 
   const searchResults = useMemo(() => {
     const query = normalizeDashboardSearchValue(searchQuery);
@@ -1253,9 +1258,41 @@ export default function HomePage() {
     });
   }, []);
 
+  const handleClearInventoryItemMessage = useCallback((inventoryItemId: number): void => {
+    setInventoryActionFeedbackById(prev => {
+      if (!prev[inventoryItemId]) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[inventoryItemId];
+      return next;
+    });
+    setInventoryActionErrorById(prev => {
+      if (!prev[inventoryItemId]) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[inventoryItemId];
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!inventoryToast) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setInventoryToast(current => (current?.id === inventoryToast.id ? null : current));
+    }, 3200);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [inventoryToast]);
+
   const handleSellInventoryToBot = useCallback(async (inventoryItemId: number): Promise<void> => {
-    setInventoryActionFeedback(null);
-    setInventoryActionError(null);
+    handleClearInventoryItemMessage(inventoryItemId);
     setInventorySellingId(inventoryItemId);
 
     const response = await sellInventoryItemToBot(inventoryItemId);
@@ -1263,40 +1300,50 @@ export default function HomePage() {
 
     if (!response.ok) {
       const message = [response.message, response.error].filter(Boolean).join(" — ") || t.marketMutationFailed;
-      setInventoryActionError(message);
+      setInventoryActionErrorById(prev => ({ ...prev, [inventoryItemId]: message }));
       return;
     }
 
     const received = response.data?.received;
-    setInventoryActionFeedback(
-      typeof received === "number" && Number.isFinite(received)
+    setInventoryActionFeedbackById(prev => ({
+      ...prev,
+      [inventoryItemId]: typeof received === "number" && Number.isFinite(received)
         ? t.marketSellBotSuccessReceived.replace("{received}", String(received))
         : t.marketSellBotSuccess,
-    );
+    }));
 
     await loadInventory({ silent: true });
     await loadBalance({ silent: true });
     await loadOverviewSummary({ silent: true, force: true });
-  }, [loadBalance, loadInventory, loadOverviewSummary, t.marketMutationFailed, t.marketSellBotSuccess, t.marketSellBotSuccessReceived]);
+  }, [handleClearInventoryItemMessage, loadBalance, loadInventory, loadOverviewSummary, t.marketMutationFailed, t.marketSellBotSuccess, t.marketSellBotSuccessReceived]);
 
   const handleListInventoryOnMarket = useCallback(async (inventoryItemId: number, price: number): Promise<void> => {
-    setInventoryActionFeedback(null);
-    setInventoryActionError(null);
+    handleClearInventoryItemMessage(inventoryItemId);
     setInventoryListingId(inventoryItemId);
+
+    const itemName = inventory.find(item => item.inventoryItemId === inventoryItemId)?.name || `#${inventoryItemId}`;
 
     const response = await createInventoryMarketListing(inventoryItemId, price);
     setInventoryListingId(null);
 
     if (!response.ok) {
       const message = [response.message, response.error].filter(Boolean).join(" — ") || t.marketMutationFailed;
-      setInventoryActionError(message);
+      setInventoryActionErrorById(prev => ({ ...prev, [inventoryItemId]: message }));
+      if (response.error === "INVENTORY_ITEM_ALREADY_LISTED") {
+        await loadMarket({ silent: true });
+      }
       return;
     }
 
-    setInventoryActionFeedback(t.marketListSuccess);
     await loadInventory({ silent: true });
     await loadMarket({ silent: true });
-  }, [loadInventory, loadMarket, t.marketListSuccess, t.marketMutationFailed]);
+    setInventoryToast({
+      id: Date.now(),
+      message: t.marketListToast
+        .replace("{itemName}", itemName)
+        .replace("{price}", String(price)),
+    });
+  }, [handleClearInventoryItemMessage, inventory, loadInventory, loadMarket, t.marketListToast, t.marketMutationFailed]);
 
   const handleBuyMarketListing = useCallback(async (listingId: number): Promise<void> => {
     handleClearMarketListingMessage(listingId);
@@ -1848,6 +1895,22 @@ export default function HomePage() {
             />
 
             <div className="dashboard-main-layout">
+            {inventoryToast ? (
+              <div className="dashboard-toast-stack" aria-live="polite" aria-atomic="true">
+                <div className="dashboard-toast dashboard-toast-success" role="status">
+                  <span>{inventoryToast.message}</span>
+                  <button
+                    type="button"
+                    className="dashboard-toast-close"
+                    onClick={() => setInventoryToast(null)}
+                    aria-label={t.toastCloseLabel}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
               <DashboardSidebar
                 t={t}
                 dashboardMode={dashboardMode}
@@ -1910,14 +1973,16 @@ export default function HomePage() {
                 dateLocale={dateLocale}
                 sellingInventoryId={inventorySellingId}
                 listingInventoryId={inventoryListingId}
-                inventoryActionFeedback={inventoryActionFeedback}
-                inventoryActionError={inventoryActionError}
+                listedInventoryItemIds={listedInventoryItemIds}
+                inventoryActionFeedbackById={inventoryActionFeedbackById}
+                inventoryActionErrorById={inventoryActionErrorById}
                 onSellToBot={(id) => {
                   void handleSellInventoryToBot(id);
                 }}
                 onListOnMarket={(id, price) => {
                   void handleListInventoryOnMarket(id, price);
                 }}
+                onClearInventoryItemMessage={handleClearInventoryItemMessage}
               />
             ) : null}
 
