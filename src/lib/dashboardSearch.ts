@@ -12,7 +12,7 @@ export type UserTab =
   | "servers"
   | "streamerApplication"
   | "streamerStudio";
-export type AdminTab = "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems" | "adminJobs" | "adminBotShop" | "adminEconomy" | "adminMessage";
+export type AdminTab = "adminDashboard" | "adminStreamers" | "adminServers" | "adminLogs" | "adminObs" | "adminItems" | "adminJobs" | "adminBotShop" | "adminEconomy" | "adminMessage";
 export type DashboardTab = UserTab | AdminTab;
 export type DashboardMode = "user" | "admin";
 export type MarketSubTab = "overview" | "listings" | "forbes";

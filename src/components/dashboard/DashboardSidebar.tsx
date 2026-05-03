@@ -204,6 +204,13 @@ export function DashboardSidebar({
           onClick: () => onAdminTabSelect("adminDashboard"),
         },
         {
+          key: "admin-streamers",
+          label: t.adminTabStreamers,
+          icon: "📡",
+          active: activeTab === "adminStreamers",
+          onClick: () => onAdminTabSelect("adminStreamers"),
+        },
+        {
           key: "admin-servers",
           label: t.adminTabServers,
           icon: "🛡",

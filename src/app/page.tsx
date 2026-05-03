@@ -53,6 +53,8 @@ import { JobsPanel } from "@/components/dashboard/JobsPanel";
 import { NotificationsPanel } from "@/components/dashboard/NotificationsPanel";
 import { ServersPanel } from "@/components/dashboard/ServersPanel";
 import { AdminDashboardPanel } from "@/components/dashboard/AdminDashboardPanel";
+import { AdminStreamerApplicationsPanel } from "@/components/dashboard/AdminStreamerApplicationsPanel";
+import { AdminStreamersPanel } from "@/components/dashboard/AdminStreamersPanel";
 import { AdminLogsPanel } from "@/components/dashboard/AdminLogsPanel";
 import { AdminObsPanel } from "@/components/dashboard/AdminObsPanel";
 import { AdminItemsPanel } from "@/components/dashboard/AdminItemsPanel";
@@ -512,6 +514,7 @@ export default function HomePage() {
 
     const adminResults: DashboardSearchResult[] = [
       { key: "tab:adminDashboard", label: t.adminTabDashboard, breadcrumb: t.adminTabDashboard, aliases: ["dashboard", "admin", "панель", "paneel"], destination: { kind: "adminTab", tab: "adminDashboard" } },
+      { key: "tab:adminStreamers", label: t.adminTabStreamers, breadcrumb: t.adminTabStreamers, aliases: ["streamers", "стримеры", "streamer applications", "striimerid"], destination: { kind: "adminTab", tab: "adminStreamers" } },
       { key: "tab:adminServers", label: t.adminTabServers, breadcrumb: t.adminTabServers, aliases: ["servers", "серверы", "serverid"], destination: { kind: "adminTab", tab: "adminServers" } },
       { key: "tab:adminLogs", label: t.adminTabLogs, breadcrumb: t.adminTabLogs, aliases: ["logs", "логи", "logid"], destination: { kind: "adminTab", tab: "adminLogs" } },
       { key: "tab:adminObs", label: t.adminTabObs, breadcrumb: t.adminTabObs, aliases: ["obs", "scene", "сцены"], destination: { kind: "adminTab", tab: "adminObs" } },
@@ -2471,11 +2474,17 @@ export default function HomePage() {
                 adminStatsLoading={adminStatsLoading}
                 adminStatsError={adminStatsError}
                 adminStats={adminStats}
-                dateLocale={dateLocale}
                 onRetry={() => {
                   void loadAdminStats();
                 }}
               />
+            ) : null}
+
+            {activeTab === "adminStreamers" ? (
+              <div className="admin-streamers-tab">
+                <AdminStreamersPanel t={t} dateLocale={dateLocale} />
+                <AdminStreamerApplicationsPanel t={t} dateLocale={dateLocale} />
+              </div>
             ) : null}
 
             {activeTab === "adminLogs" ? (

@@ -3,7 +3,7 @@ import { DashboardText, LanguageCode } from "@/lib/dashboardText";
 import { UserBalance } from "@/lib/types";
 
 type DashboardMode = "user" | "admin";
-type DashboardTab = "overview" | "inventory" | "market" | "botShop" | "craft" | "jobs" | "profile" | "notifications" | "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems" | "adminJobs" | "adminBotShop" | "adminMessage";
+type DashboardTab = "overview" | "inventory" | "market" | "botShop" | "craft" | "jobs" | "profile" | "notifications" | "adminDashboard" | "adminStreamers" | "adminServers" | "adminLogs" | "adminObs" | "adminItems" | "adminJobs" | "adminBotShop" | "adminMessage";
 
 type ProfileDropdownProps = {
   profileMenuRef: RefObject<HTMLDivElement>;

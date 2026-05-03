@@ -1,21 +1,17 @@
 import { DashboardText } from "@/lib/dashboardText";
 import { AdminStats } from "@/lib/types";
-import { AdminStreamersPanel } from "./AdminStreamersPanel";
-import { AdminStreamerApplicationsPanel } from "./AdminStreamerApplicationsPanel";
-import { AdminJobsPanel } from "./AdminJobsPanel";
 
 type AdminDashboardPanelProps = {
   t: DashboardText;
   adminStatsLoading: boolean;
   adminStatsError: string | null;
   adminStats: AdminStats | null;
-  dateLocale: string;
   onRetry: () => void;
 };
 
-export function AdminDashboardPanel({ t, adminStatsLoading, adminStatsError, adminStats, dateLocale, onRetry }: AdminDashboardPanelProps) {
+export function AdminDashboardPanel({ t, adminStatsLoading, adminStatsError, adminStats, onRetry }: AdminDashboardPanelProps) {
   return (
-    <div className="panel panel-overview">
+    <div className="panel panel-overview admin-dashboard-panel">
       {adminStatsLoading && !adminStats ? <p className="state-text">{t.adminStatsLoading}</p> : null}
       {!adminStatsLoading && adminStatsError && !adminStats ? (
         <div className="admin-empty-card">
@@ -38,10 +34,6 @@ export function AdminDashboardPanel({ t, adminStatsLoading, adminStatsError, adm
           <article className="admin-stat-card"><p>{t.adminCountActions}</p><h3>{adminStats.counts.actions_count}</h3></article>
         </div>
       ) : null}
-
-      <AdminStreamersPanel t={t} dateLocale={dateLocale} />
-      <AdminStreamerApplicationsPanel t={t} dateLocale={dateLocale} />
-      <AdminJobsPanel t={t} />
     </div>
   );
 }

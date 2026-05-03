@@ -2293,6 +2293,11 @@ body {
   padding-bottom: 14px;
 }
 
+.admin-dashboard-panel {
+  display: grid;
+  gap: 16px;
+}
+
 .overview-dashboard {
   min-height: 0;
   overflow: visible;
@@ -4312,6 +4317,11 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 10px;
+}
+
+.admin-streamers-tab {
+  display: grid;
+  gap: 16px;
 }
 
 .admin-stat-card {
