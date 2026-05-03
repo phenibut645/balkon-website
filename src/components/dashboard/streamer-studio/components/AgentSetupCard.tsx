@@ -17,6 +17,8 @@ type FeedbackState = {
   isError: boolean;
 };
 
+type AgentSetupTab = "status" | "setup" | "token" | "bind" | "danger";
+
 function obsConnectionLabel(t: DashboardText, setup: StreamerStudioAgentSetupView | null): string {
   if (!setup || setup.obsConnected === null) {
     return t.streamerStudioAgentSetupUnknown;
@@ -71,6 +73,7 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
   const [setup, setSetup] = useState<StreamerStudioAgentSetupView | null>(null);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const [activeTab, setActiveTab] = useState<AgentSetupTab>("status");
   const [customAgentId, setCustomAgentId] = useState("");
   const [bindAgentId, setBindAgentId] = useState("");
   const [bindAgentToken, setBindAgentToken] = useState("");
@@ -128,7 +131,40 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
     return parts.join(" · ");
   }, [setup, t]);
 
+  const summaryHint = useMemo(() => {
+    if (!setup) {
+      return t.streamerStudioAgentSetupSubtitle;
+    }
+
+    if (!setup.configured) {
+      return t.streamerStudioAgentSetupNotConfigured;
+    }
+
+    if (!setup.online) {
+      return t.streamerStudioAgentSetupOfflineHint;
+    }
+
+    if (setup.obsConnected === false) {
+      return t.streamerStudioAgentSetupObsDisconnectedHint;
+    }
+
+    if (setup.obsConnected === true) {
+      return t.streamerStudioAgentSetupReady;
+    }
+
+    return t.streamerStudioAgentSetupUnknown;
+  }, [setup, t]);
+
+  const tabItems: Array<{ id: AgentSetupTab; label: string }> = useMemo(() => [
+    { id: "status", label: t.streamerStudioAgentSetupTabStatus },
+    { id: "setup", label: t.streamerStudioAgentSetupTabSetup },
+    { id: "token", label: t.streamerStudioAgentSetupTabToken },
+    { id: "bind", label: t.streamerStudioAgentSetupTabManualBind },
+    { id: "danger", label: t.streamerStudioAgentSetupTabDanger },
+  ], [t]);
+
   const currentAgentId = setup?.agentId ?? null;
+  const capabilityCount = setup?.capabilities.length ?? 0;
 
   const handleCopy = useCallback(async (value: string, field: "agentId" | "token") => {
     const copied = await copyText(value);
@@ -236,11 +272,6 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
           <button className="pagination-btn ghost" type="button" onClick={() => void loadSetup()} disabled={loading}>
             {t.streamerStudioAgentSetupRefresh}
           </button>
-          {setup?.configured ? (
-            <button className="pagination-btn ghost streamer-danger-button" type="button" onClick={() => void handleClear()} disabled={clearing}>
-              {clearing ? t.streamerStudioAgentSetupClearing : t.streamerStudioAgentSetupClear}
-            </button>
-          ) : null}
         </div>
       </div>
 
@@ -252,7 +283,7 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
 
       {loading && !setup ? <p className="state-text compact">{t.shopObsLoading}</p> : null}
 
-      <div className="agent-setup-status-grid">
+      <div className="agent-setup-summary-grid">
         <div className="agent-setup-status-item">
           <span>{t.streamerStudioAgentSetupTitle}</span>
           <strong>{setup?.configured ? t.streamerStudioAgentSetupConfigured : t.streamerStudioAgentSetupNotConfigured}</strong>
@@ -266,6 +297,18 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
           <strong>{obsConnectionLabel(t, setup)}</strong>
         </div>
         <div className="agent-setup-status-item">
+          <span>{t.streamerStudioAgentVersionLabel}</span>
+          <strong>{setup?.agentVersion ?? "-"}</strong>
+        </div>
+        <div className="agent-setup-status-item">
+          <span>{t.streamerStudioRelayProtocolLabel}</span>
+          <strong>{setup?.relayProtocolVersion ?? "-"}</strong>
+        </div>
+        <div className="agent-setup-status-item">
+          <span>{t.streamerStudioCapabilitiesLabel}</span>
+          <strong>{capabilityCount}</strong>
+        </div>
+        <div className="agent-setup-status-item">
           <span>{t.streamerStudioAgentSetupLastSeen}</span>
           <strong>{formatLastSeen(t, setup?.lastSeenAt ?? null)}</strong>
         </div>
@@ -277,98 +320,175 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
         <span className={`obs-status-pill ${setup ? (setup.online ? "online" : "offline") : "unknown"}`}>{setup?.online ? t.streamerStudioAgentOnline : setup ? t.streamerStudioAgentOffline : t.streamerStudioAgentSetupUnknown}</span>
       </div>
 
-      <div className="agent-setup-diagnostics-grid">
-        <p className="market-card-hint"><strong>{t.streamerStudioAgentVersionLabel}:</strong> {setup?.agentVersion ?? "-"}</p>
-        <p className="market-card-hint"><strong>{t.streamerStudioRelayProtocolLabel}:</strong> {setup?.relayProtocolVersion ?? "-"}</p>
-        <p className="market-card-hint"><strong>{t.streamerStudioCapabilitiesLabel}:</strong> {setup?.capabilities.length ?? 0}</p>
-        <p className="market-card-hint"><strong>{t.streamerStudioObsVersionLabel}:</strong> {setup?.obsVersion ?? "-"}</p>
-        <p className="market-card-hint"><strong>{t.streamerStudioObsWebsocketVersionLabel}:</strong> {setup?.obsWebsocketVersion ?? "-"}</p>
+      <p className={`agent-setup-summary-hint ${setup && setup.online && setup.obsConnected === true ? "state-ok" : setup && ((!setup.online) || setup.obsConnected === false) ? "state-error" : ""}`}>
+        {summaryHint}
+      </p>
+
+      <div className="shop-subtabs agent-setup-tabs" role="tablist" aria-label={t.streamerStudioAgentSetupTitle}>
+        {tabItems.map(tab => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            className={`shop-subtab-chip ${activeTab === tab.id ? "active" : ""}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      <div className="agent-setup-info-grid">
-        <div className="agent-setup-info-card">
-          <h4 className="agent-setup-subtitle">{t.streamerStudioAgentSetupInstructionsTitle}</h4>
-          <ul className="agent-setup-instructions">
-            <li>{t.streamerStudioAgentSetupInstructionInstall}</li>
-            <li>{t.streamerStudioAgentSetupInstructionRelay}</li>
-            <li>{t.streamerStudioAgentSetupInstructionAgentId}</li>
-            <li>{t.streamerStudioAgentSetupInstructionAgentToken}</li>
-            <li>{t.streamerStudioAgentSetupInstructionObs}</li>
-            <li>{t.streamerStudioAgentSetupInstructionStart}</li>
-          </ul>
-          <div className="agent-setup-inline-field">
-            <span>{t.streamerStudioAgentSetupRelayLabel}</span>
-            <strong>{setup?.relayUrl ?? t.streamerStudioAgentSetupRelayUnavailable}</strong>
+      <div className="agent-setup-tab-panel">
+        {activeTab === "status" ? (
+          <div className="agent-setup-tab-stack">
+            <div className="agent-setup-diagnostics-grid">
+              <div className="agent-setup-inline-field">
+                <span>{t.streamerStudioAgentSetupTitle}</span>
+                <strong>{setup?.configured ? t.streamerStudioAgentSetupConfigured : t.streamerStudioAgentSetupNotConfigured}</strong>
+              </div>
+              <div className="agent-setup-inline-field">
+                <span>{t.streamerStudioAgentOnline}</span>
+                <strong>{setup?.online ? t.streamerStudioAgentOnline : t.streamerStudioAgentOffline}</strong>
+              </div>
+              <div className="agent-setup-inline-field">
+                <span>{t.streamerStudioObsStatusLabel}</span>
+                <strong>{obsConnectionLabel(t, setup)}</strong>
+              </div>
+              <div className="agent-setup-inline-field">
+                <span>{t.streamerStudioAgentVersionLabel}</span>
+                <strong>{setup?.agentVersion ?? "-"}</strong>
+              </div>
+              <div className="agent-setup-inline-field">
+                <span>{t.streamerStudioRelayProtocolLabel}</span>
+                <strong>{setup?.relayProtocolVersion ?? "-"}</strong>
+              </div>
+              <div className="agent-setup-inline-field">
+                <span>{t.streamerStudioObsVersionLabel}</span>
+                <strong>{setup?.obsVersion ?? "-"}</strong>
+              </div>
+              <div className="agent-setup-inline-field">
+                <span>{t.streamerStudioObsWebsocketVersionLabel}</span>
+                <strong>{setup?.obsWebsocketVersion ?? "-"}</strong>
+              </div>
+              <div className="agent-setup-inline-field">
+                <span>{t.streamerStudioCapabilitiesLabel}</span>
+                <strong>{capabilityCount}</strong>
+              </div>
+              <div className="agent-setup-inline-field">
+                <span>{t.streamerStudioAgentSetupLastSeen}</span>
+                <strong>{formatLastSeen(t, setup?.lastSeenAt ?? null)}</strong>
+              </div>
+            </div>
+            <div className="agent-setup-tab-actions">
+              <button className="pagination-btn ghost" type="button" onClick={() => void loadSetup()} disabled={loading}>
+                {t.streamerStudioAgentSetupRefresh}
+              </button>
+            </div>
           </div>
-        </div>
+        ) : null}
 
-        <div className="agent-setup-info-card">
-          <div className="agent-setup-inline-field">
-            <span>{t.streamerStudioAgentSetupAgentIdLabel}</span>
-            <div className="agent-setup-inline-value">
-              <strong>{currentAgentId ?? t.streamerStudioAgentSetupUnknown}</strong>
-              {currentAgentId ? (
-                <button className="pagination-btn ghost" type="button" onClick={() => void handleCopy(currentAgentId, "agentId")}>
-                  {copiedField === "agentId" ? t.streamerStudioAgentSetupCopied : t.streamerStudioAgentSetupCopy}
-                </button>
+        {activeTab === "setup" ? (
+          <div className="agent-setup-tab-stack">
+            <div className="agent-setup-info-card agent-setup-single-card">
+              <h4 className="agent-setup-subtitle">{t.streamerStudioAgentSetupInstructionsTitle}</h4>
+              <ul className="agent-setup-instructions compact">
+                <li>{t.streamerStudioAgentSetupInstructionInstall}</li>
+                <li>{t.streamerStudioAgentSetupInstructionObs}</li>
+                <li>{t.streamerStudioAgentSetupInstructionStart}</li>
+              </ul>
+              <div className="agent-setup-inline-field">
+                <span>{t.streamerStudioAgentSetupRelayLabel}</span>
+                <strong>{setup?.relayUrl ?? t.streamerStudioAgentSetupRelayUnavailable}</strong>
+              </div>
+              <div className="agent-setup-inline-field">
+                <span>{t.streamerStudioAgentSetupAgentIdLabel}</span>
+                <div className="agent-setup-inline-value">
+                  <strong>{currentAgentId ?? t.streamerStudioAgentSetupUnknown}</strong>
+                  {currentAgentId ? (
+                    <button className="pagination-btn ghost" type="button" onClick={() => void handleCopy(currentAgentId, "agentId")}>
+                      {copiedField === "agentId" ? t.streamerStudioAgentSetupCopied : t.streamerStudioAgentSetupCopy}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              <div className="agent-setup-inline-field">
+                <span>{t.streamerStudioAgentSetupTokenLabel}</span>
+                <strong>{setup?.tokenPresent ? t.streamerStudioAgentSetupTokenPresent : t.streamerStudioAgentSetupTokenMissing}</strong>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {activeTab === "token" ? (
+          <div className="agent-setup-tab-stack">
+            <div className="agent-setup-action-card agent-setup-single-card">
+              <h4 className="agent-setup-subtitle">{t.streamerStudioAgentSetupGenerateToken}</h4>
+              <label className="streamer-transform-field">
+                <span>{t.streamerStudioAgentSetupCustomAgentId}</span>
+                <input
+                  type="text"
+                  value={customAgentId}
+                  onChange={(event) => setCustomAgentId(event.target.value.slice(0, 80))}
+                  placeholder={t.streamerStudioAgentSetupCustomAgentIdPlaceholder}
+                  maxLength={80}
+                />
+              </label>
+              <button className="pagination-btn" type="button" onClick={() => void handleProvision()} disabled={provisioning}>
+                {provisioning ? t.streamerStudioAgentSetupGenerating : t.streamerStudioAgentSetupGenerateToken}
+              </button>
+
+              {generatedToken ? (
+                <div className="agent-setup-token-box">
+                  <div className="agent-setup-token-head">
+                    <strong>{t.streamerStudioAgentSetupOneTimeTitle}</strong>
+                    <button className="pagination-btn ghost" type="button" onClick={() => void handleCopy(generatedToken.agentToken, "token")}>
+                      {copiedField === "token" ? t.streamerStudioAgentSetupCopied : t.streamerStudioAgentSetupCopy}
+                    </button>
+                  </div>
+                  <code>{generatedToken.agentToken}</code>
+                  <p className="market-card-hint">{t.streamerStudioAgentSetupCopyNowWarning}</p>
+                </div>
               ) : null}
             </div>
           </div>
-          <div className="agent-setup-inline-field">
-            <span>{t.streamerStudioAgentSetupTokenLabel}</span>
-            <strong>{setup?.tokenPresent ? t.streamerStudioAgentSetupTokenPresent : t.streamerStudioAgentSetupTokenMissing}</strong>
+        ) : null}
+
+        {activeTab === "bind" ? (
+          <div className="agent-setup-tab-stack">
+            <div className="agent-setup-action-card agent-setup-single-card">
+              <h4 className="agent-setup-subtitle">{t.streamerStudioAgentSetupBindTitle}</h4>
+              <p className="market-card-hint">{t.streamerStudioAgentSetupBindSubtitle}</p>
+              <div className="agent-setup-bind-grid">
+                <label className="streamer-transform-field">
+                  <span>{t.streamerStudioAgentSetupAgentIdLabel}</span>
+                  <input type="text" value={bindAgentId} onChange={(event) => setBindAgentId(event.target.value.slice(0, 80))} maxLength={80} />
+                </label>
+                <label className="streamer-transform-field">
+                  <span>{t.streamerStudioAgentSetupTokenLabel}</span>
+                  <input type="password" value={bindAgentToken} onChange={(event) => setBindAgentToken(event.target.value)} autoComplete="off" />
+                </label>
+              </div>
+              <button className="pagination-btn" type="button" onClick={() => void handleBind()} disabled={binding}>
+                {binding ? t.streamerStudioAgentSetupBinding : t.streamerStudioAgentSetupBindButton}
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
+        ) : null}
 
-      <div className="agent-setup-action-grid">
-        <div className="agent-setup-action-card">
-          <h4 className="agent-setup-subtitle">{t.streamerStudioAgentSetupGenerateToken}</h4>
-          <label className="streamer-transform-field">
-            <span>{t.streamerStudioAgentSetupCustomAgentId}</span>
-            <input
-              type="text"
-              value={customAgentId}
-              onChange={(event) => setCustomAgentId(event.target.value.slice(0, 80))}
-              placeholder={t.streamerStudioAgentSetupCustomAgentIdPlaceholder}
-              maxLength={80}
-            />
-          </label>
-          <button className="pagination-btn" type="button" onClick={() => void handleProvision()} disabled={provisioning}>
-            {provisioning ? t.streamerStudioAgentSetupGenerating : t.streamerStudioAgentSetupGenerateToken}
-          </button>
-
-          {generatedToken ? (
-            <div className="agent-setup-token-box">
-              <div className="agent-setup-token-head">
-                <strong>{t.streamerStudioAgentSetupOneTimeTitle}</strong>
-                <button className="pagination-btn ghost" type="button" onClick={() => void handleCopy(generatedToken.agentToken, "token")}>
-                  {copiedField === "token" ? t.streamerStudioAgentSetupCopied : t.streamerStudioAgentSetupCopy}
+        {activeTab === "danger" ? (
+          <div className="agent-setup-tab-stack">
+            <div className="agent-setup-action-card agent-setup-single-card danger">
+              <h4 className="agent-setup-subtitle">{t.streamerStudioAgentSetupTabDanger}</h4>
+              <p className="market-card-hint">{t.streamerStudioAgentSetupClearWarning}</p>
+              <div className="agent-setup-tab-actions">
+                <button className="pagination-btn ghost streamer-danger-button" type="button" onClick={() => void handleClear()} disabled={clearing || !setup?.configured}>
+                  {clearing ? t.streamerStudioAgentSetupClearing : t.streamerStudioAgentSetupClear}
                 </button>
               </div>
-              <code>{generatedToken.agentToken}</code>
-              <p className="market-card-hint">{t.streamerStudioAgentSetupOneTimeWarning}</p>
             </div>
-          ) : null}
-        </div>
-
-        <div className="agent-setup-action-card">
-          <h4 className="agent-setup-subtitle">{t.streamerStudioAgentSetupBindTitle}</h4>
-          <p className="market-card-hint">{t.streamerStudioAgentSetupBindSubtitle}</p>
-          <div className="agent-setup-bind-grid">
-            <label className="streamer-transform-field">
-              <span>{t.streamerStudioAgentSetupAgentIdLabel}</span>
-              <input type="text" value={bindAgentId} onChange={(event) => setBindAgentId(event.target.value.slice(0, 80))} maxLength={80} />
-            </label>
-            <label className="streamer-transform-field">
-              <span>{t.streamerStudioAgentSetupTokenLabel}</span>
-              <input type="password" value={bindAgentToken} onChange={(event) => setBindAgentToken(event.target.value)} autoComplete="off" />
-            </label>
           </div>
-          <button className="pagination-btn" type="button" onClick={() => void handleBind()} disabled={binding}>
-            {binding ? t.streamerStudioAgentSetupBinding : t.streamerStudioAgentSetupBindButton}
-          </button>
-        </div>
+        ) : null}
       </div>
     </section>
   );

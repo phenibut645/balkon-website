@@ -381,9 +381,10 @@ body {
   color: #9de7b6;
 }
 
+.agent-setup-summary-grid,
 .agent-setup-status-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
   gap: 10px;
 }
 
@@ -422,6 +423,61 @@ body {
   flex-wrap: wrap;
 }
 
+.agent-setup-summary-hint {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(96, 112, 149, 0.22);
+  background: rgba(14, 20, 33, 0.5);
+  color: #dfe7fa;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.agent-setup-summary-hint.state-ok {
+  color: #a8f0c0;
+  border-color: rgba(92, 180, 126, 0.28);
+  background: rgba(21, 49, 34, 0.34);
+}
+
+.agent-setup-summary-hint.state-error {
+  color: #ffc1ca;
+  border-color: rgba(214, 97, 129, 0.28);
+  background: rgba(62, 21, 34, 0.34);
+}
+
+.agent-setup-tabs {
+  margin-bottom: 0;
+}
+
+.agent-setup-tab-panel {
+  border: 1px solid rgba(95, 116, 159, 0.18);
+  border-radius: 12px;
+  background: rgba(13, 19, 31, 0.4);
+  padding: 10px;
+}
+
+.agent-setup-tab-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.agent-setup-tab-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.agent-setup-single-card {
+  min-width: 0;
+}
+
+.agent-setup-single-card.danger {
+  border-color: rgba(185, 88, 99, 0.34);
+  background: linear-gradient(145deg, rgba(49, 18, 27, 0.5), rgba(21, 10, 17, 0.6));
+}
+
 .agent-setup-diagnostics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -458,6 +514,10 @@ body {
   padding-left: 18px;
   color: #d6def1;
   font-size: 12px;
+}
+
+.agent-setup-instructions.compact {
+  gap: 6px;
 }
 
 .agent-setup-inline-field {
@@ -518,6 +578,22 @@ body {
 
 .agent-setup-token-box .market-card-hint {
   margin: 0;
+}
+
+@media (max-width: 700px) {
+  .agent-setup-bind-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-setup-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .agent-setup-head-actions,
+  .agent-setup-tab-actions {
+    justify-content: flex-start;
+  }
 }
 
 .streamer-scene-toolbar {
