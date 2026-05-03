@@ -117,6 +117,24 @@ body {
   align-items: center;
 }
 
+.streamer-session-tabs {
+  margin-bottom: 0;
+}
+
+.streamer-session-tab-panel {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.streamer-session-tab-panel[hidden] {
+  display: none;
+}
+
+.streamer-obs-control-actions {
+  flex-wrap: wrap;
+}
+
 .streamer-trusted-panel {
   border: 1px solid rgba(95, 116, 159, 0.22);
   border-radius: 14px;
