@@ -4074,11 +4074,12 @@ body {
   padding: 12px;
   transition: opacity 0.24s ease, transform 0.24s ease;
   min-width: 0;
-  height: 100%;
-  max-height: 100%;
+  height: auto;
+  max-height: none;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  align-self: start;
+  overflow: visible;
 }
 
 .inventory-details-panel.enter {
@@ -4160,10 +4161,10 @@ body {
 }
 
 .inventory-details-scroll {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
-  overflow-y: auto;
-  padding-right: 4px;
+  overflow: visible;
+  padding-right: 0;
   display: grid;
   align-content: start;
   gap: 10px;

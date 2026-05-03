@@ -564,16 +564,14 @@ export function InventoryPanel({
                   </div>
                 </div>
               </div>
-            </div>
-
-            {selectedItem ? (
-              <aside
-                className="inventory-details-panel enter"
-                style={{
-                  borderColor: `${selectedRarityAccent}66`,
-                  boxShadow: `0 0 0 1px ${selectedRarityAccent}22 inset`,
-                }}
-              >
+              {selectedItem ? (
+                <aside
+                  className="inventory-details-panel enter"
+                  style={{
+                    borderColor: `${selectedRarityAccent}66`,
+                    boxShadow: `0 0 0 1px ${selectedRarityAccent}22 inset`,
+                  }}
+                >
                   <div className="inventory-details-header">
                     <p className="inventory-details-title">{t.itemDetails}</p>
                     <button
@@ -773,6 +771,7 @@ export function InventoryPanel({
                   </div>
                 </aside>
               ) : null}
+            </div>
 
             <div className="inventory-pagination">
               <button
