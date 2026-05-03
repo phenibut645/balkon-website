@@ -424,6 +424,8 @@ export type StreamerApplicationView = {
   description: string | null;
   status: StreamerApplicationStatus;
   streamerId: number | null;
+  streamerActive: boolean | null;
+  streamerArchivedAt: string | null;
   rejectionReason: string | null;
   reviewedAt: string | null;
   createdAt: string;

@@ -142,6 +142,9 @@ export function AdminStreamerApplicationsPanel({ t, dateLocale }: AdminStreamerA
                 <span className="meta-badge">#{application.id}</span>
                 <span className="meta-badge muted">{t.streamerApplicationDiscordGuildId}: {application.discordGuildId}</span>
                 {application.streamerId ? <span className="meta-badge ok">Streamer ID: {application.streamerId}</span> : null}
+                {application.status === "approved" && application.streamerActive === false ? (
+                  <span className="meta-badge danger">{t.streamerApplicationStreamerArchived}</span>
+                ) : null}
               </div>
 
               {application.twitchUrl ? (
@@ -152,6 +155,9 @@ export function AdminStreamerApplicationsPanel({ t, dateLocale }: AdminStreamerA
 
               {application.description ? <p className="market-card-hint">{application.description}</p> : null}
               <p className="user-id">{t.obtained}: {formatDashboardDate(application.createdAt, dateLocale, t.unknownDate)}</p>
+              {application.status === "approved" && application.streamerActive === false ? (
+                <p className="state-text state-error">{t.streamerApplicationApprovedArchived}</p>
+              ) : null}
               {application.rejectionReason ? (
                 <p className="state-text state-error">{t.streamerApplicationRejectionReason}: {application.rejectionReason}</p>
               ) : null}

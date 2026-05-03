@@ -38,7 +38,14 @@ export function StreamerApplicationCard({ t, active, dateLocale, initialGuildId 
   const [description, setDescription] = useState("");
 
   const sortedApplications = useMemo(() => latestFirst(applications), [applications]);
-  const hasPendingApplication = sortedApplications.some(application => application.status === "pending");
+  const hasPendingForSelectedGuild = useMemo(() => {
+    const normalizedGuildId = discordGuildId.trim();
+    if (!normalizedGuildId) {
+      return false;
+    }
+
+    return sortedApplications.some(application => application.status === "pending" && application.discordGuildId === normalizedGuildId);
+  }, [discordGuildId, sortedApplications]);
 
   useEffect(() => {
     if (!discordGuildId.trim() && initialGuildId) {
@@ -151,7 +158,16 @@ export function StreamerApplicationCard({ t, active, dateLocale, initialGuildId 
               <div className="botshop-meta">
                 <span className="meta-badge muted">{t.obtained}: {formatDashboardDate(application.createdAt, dateLocale, t.unknownDate)}</span>
                 {application.streamerId ? <span className="meta-badge ok">Streamer ID: {application.streamerId}</span> : null}
+                {application.status === "approved" && application.streamerActive === false ? (
+                  <span className="meta-badge danger">{t.streamerApplicationStreamerArchived}</span>
+                ) : null}
               </div>
+              {application.status === "approved" && application.streamerActive === false ? (
+                <p className="state-text state-error">{t.streamerApplicationApprovedArchived}</p>
+              ) : null}
+              {application.status === "approved" && application.streamerActive === false ? (
+                <p className="market-card-hint">{t.streamerApplicationCanReapply}</p>
+              ) : null}
               {application.rejectionReason ? (
                 <p className="state-text state-error">{t.streamerApplicationRejectionReason}: {application.rejectionReason}</p>
               ) : null}
@@ -211,7 +227,9 @@ export function StreamerApplicationCard({ t, active, dateLocale, initialGuildId 
           </div>
         </div>
 
-        <button className="pagination-btn" type="submit" disabled={submitting || hasPendingApplication}>
+        {hasPendingForSelectedGuild ? <p className="market-card-hint">{t.streamerApplicationPendingForGuild}</p> : null}
+
+        <button className="pagination-btn" type="submit" disabled={submitting || hasPendingForSelectedGuild}>
           {submitting ? t.streamerApplicationSubmitting : t.streamerApplicationSubmit}
         </button>
       </form>
