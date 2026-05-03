@@ -52,6 +52,56 @@ body {
   min-width: 0;
 }
 
+.streamer-application-card,
+.admin-streamer-applications-panel {
+  background: rgba(14, 18, 30, 0.62);
+  border: 1px solid rgba(95, 116, 159, 0.28);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(137, 158, 197, 0.08) inset;
+  backdrop-filter: blur(14px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.streamer-application-list {
+  display: grid;
+  gap: 10px;
+}
+
+.streamer-application-status-card,
+.streamer-application-admin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.streamer-application-form {
+  margin-top: 2px;
+}
+
+.streamer-application-admin-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.streamer-application-admin-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.streamer-application-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 .streamer-service-catalog-panel {
   border: 1px solid rgba(95, 116, 159, 0.22);
   border-radius: 14px;

@@ -413,6 +413,61 @@ export type ApiBaseResponse = {
   message?: string;
 };
 
+export type StreamerApplicationStatus = "pending" | "approved" | "rejected";
+export type AdminStreamerApplicationStatusFilter = StreamerApplicationStatus | "all";
+
+export type StreamerApplicationView = {
+  id: number;
+  discordGuildId: string;
+  requestedNickname: string;
+  twitchUrl: string | null;
+  description: string | null;
+  status: StreamerApplicationStatus;
+  streamerId: number | null;
+  rejectionReason: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  applicant?: {
+    memberId: number;
+    discordId: string;
+    username: string | null;
+    globalName: string | null;
+    avatarUrl: string | null;
+    displayName: string;
+  };
+};
+
+export type CreateStreamerApplicationInput = {
+  discordGuildId: string;
+  requestedNickname: string;
+  twitchUrl?: string | null;
+  description?: string | null;
+};
+
+export type RejectStreamerApplicationInput = {
+  reason?: string | null;
+};
+
+export type ApiMyStreamerApplicationsResponse = ApiBaseResponse & {
+  data?: StreamerApplicationView[];
+};
+
+export type ApiStreamerApplicationSubmitResponse = ApiBaseResponse & {
+  data?: StreamerApplicationView;
+};
+
+export type ApiAdminStreamerApplicationsResponse = ApiBaseResponse & {
+  data?: StreamerApplicationView[];
+};
+
+export type ApiAdminStreamerApplicationActionResponse = ApiBaseResponse & {
+  data?: {
+    application?: StreamerApplicationView;
+    streamerId?: number | null;
+  } | StreamerApplicationView;
+};
+
 // ── Streamer Studio (Phase 4 UI) ──────────────────────────────────────────────
 
 export type StreamerStudioAccessRole = "owner" | "manager" | "moderator" | "bot_admin";

@@ -2279,6 +2279,7 @@ export default function HomePage() {
                 adminStatsLoading={adminStatsLoading}
                 adminStatsError={adminStatsError}
                 adminStats={adminStats}
+                dateLocale={dateLocale}
                 onRetry={() => {
                   void loadAdminStats();
                 }}
@@ -2359,6 +2360,8 @@ export default function HomePage() {
               <StreamerStudioPanel
                 t={t}
                 active
+                dateLocale={dateLocale}
+                homeGuildId={profileData?.homeGuildId ?? selectedGuildId}
               />
             ) : null}
 

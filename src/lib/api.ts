@@ -65,7 +65,14 @@ import {
   ApiStreamerServicePurchaseResponse,
   ApiStreamerServiceResponse,
   ApiStreamerServicesResponse,
+  ApiAdminStreamerApplicationActionResponse,
+  ApiAdminStreamerApplicationsResponse,
+  ApiMyStreamerApplicationsResponse,
+  ApiStreamerApplicationSubmitResponse,
+  AdminStreamerApplicationStatusFilter,
   CreateStreamerServiceInput,
+  CreateStreamerApplicationInput,
+  RejectStreamerApplicationInput,
   UpdateStreamerServiceInput,
 } from "./types";
 
@@ -73,6 +80,159 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3
 
 export function getDiscordLoginUrl(): string {
   return `${API_BASE_URL}/api/auth/discord`;
+}
+
+export async function getMyStreamerApplications(): Promise<ApiMyStreamerApplicationsResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-applications/me`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiMyStreamerApplicationsResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_APPLICATION_LOAD_FAILED",
+        message: data?.message || "Failed to load streamer applications.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function submitStreamerApplication(payload: CreateStreamerApplicationInput): Promise<ApiStreamerApplicationSubmitResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-applications`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerApplicationSubmitResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_APPLICATION_SUBMIT_FAILED",
+        message: data?.message || "Failed to submit streamer application.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function listAdminStreamerApplications(
+  status: AdminStreamerApplicationStatusFilter = "pending",
+): Promise<ApiAdminStreamerApplicationsResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/streamer-applications?status=${encodeURIComponent(status)}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminStreamerApplicationsResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_APPLICATION_LOAD_FAILED",
+        message: data?.message || "Failed to load streamer applications.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function approveStreamerApplication(applicationId: number): Promise<ApiAdminStreamerApplicationActionResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/streamer-applications/${encodeURIComponent(String(applicationId))}/approve`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminStreamerApplicationActionResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_APPLICATION_APPROVE_FAILED",
+        message: data?.message || "Failed to approve streamer application.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function rejectStreamerApplication(
+  applicationId: number,
+  reason?: string | null,
+): Promise<ApiAdminStreamerApplicationActionResponse> {
+  const payload: RejectStreamerApplicationInput = { reason };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/streamer-applications/${encodeURIComponent(String(applicationId))}/reject`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminStreamerApplicationActionResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_APPLICATION_REJECT_FAILED",
+        message: data?.message || "Failed to reject streamer application.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
 }
 
 export async function listStreamerServices(streamerId: number): Promise<ApiStreamerServicesResponse> {
