@@ -1,8 +1,10 @@
-import { DashboardText } from "@/lib/dashboardText";
+import { DashboardText, LanguageCode } from "@/lib/dashboardText";
+import { getLocalizedItemName } from "@/lib/localizedItems";
 import { CraftRecipe } from "@/lib/types";
 
 type CraftPanelProps = {
   t: DashboardText;
+  language: LanguageCode;
   loadingGifs: string[];
   recipes: CraftRecipe[];
   loading: boolean;
@@ -16,6 +18,7 @@ type CraftPanelProps = {
 
 export function CraftPanel({
   t,
+  language,
   loadingGifs,
   recipes,
   loading,
@@ -54,62 +57,75 @@ export function CraftPanel({
 
         {!loading && !error && recipes.length > 0 ? (
           <div className="craft-grid">
-            {recipes.map(recipe => (
-              <article className="craft-card" key={recipe.recipeId}>
-                <h3 className="craft-title">{recipe.name}</h3>
-                <p className="craft-description">{recipe.description || "-"}</p>
+            {recipes.map(recipe => {
+              const resultName = getLocalizedItemName({
+                name: recipe.resultName,
+                nameRu: recipe.resultNameRu,
+                nameEn: recipe.resultNameEn,
+                nameEt: recipe.resultNameEt,
+              }, language);
 
-                <div className="craft-result">
-                  <p className="craft-label">{t.craftResult}</p>
-                  <div className="craft-result-item">
-                    <span className="craft-result-emoji">{recipe.resultEmoji || "📦"}</span>
-                    <div>
-                      <p className="craft-result-name">{recipe.resultName}</p>
-                      <p className="craft-result-meta">{recipe.resultRarityName} • x{recipe.resultAmount}</p>
+              return (
+                <article className="craft-card" key={recipe.recipeId}>
+                  <h3 className="craft-title">{recipe.name}</h3>
+                  <p className="craft-description">{recipe.description || "-"}</p>
+
+                  <div className="craft-result">
+                    <p className="craft-label">{t.craftResult}</p>
+                    <div className="craft-result-item">
+                      <span className="craft-result-emoji">{recipe.resultEmoji || "📦"}</span>
+                      <div>
+                        <p className="craft-result-name">{resultName}</p>
+                        <p className="craft-result-meta">{recipe.resultRarityName} • x{recipe.resultAmount}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="craft-ingredients">
-                  <p className="craft-label">{t.craftIngredients}</p>
-                  {recipe.ingredients.length > 0 ? (
-                    <div className="craft-ingredients-list">
-                      {recipe.ingredients.map(ingredient => (
-                        <div className="craft-ingredient" key={`${recipe.recipeId}-${ingredient.itemTemplateId}`}>
-                          <span className="craft-ingredient-emoji">{ingredient.emoji || "📦"}</span>
-                          <span className="craft-ingredient-name">{ingredient.name}</span>
-                          <span className="craft-ingredient-amount">x{ingredient.amount}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="state-text state-empty">-</p>
-                  )}
-                </div>
+                  <div className="craft-ingredients">
+                    <p className="craft-label">{t.craftIngredients}</p>
+                    {recipe.ingredients.length > 0 ? (
+                      <div className="craft-ingredients-list">
+                        {recipe.ingredients.map(ingredient => {
+                          const ingredientName = getLocalizedItemName(ingredient, language);
 
-                <div className="craft-meta">
-                  <span className="meta-badge">{t.craftRecipeId} #{recipe.recipeId}</span>
-                  <span className="meta-badge">{t.craftResultItemId} #{recipe.resultItemTemplateId}</span>
-                </div>
+                          return (
+                            <div className="craft-ingredient" key={`${recipe.recipeId}-${ingredient.itemTemplateId}`}>
+                              <span className="craft-ingredient-emoji">{ingredient.emoji || "📦"}</span>
+                              <span className="craft-ingredient-name">{ingredientName}</span>
+                              <span className="craft-ingredient-amount">x{ingredient.amount}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="state-text state-empty">-</p>
+                    )}
+                  </div>
 
-                {craftFeedbackByRecipeId[recipe.recipeId] ? (
-                  <p className="state-text state-ok">{craftFeedbackByRecipeId[recipe.recipeId]}</p>
-                ) : null}
+                  <div className="craft-meta">
+                    <span className="meta-badge">{t.craftRecipeId} #{recipe.recipeId}</span>
+                    <span className="meta-badge">{t.craftResultItemId} #{recipe.resultItemTemplateId}</span>
+                  </div>
 
-                {craftErrorByRecipeId[recipe.recipeId] ? (
-                  <p className="state-text state-error">{craftErrorByRecipeId[recipe.recipeId]}</p>
-                ) : null}
+                  {craftFeedbackByRecipeId[recipe.recipeId] ? (
+                    <p className="state-text state-ok">{craftFeedbackByRecipeId[recipe.recipeId]}</p>
+                  ) : null}
 
-                <button
-                  className="pagination-btn"
-                  type="button"
-                  onClick={() => onCraft(recipe.recipeId)}
-                  disabled={craftingRecipeId === recipe.recipeId}
-                >
-                  {craftingRecipeId === recipe.recipeId ? t.crafting : t.craftAction}
-                </button>
-              </article>
-            ))}
+                  {craftErrorByRecipeId[recipe.recipeId] ? (
+                    <p className="state-text state-error">{craftErrorByRecipeId[recipe.recipeId]}</p>
+                  ) : null}
+
+                  <button
+                    className="pagination-btn"
+                    type="button"
+                    onClick={() => onCraft(recipe.recipeId)}
+                    disabled={craftingRecipeId === recipe.recipeId}
+                  >
+                    {craftingRecipeId === recipe.recipeId ? t.crafting : t.craftAction}
+                  </button>
+                </article>
+              );
+            })}
           </div>
         ) : null}
       </div>

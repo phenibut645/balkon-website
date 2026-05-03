@@ -1,4 +1,4 @@
-import { DashboardText } from "@/lib/dashboardText";
+import { DashboardText, LanguageCode } from "@/lib/dashboardText";
 import { MarketSubTab } from "@/lib/dashboardSearch";
 import { MarketCapitalizationData, MarketForbesEntry, MarketListing } from "@/lib/types";
 import { MarketOverviewPanel } from "./MarketOverviewPanel";
@@ -7,6 +7,7 @@ import { MarketForbesPanel } from "./MarketForbesPanel";
 
 type MarketPanelProps = {
   t: DashboardText;
+  language: LanguageCode;
   dateLocale: string;
   loadingGifs: string[];
   marketListings: MarketListing[];
@@ -38,6 +39,7 @@ type MarketPanelProps = {
 
 export function MarketPanel({
   t,
+  language,
   dateLocale,
   loadingGifs,
   marketListings,
@@ -120,6 +122,7 @@ export function MarketPanel({
         ) : (
           <MarketListingsPanel
             t={t}
+            language={language}
             loadingGifs={loadingGifs}
             marketListings={marketListings}
             marketLoading={marketLoading}

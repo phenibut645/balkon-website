@@ -1,5 +1,6 @@
 import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { DashboardText, formatDashboardDate } from "@/lib/dashboardText";
+import { DashboardText, LanguageCode, formatDashboardDate } from "@/lib/dashboardText";
+import { getLocalizedItemDescription, getLocalizedItemName } from "@/lib/localizedItems";
 import { InventoryItem, StreamerStudioAccessView } from "@/lib/types";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ItemBadgeRow } from "./items/ItemBadgeRow";
@@ -10,6 +11,7 @@ type InventoryFilter = "all" | "materials" | "sellable" | "tradeable";
 
 type InventoryPanelProps = {
   t: DashboardText;
+  language: LanguageCode;
   loadingGifs: string[];
   inventoryFilterItems: Array<{ id: InventoryFilter; label: string }>;
   inventoryFilter: InventoryFilter;
@@ -66,6 +68,7 @@ type GridMetrics = {
 
 export function InventoryPanel({
   t,
+  language,
   loadingGifs,
   inventoryFilterItems,
   inventoryFilter,
@@ -200,8 +203,8 @@ export function InventoryPanel({
       return inventoryItems;
     }
 
-    return inventoryItems.filter(item => item.name.toLowerCase().includes(normalizedSearchQuery));
-  }, [inventoryItems, normalizedSearchQuery]);
+    return inventoryItems.filter(item => getLocalizedItemName(item, language).toLowerCase().includes(normalizedSearchQuery));
+  }, [inventoryItems, language, normalizedSearchQuery]);
 
   const visibleInventoryCount = searchedInventoryItems.length;
 
@@ -410,12 +413,15 @@ export function InventoryPanel({
     setCurrentPage(prev => Math.min(totalPages, prev + 1));
   }, [totalPages]);
 
+  const selectedItemName = selectedItem ? getLocalizedItemName(selectedItem, language) : "";
+  const selectedItemDescription = selectedItem ? getLocalizedItemDescription(selectedItem, language) : "";
+
   return (
     <div className="panel panel-inventory">
       <ConfirmDialog
         open={confirmSellItem !== null}
         title={t.confirmSellToBotTitle}
-        message={confirmSellItem ? `${confirmSellItem.name}. ${t.confirmSellToBotMessage}` : ""}
+        message={confirmSellItem ? `${getLocalizedItemName(confirmSellItem, language)}. ${t.confirmSellToBotMessage}` : ""}
         confirmLabel={t.sellToBot}
         cancelLabel={t.close}
         busy={confirmSellItem !== null && sellingInventoryId === confirmSellItem.inventoryItemId}
@@ -509,6 +515,7 @@ export function InventoryPanel({
                     {paginatedInventory.map(item => {
                       const rarityAccent = item.rarityColorHex || "#44506d";
                       const isSelected = selectedItem?.inventoryItemId === item.inventoryItemId;
+                      const itemName = getLocalizedItemName(item, language);
                       const compactBadges = [
                         <span key="rarity" className="meta-badge rarity-badge" style={{ borderColor: `${rarityAccent}66` }}>
                           {item.rarityName}
@@ -532,7 +539,7 @@ export function InventoryPanel({
                           aria-pressed={isSelected}
                         >
                           <ItemMedia
-                            name={item.name}
+                            name={itemName}
                             imageUrl={item.imageUrl}
                             emoji={item.emoji}
                             accentColor={rarityAccent}
@@ -548,7 +555,7 @@ export function InventoryPanel({
                           />
 
                           <div className="item-card-content inventory-content compact">
-                            <h3 className="item-card-title inventory-title">{item.name}</h3>
+                            <h3 className="item-card-title inventory-title">{itemName}</h3>
                             <ItemBadgeRow badges={compactBadges} className="inventory-meta compact" />
                           </div>
                         </button>
@@ -557,15 +564,16 @@ export function InventoryPanel({
                   </div>
                 </div>
               </div>
+            </div>
 
-              {selectedItem ? (
-                <aside
-                  className="inventory-details-panel enter"
-                  style={{
-                    borderColor: `${selectedRarityAccent}66`,
-                    boxShadow: `0 0 0 1px ${selectedRarityAccent}22 inset`,
-                  }}
-                >
+            {selectedItem ? (
+              <aside
+                className="inventory-details-panel enter"
+                style={{
+                  borderColor: `${selectedRarityAccent}66`,
+                  boxShadow: `0 0 0 1px ${selectedRarityAccent}22 inset`,
+                }}
+              >
                   <div className="inventory-details-header">
                     <p className="inventory-details-title">{t.itemDetails}</p>
                     <button
@@ -579,7 +587,7 @@ export function InventoryPanel({
 
                   <div className="inventory-details-scroll">
                     <ItemMedia
-                      name={selectedItem.name}
+                      name={selectedItemName}
                       imageUrl={selectedItem.imageUrl}
                       emoji={selectedItem.emoji}
                       accentColor={selectedRarityAccent}
@@ -589,8 +597,8 @@ export function InventoryPanel({
                     />
 
                     <div className="inventory-details-body">
-                      <h3 className="item-card-title inventory-title">{selectedItem.name}</h3>
-                      <p className="item-card-description inventory-description details">{selectedItem.description}</p>
+                      <h3 className="item-card-title inventory-title">{selectedItemName}</h3>
+                      <p className="item-card-description inventory-description details">{selectedItemDescription}</p>
 
                       <ItemBadgeRow
                         className="inventory-meta"
@@ -765,7 +773,6 @@ export function InventoryPanel({
                   </div>
                 </aside>
               ) : null}
-            </div>
 
             <div className="inventory-pagination">
               <button

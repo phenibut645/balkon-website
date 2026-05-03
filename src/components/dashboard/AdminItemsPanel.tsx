@@ -10,16 +10,18 @@ import {
   searchAdminRarities,
   updateAdminItem,
 } from "@/lib/api";
-import { DashboardText } from "@/lib/dashboardText";
+import { DashboardText, LanguageCode } from "@/lib/dashboardText";
+import { getLocalizedItemDescription, getLocalizedItemName } from "@/lib/localizedItems";
 import { AdminItem, AdminItemInput, AdminSearchOption } from "@/lib/types";
 import { AdminItemForm } from "./AdminItemForm";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 type AdminItemsPanelProps = {
   t: DashboardText;
+  language: LanguageCode;
 };
 
-export function AdminItemsPanel({ t }: AdminItemsPanelProps) {
+export function AdminItemsPanel({ t, language }: AdminItemsPanelProps) {
   const [items, setItems] = useState<AdminItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,11 +80,11 @@ export function AdminItemsPanel({ t }: AdminItemsPanelProps) {
     }
 
     return items.filter(item => {
-      return item.name.toLowerCase().includes(normalizedQuery)
+      return getLocalizedItemName(item, language).toLowerCase().includes(normalizedQuery)
         || item.itemType.toLowerCase().includes(normalizedQuery)
         || item.rarityName.toLowerCase().includes(normalizedQuery);
     });
-  }, [items, query]);
+  }, [items, language, query]);
 
   const searchTypes = useCallback(async (input: string): Promise<AdminSearchOption[]> => {
     const response = await searchAdminItemTypes(input);
@@ -165,6 +167,7 @@ export function AdminItemsPanel({ t }: AdminItemsPanelProps) {
 
       <AdminItemForm
         t={t}
+        language={language}
         editingItem={editingItem}
         submitting={submitting}
         onSubmit={handleSubmit}
@@ -190,42 +193,47 @@ export function AdminItemsPanel({ t }: AdminItemsPanelProps) {
 
       {!loading && !error && filteredItems.length > 0 ? (
         <div className="admin-list-grid">
-          {filteredItems.map(item => (
-            <article className="admin-log-card" key={item.id}>
-              <div className="admin-log-head">
-                <p className="display-name">{item.emoji ? `${item.emoji} ${item.name}` : item.name}</p>
-                <span className="meta-badge">#{item.id}</span>
-              </div>
-              <p className="state-text">{item.description}</p>
-              <div className="inventory-meta">
-                <span className="meta-badge">{item.itemType}</span>
-                <span className="meta-badge" style={item.rarityColorHex ? { borderColor: item.rarityColorHex } : undefined}>
-                  {item.rarityName}
-                </span>
-                <span className={`meta-badge ${item.tradeable ? "ok" : "muted"}`}>
-                  {item.tradeable ? t.tradeableYes : t.tradeableNo}
-                </span>
-                <span className="meta-badge muted">
-                  {item.botSellPrice === null ? "-" : item.botSellPrice}
-                </span>
-              </div>
-              <div className="admin-form-actions">
-                <button className="pagination-btn" type="button" onClick={() => setEditingItem(item)}>
-                  {t.adminItemsEdit}
-                </button>
-                <button className="pagination-btn admin-danger-btn" type="button" onClick={() => setDeleteTarget(item)}>
-                  {t.adminItemsDelete}
-                </button>
-              </div>
-            </article>
-          ))}
+          {filteredItems.map(item => {
+            const itemName = getLocalizedItemName(item, language);
+            const itemDescription = getLocalizedItemDescription(item, language);
+
+            return (
+              <article className="admin-log-card" key={item.id}>
+                <div className="admin-log-head">
+                  <p className="display-name">{item.emoji ? `${item.emoji} ${itemName}` : itemName}</p>
+                  <span className="meta-badge">#{item.id}</span>
+                </div>
+                <p className="state-text">{itemDescription}</p>
+                <div className="inventory-meta">
+                  <span className="meta-badge">{item.itemType}</span>
+                  <span className="meta-badge" style={item.rarityColorHex ? { borderColor: item.rarityColorHex } : undefined}>
+                    {item.rarityName}
+                  </span>
+                  <span className={`meta-badge ${item.tradeable ? "ok" : "muted"}`}>
+                    {item.tradeable ? t.tradeableYes : t.tradeableNo}
+                  </span>
+                  <span className="meta-badge muted">
+                    {item.botSellPrice === null ? "-" : item.botSellPrice}
+                  </span>
+                </div>
+                <div className="admin-form-actions">
+                  <button className="pagination-btn" type="button" onClick={() => setEditingItem(item)}>
+                    {t.adminItemsEdit}
+                  </button>
+                  <button className="pagination-btn admin-danger-btn" type="button" onClick={() => setDeleteTarget(item)}>
+                    {t.adminItemsDelete}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
         </div>
       ) : null}
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title={t.adminItemsDeleteConfirmTitle}
-        message={deleteTarget ? `${t.adminItemsDeleteConfirmText} ${deleteTarget.name}` : ""}
+        message={deleteTarget ? `${t.adminItemsDeleteConfirmText} ${getLocalizedItemName(deleteTarget, language)}` : ""}
         confirmLabel={t.adminItemsDeleteConfirmAction}
         cancelLabel={t.adminItemsCancelEdit}
         busy={deleting}

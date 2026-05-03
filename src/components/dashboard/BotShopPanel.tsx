@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { DashboardText } from "@/lib/dashboardText";
+import { DashboardText, LanguageCode } from "@/lib/dashboardText";
 import { BotShopListing, ObsMediaProduct, ObsShopStreamer, ShopSubTab, UserBalance } from "@/lib/types";
 import { BotShopItemsPanel } from "./BotShopItemsPanel";
 import { BotShopOverviewPanel } from "./BotShopOverviewPanel";
@@ -11,6 +11,7 @@ import { BotShopObsStreamerPanel } from "./BotShopObsStreamerPanel";
 
 type BotShopPanelProps = {
   t: DashboardText;
+  language: LanguageCode;
   dateLocale: string;
   loadingGifs: string[];
   shopSubTab: ShopSubTab;
@@ -41,6 +42,7 @@ type BotShopPanelProps = {
 
 export function BotShopPanel({
   t,
+  language,
   dateLocale,
   loadingGifs,
   shopSubTab,
@@ -98,6 +100,7 @@ export function BotShopPanel({
         {shopSubTab === "items" ? (
           <BotShopItemsPanel
             t={t}
+            language={language}
             loadingGifs={loadingGifs}
             botShopListings={botShopListings}
             botShopLoading={botShopLoading}

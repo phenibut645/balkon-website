@@ -4513,6 +4513,15 @@ body {
   min-height: 76px;
 }
 
+.admin-item-localization-block {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-item-localization-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .admin-checkbox-wrap {
   display: flex;
   align-items: flex-end;
@@ -5124,6 +5133,10 @@ body {
   }
 
   .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-item-localization-grid {
     grid-template-columns: 1fr;
   }
 

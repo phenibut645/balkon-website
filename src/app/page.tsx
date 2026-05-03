@@ -166,7 +166,7 @@ function persistJobCooldowns(cooldowns: Record<number, JobCooldownState>): void 
   window.sessionStorage.setItem(JOB_COOLDOWNS_STORAGE_KEY, JSON.stringify(serialized));
 }
 
-const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "v0.1.0";
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "v1.2.18";
 const BOT_UI_STATUS: BotUiStatus = (
   (process.env.NEXT_PUBLIC_BOT_UI_STATUS || "online").toLowerCase() === "offline"
     ? "offline"
@@ -2430,6 +2430,7 @@ export default function HomePage() {
             {activeTab === "inventory" ? (
               <InventoryPanel
                 t={t}
+                language={language}
                 loadingGifs={LOADING_GIFS}
                 inventoryFilterItems={inventoryFilterItems}
                 inventoryFilter={inventoryFilter}
@@ -2471,6 +2472,7 @@ export default function HomePage() {
             {activeTab === "market" ? (
               <MarketPanel
                 t={t}
+                language={language}
                 dateLocale={dateLocale}
                 loadingGifs={LOADING_GIFS}
                 marketListings={marketListings}
@@ -2519,6 +2521,7 @@ export default function HomePage() {
             {activeTab === "botShop" ? (
               <BotShopPanel
                 t={t}
+                language={language}
                 dateLocale={dateLocale}
                 loadingGifs={LOADING_GIFS}
                 shopSubTab={shopSubTab}
@@ -2561,6 +2564,7 @@ export default function HomePage() {
             {activeTab === "craft" ? (
               <CraftPanel
                 t={t}
+                language={language}
                 loadingGifs={LOADING_GIFS}
                 recipes={craftRecipes}
                 loading={craftLoading}
@@ -2685,11 +2689,11 @@ export default function HomePage() {
             ) : null}
 
             {activeTab === "adminItems" ? (
-              <AdminItemsPanel t={t} />
+              <AdminItemsPanel t={t} language={language} />
             ) : null}
 
             {activeTab === "adminJobs" ? (
-              <AdminJobsPanel t={t} />
+              <AdminJobsPanel t={t} language={language} />
             ) : null}
 
             {activeTab === "adminBotShop" ? (

@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { DashboardText } from "@/lib/dashboardText";
+import { DashboardText, LanguageCode } from "@/lib/dashboardText";
+import { getLocalizedItemDescription, getLocalizedItemName } from "@/lib/localizedItems";
 import { BotShopListing, UserBalance } from "@/lib/types";
 import { ItemBadgeRow } from "./items/ItemBadgeRow";
 import { ItemMedia } from "./items/ItemMedia";
 
 type BotShopItemsPanelProps = {
   t: DashboardText;
+  language: LanguageCode;
   loadingGifs: string[];
   botShopListings: BotShopListing[];
   botShopLoading: boolean;
@@ -22,6 +24,7 @@ type BotShopItemsPanelProps = {
 
 export function BotShopItemsPanel({
   t,
+  language,
   loadingGifs,
   botShopListings,
   botShopLoading,
@@ -77,6 +80,8 @@ export function BotShopItemsPanel({
             const totalPrice = listing.price * qty;
             const isBuying = buyingListingId === listing.listingId;
             const notEnough = balance !== null && balance.odm < totalPrice;
+            const listingName = getLocalizedItemName(listing, language);
+            const listingDescription = getLocalizedItemDescription(listing, language);
             return (
               <article
                 key={listing.listingId}
@@ -84,7 +89,7 @@ export function BotShopItemsPanel({
                 style={{ borderColor: `${rarityAccent}66`, boxShadow: `0 0 0 1px ${rarityAccent}22 inset` }}
               >
                 <ItemMedia
-                  name={listing.name}
+                  name={listingName}
                   imageUrl={listing.imageUrl}
                   emoji={listing.emoji}
                   accentColor={rarityAccent}
@@ -94,8 +99,8 @@ export function BotShopItemsPanel({
                 />
 
                 <div className="item-card-content botshop-content">
-                  <h3 className="item-card-title botshop-title">{listing.name}</h3>
-                  <p className="item-card-description botshop-description">{listing.description}</p>
+                  <h3 className="item-card-title botshop-title">{listingName}</h3>
+                  <p className="item-card-description botshop-description">{listingDescription}</p>
 
                   <ItemBadgeRow
                     className="botshop-meta"

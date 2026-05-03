@@ -25,6 +25,12 @@ export type InventoryItem = {
   itemTemplateId: number;
   name: string;
   description: string;
+  nameRu?: string | null;
+  nameEn?: string | null;
+  nameEt?: string | null;
+  descriptionRu?: string | null;
+  descriptionEn?: string | null;
+  descriptionEt?: string | null;
   emoji: string | null;
   imageUrl: string | null;
   tradeable: boolean;
@@ -60,6 +66,12 @@ export type MarketListing = {
   itemTemplateId: number;
   name: string;
   description: string;
+  nameRu?: string | null;
+  nameEn?: string | null;
+  nameEt?: string | null;
+  descriptionRu?: string | null;
+  descriptionEn?: string | null;
+  descriptionEt?: string | null;
   emoji: string | null;
   imageUrl: string | null;
   tradeable: boolean;
@@ -241,6 +253,12 @@ export type BotShopListing = {
   itemTemplateId: number;
   name: string;
   description: string;
+  nameRu?: string | null;
+  nameEn?: string | null;
+  nameEt?: string | null;
+  descriptionRu?: string | null;
+  descriptionEn?: string | null;
+  descriptionEt?: string | null;
   emoji: string | null;
   imageUrl: string | null;
   tradeable: boolean;
@@ -346,6 +364,13 @@ export type ApiObsMediaActionsResponse = ApiBaseResponse & {
 export type CraftRecipeIngredient = {
   itemTemplateId: number;
   name: string;
+  nameRu?: string | null;
+  nameEn?: string | null;
+  nameEt?: string | null;
+  description: string;
+  descriptionRu?: string | null;
+  descriptionEn?: string | null;
+  descriptionEt?: string | null;
   emoji: string | null;
   amount: number;
 };
@@ -357,6 +382,13 @@ export type CraftRecipe = {
   resultAmount: number;
   resultItemTemplateId: number;
   resultName: string;
+  resultNameRu?: string | null;
+  resultNameEn?: string | null;
+  resultNameEt?: string | null;
+  resultDescription: string;
+  resultDescriptionRu?: string | null;
+  resultDescriptionEn?: string | null;
+  resultDescriptionEt?: string | null;
   resultEmoji: string | null;
   resultRarityName: string;
   ingredients: CraftRecipeIngredient[];
@@ -406,6 +438,9 @@ export type JobView = {
   enabled: boolean;
   rewardItemId: number | null;
   rewardItemName: string | null;
+  rewardItemNameRu?: string | null;
+  rewardItemNameEn?: string | null;
+  rewardItemNameEt?: string | null;
   rewardItemEmoji: string | null;
   rewardItemChancePercent: number | null;
   rewardItemQuantity: number | null;
@@ -416,6 +451,9 @@ export type JobView = {
 export type JobRunGrantedItem = {
   itemTemplateId: number;
   name: string;
+  nameRu?: string | null;
+  nameEn?: string | null;
+  nameEt?: string | null;
   emoji: string | null;
   quantity: number;
 };
@@ -1037,6 +1075,12 @@ export type AdminItem = {
   id: number;
   name: string;
   description: string;
+  nameRu?: string | null;
+  nameEn?: string | null;
+  nameEt?: string | null;
+  descriptionRu?: string | null;
+  descriptionEn?: string | null;
+  descriptionEt?: string | null;
   emoji: string | null;
   imageUrl: string | null;
   tradeable: boolean;
@@ -1050,6 +1094,12 @@ export type AdminItem = {
 export type AdminItemInput = {
   name: string;
   description: string;
+  nameRu?: string | null;
+  nameEn?: string | null;
+  nameEt?: string | null;
+  descriptionRu?: string | null;
+  descriptionEn?: string | null;
+  descriptionEt?: string | null;
   emoji?: string | null;
   imageUrl?: string | null;
   rarityName: string;

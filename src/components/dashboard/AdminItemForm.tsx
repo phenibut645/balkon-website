@@ -1,12 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { DashboardText } from "@/lib/dashboardText";
+import { DashboardText, LanguageCode } from "@/lib/dashboardText";
 import { AdminItem, AdminItemInput, AdminSearchOption } from "@/lib/types";
 import { SearchableSelect } from "./SearchableSelect";
 
 type AdminItemFormProps = {
   t: DashboardText;
+  language: LanguageCode;
   editingItem: AdminItem | null;
   submitting: boolean;
   onSubmit: (input: AdminItemInput, editingItemId: number | null) => Promise<void>;
@@ -18,6 +19,12 @@ type AdminItemFormProps = {
 type FormState = {
   name: string;
   description: string;
+  nameRu: string;
+  nameEn: string;
+  nameEt: string;
+  descriptionRu: string;
+  descriptionEn: string;
+  descriptionEt: string;
   emoji: string;
   imageUrl: string;
   rarityName: string;
@@ -29,6 +36,12 @@ type FormState = {
 const EMPTY_FORM: FormState = {
   name: "",
   description: "",
+  nameRu: "",
+  nameEn: "",
+  nameEt: "",
+  descriptionRu: "",
+  descriptionEn: "",
+  descriptionEt: "",
   emoji: "",
   imageUrl: "",
   rarityName: "",
@@ -39,6 +52,7 @@ const EMPTY_FORM: FormState = {
 
 export function AdminItemForm({
   t,
+  language,
   editingItem,
   submitting,
   onSubmit,
@@ -59,6 +73,12 @@ export function AdminItemForm({
     setForm({
       name: editingItem.name,
       description: editingItem.description,
+      nameRu: editingItem.nameRu || "",
+      nameEn: editingItem.nameEn || "",
+      nameEt: editingItem.nameEt || "",
+      descriptionRu: editingItem.descriptionRu || "",
+      descriptionEn: editingItem.descriptionEn || "",
+      descriptionEt: editingItem.descriptionEt || "",
       emoji: editingItem.emoji || "",
       imageUrl: editingItem.imageUrl || "",
       rarityName: editingItem.rarityName,
@@ -73,6 +93,8 @@ export function AdminItemForm({
     () => (editingItem ? t.adminItemsUpdate : t.adminItemsCreate),
     [editingItem, t],
   );
+
+  void language;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -98,6 +120,12 @@ export function AdminItemForm({
       {
         name,
         description,
+        nameRu: form.nameRu.trim() || null,
+        nameEn: form.nameEn.trim() || null,
+        nameEt: form.nameEt.trim() || null,
+        descriptionRu: form.descriptionRu.trim() || null,
+        descriptionEn: form.descriptionEn.trim() || null,
+        descriptionEt: form.descriptionEt.trim() || null,
         emoji: form.emoji.trim() || null,
         imageUrl: form.imageUrl.trim() || null,
         rarityName,
@@ -191,6 +219,36 @@ export function AdminItemForm({
           onChange={(event) => setForm(prev => ({ ...prev, description: event.target.value }))}
           rows={3}
         />
+      </div>
+
+      <div className="admin-item-localization-block">
+        <p className="admin-field-label">{t.adminItemsLocalizedFields}</p>
+        <div className="admin-form-grid admin-item-localization-grid">
+          <div>
+            <label className="admin-field-label">{t.adminItemsNameRu}</label>
+            <input className="admin-field-input" value={form.nameRu} onChange={(event) => setForm(prev => ({ ...prev, nameRu: event.target.value }))} />
+          </div>
+          <div>
+            <label className="admin-field-label">{t.adminItemsNameEn}</label>
+            <input className="admin-field-input" value={form.nameEn} onChange={(event) => setForm(prev => ({ ...prev, nameEn: event.target.value }))} />
+          </div>
+          <div>
+            <label className="admin-field-label">{t.adminItemsNameEt}</label>
+            <input className="admin-field-input" value={form.nameEt} onChange={(event) => setForm(prev => ({ ...prev, nameEt: event.target.value }))} />
+          </div>
+          <div>
+            <label className="admin-field-label">{t.adminItemsDescriptionRu}</label>
+            <textarea className="admin-field-input admin-textarea" value={form.descriptionRu} onChange={(event) => setForm(prev => ({ ...prev, descriptionRu: event.target.value }))} rows={3} />
+          </div>
+          <div>
+            <label className="admin-field-label">{t.adminItemsDescriptionEn}</label>
+            <textarea className="admin-field-input admin-textarea" value={form.descriptionEn} onChange={(event) => setForm(prev => ({ ...prev, descriptionEn: event.target.value }))} rows={3} />
+          </div>
+          <div>
+            <label className="admin-field-label">{t.adminItemsDescriptionEt}</label>
+            <textarea className="admin-field-input admin-textarea" value={form.descriptionEt} onChange={(event) => setForm(prev => ({ ...prev, descriptionEt: event.target.value }))} rows={3} />
+          </div>
+        </div>
       </div>
 
       {error ? <p className="state-text state-error">{error}</p> : null}

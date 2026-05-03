@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { DashboardText } from "@/lib/dashboardText";
+import { DashboardText, LanguageCode } from "@/lib/dashboardText";
+import { getLocalizedItemDescription, getLocalizedItemName } from "@/lib/localizedItems";
 import { MarketListing } from "@/lib/types";
 import { UserIdentity } from "./UserIdentity";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -18,6 +19,7 @@ function parsePositiveFinitePrice(raw: string): number | null {
 
 type MarketListingsPanelProps = {
   t: DashboardText;
+  language: LanguageCode;
   loadingGifs: string[];
   marketListings: MarketListing[];
   marketLoading: boolean;
@@ -38,6 +40,7 @@ type MarketListingsPanelProps = {
 
 export function MarketListingsPanel({
   t,
+  language,
   loadingGifs,
   marketListings,
   marketLoading,
@@ -199,7 +202,7 @@ export function MarketListingsPanel({
         title={t.confirmMarketPurchaseTitle}
         message={
           buyConfirmListing
-            ? `${buyConfirmListing.name}. ${t.marketPrice}: ${buyConfirmListing.price} ODM. ${t.confirmMarketPurchaseMessage}`
+            ? `${getLocalizedItemName(buyConfirmListing, language)}. ${t.marketPrice}: ${buyConfirmListing.price} ODM. ${t.confirmMarketPurchaseMessage}`
             : ""
         }
         confirmLabel={t.marketBuyListing}
@@ -226,7 +229,7 @@ export function MarketListingsPanel({
         title={t.confirmCancelListingTitle}
         message={
           cancelConfirmListing
-            ? `${cancelConfirmListing.name}. ${t.confirmCancelListingMessage}`
+            ? `${getLocalizedItemName(cancelConfirmListing, language)}. ${t.confirmCancelListingMessage}`
             : ""
         }
         confirmLabel={t.cancelListing}
@@ -277,6 +280,8 @@ export function MarketListingsPanel({
             {paginatedListings.map(listing => {
               const rarityAccent = listing.rarityColorHex || "#44506d";
               const isMine = listing.sellerDiscordId === myDiscordId;
+              const listingName = getLocalizedItemName(listing, language);
+              const listingDescription = getLocalizedItemDescription(listing, language);
               const draft = listingPriceDraftById[listing.listingId] ?? String(listing.price);
 
               const buyBusy = marketBuyingListingId === listing.listingId;
@@ -293,7 +298,7 @@ export function MarketListingsPanel({
                   style={{ borderColor: `${rarityAccent}66`, boxShadow: `0 0 0 1px ${rarityAccent}22 inset` }}
                 >
                   <ItemMedia
-                    name={listing.name}
+                    name={listingName}
                     imageUrl={listing.imageUrl}
                     emoji={listing.emoji}
                     accentColor={rarityAccent}
@@ -304,8 +309,8 @@ export function MarketListingsPanel({
                   />
 
                   <div className="item-card-content inventory-content compact market-content">
-                    <h3 className="item-card-title inventory-title market-title">{listing.name}</h3>
-                    <p className="item-card-description inventory-description market-description compact">{listing.description}</p>
+                    <h3 className="item-card-title inventory-title market-title">{listingName}</h3>
+                    <p className="item-card-description inventory-description market-description compact">{listingDescription}</p>
 
                     <ItemBadgeRow
                       className="inventory-meta compact market-meta"

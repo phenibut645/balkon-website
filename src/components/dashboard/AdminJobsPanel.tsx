@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createAdminJob, disableAdminJob, getAdminItems, getAdminJobs, updateAdminJob } from "@/lib/api";
-import { DashboardText } from "@/lib/dashboardText";
+import { DashboardText, LanguageCode } from "@/lib/dashboardText";
+import { getLocalizedItemName } from "@/lib/localizedItems";
 import { AdminItem, JobInput, JobView } from "@/lib/types";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 type AdminJobsPanelProps = {
   t: DashboardText;
+  language: LanguageCode;
 };
 
 type JobFormState = {
@@ -82,7 +84,7 @@ function mapFormToInput(form: JobFormState): JobInput {
   };
 }
 
-export function AdminJobsPanel({ t }: AdminJobsPanelProps) {
+export function AdminJobsPanel({ t, language }: AdminJobsPanelProps) {
   const [jobs, setJobs] = useState<JobView[]>([]);
   const [adminItems, setAdminItems] = useState<AdminItem[]>([]);
   const [adminItemsError, setAdminItemsError] = useState<string | null>(null);
@@ -148,12 +150,17 @@ export function AdminJobsPanel({ t }: AdminJobsPanelProps) {
 
   useEffect(() => {
     if (editingJob?.rewardItemName) {
-      setRewardItemQuery(editingJob.rewardItemName);
+      setRewardItemQuery(getLocalizedItemName({
+        name: editingJob.rewardItemName,
+        nameRu: editingJob.rewardItemNameRu,
+        nameEn: editingJob.rewardItemNameEn,
+        nameEt: editingJob.rewardItemNameEt,
+      }, language));
       return;
     }
 
     setRewardItemQuery("");
-  }, [editingJob]);
+  }, [editingJob, language]);
 
   const filteredJobs = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -177,13 +184,13 @@ export function AdminJobsPanel({ t }: AdminJobsPanelProps) {
 
     return adminItems
       .filter(item => {
-        return item.name.toLowerCase().includes(normalizedQuery)
+        return getLocalizedItemName(item, language).toLowerCase().includes(normalizedQuery)
           || item.itemType.toLowerCase().includes(normalizedQuery)
           || item.rarityName.toLowerCase().includes(normalizedQuery)
           || String(item.id).includes(normalizedQuery);
       })
       .slice(0, 150);
-  }, [adminItems, rewardItemQuery]);
+  }, [adminItems, language, rewardItemQuery]);
 
   function updateForm<K extends keyof JobFormState>(key: K, value: JobFormState[K]): void {
     setForm(prev => ({
@@ -202,7 +209,7 @@ export function AdminJobsPanel({ t }: AdminJobsPanelProps) {
 
     const selected = adminItems.find(item => String(item.id) === value);
     if (selected) {
-      setRewardItemQuery(selected.name);
+      setRewardItemQuery(getLocalizedItemName(selected, language));
     }
   }
 
@@ -360,11 +367,15 @@ export function AdminJobsPanel({ t }: AdminJobsPanelProps) {
                     onChange={event => handleRewardItemSelect(event.target.value)}
                   >
                     <option value="">{t.adminJobsRewardItemNone}</option>
-                    {filteredRewardItems.map(item => (
-                      <option key={item.id} value={String(item.id)}>
-                        {item.emoji ? `${item.emoji} ` : ""}{item.name} · #{item.id}
-                      </option>
-                    ))}
+                    {filteredRewardItems.map(item => {
+                      const itemName = getLocalizedItemName(item, language);
+
+                      return (
+                        <option key={item.id} value={String(item.id)}>
+                          {item.emoji ? `${item.emoji} ` : ""}{itemName} · #{item.id}
+                        </option>
+                      );
+                    })}
                   </select>
                 </label>
               </div>
@@ -419,7 +430,12 @@ export function AdminJobsPanel({ t }: AdminJobsPanelProps) {
               </div>
               {job.rewardItemId !== null ? (
                 <p className="market-card-hint">
-                  {t.jobsItemChance}: {job.rewardItemChancePercent ?? 0}% • {job.rewardItemName || `#${job.rewardItemId}`} • x{job.rewardItemQuantity ?? 1}
+                  {t.jobsItemChance}: {job.rewardItemChancePercent ?? 0}% • {getLocalizedItemName({
+                    name: job.rewardItemName,
+                    nameRu: job.rewardItemNameRu,
+                    nameEn: job.rewardItemNameEn,
+                    nameEt: job.rewardItemNameEt,
+                  }, language) || `#${job.rewardItemId}`} • x{job.rewardItemQuantity ?? 1}
                 </p>
               ) : null}
               <div className="admin-form-actions">
