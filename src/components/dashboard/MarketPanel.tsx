@@ -69,12 +69,12 @@ export function MarketPanel({
   return (
     <div className="panel panel-market">
       <div className="market-scroll">
-        <div className="market-subtabs" role="tablist" aria-label={t.marketSubtabLabel}>
+        <div className="dashboard-subtabs" role="tablist" aria-label={t.marketSubtabLabel}>
           <button
             type="button"
             role="tab"
             aria-selected={marketSubTab === "overview"}
-            className={`market-subtab-chip ${marketSubTab === "overview" ? "active" : ""}`}
+            className={`dashboard-subtab-chip ${marketSubTab === "overview" ? "active" : ""}`}
             onClick={() => onMarketSubTabChange("overview")}
           >
             {t.marketOverview}
@@ -83,7 +83,7 @@ export function MarketPanel({
             type="button"
             role="tab"
             aria-selected={marketSubTab === "listings"}
-            className={`market-subtab-chip ${marketSubTab === "listings" ? "active" : ""}`}
+            className={`dashboard-subtab-chip ${marketSubTab === "listings" ? "active" : ""}`}
             onClick={() => onMarketSubTabChange("listings")}
           >
             {t.marketListings}
@@ -92,7 +92,7 @@ export function MarketPanel({
             type="button"
             role="tab"
             aria-selected={marketSubTab === "forbes"}
-            className={`market-subtab-chip ${marketSubTab === "forbes" ? "active" : ""}`}
+            className={`dashboard-subtab-chip ${marketSubTab === "forbes" ? "active" : ""}`}
             onClick={() => onMarketSubTabChange("forbes")}
           >
             {t.marketForbes}

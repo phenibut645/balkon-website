@@ -82,11 +82,11 @@ export function BotShopPanel({
   return (
     <div className="panel panel-botshop">
       <div className="botshop-scroll">
-        <div className="shop-subtabs" role="tablist" aria-label={t.tabBotShop}>
-          <button type="button" className={`shop-subtab-chip ${shopSubTab === "overview" ? "active" : ""}`} onClick={() => onShopSubTabChange("overview")}>{t.shopOverview}</button>
-          <button type="button" className={`shop-subtab-chip ${shopSubTab === "items" ? "active" : ""}`} onClick={() => onShopSubTabChange("items")}>{t.shopItems}</button>
-          <button type="button" className={`shop-subtab-chip ${shopSubTab === "cases" ? "active" : ""}`} onClick={() => onShopSubTabChange("cases")}>{t.shopCases}</button>
-          <button type="button" className={`shop-subtab-chip ${shopSubTab === "obs" ? "active" : ""}`} onClick={() => onShopSubTabChange("obs")}>{t.shopObs}</button>
+        <div className="dashboard-subtabs" role="tablist" aria-label={t.tabBotShop}>
+          <button type="button" className={`dashboard-subtab-chip ${shopSubTab === "overview" ? "active" : ""}`} onClick={() => onShopSubTabChange("overview")}>{t.shopOverview}</button>
+          <button type="button" className={`dashboard-subtab-chip ${shopSubTab === "items" ? "active" : ""}`} onClick={() => onShopSubTabChange("items")}>{t.shopItems}</button>
+          <button type="button" className={`dashboard-subtab-chip ${shopSubTab === "cases" ? "active" : ""}`} onClick={() => onShopSubTabChange("cases")}>{t.shopCases}</button>
+          <button type="button" className={`dashboard-subtab-chip ${shopSubTab === "obs" ? "active" : ""}`} onClick={() => onShopSubTabChange("obs")}>{t.shopObs}</button>
         </div>
 
         {shopSubTab === "overview" ? (
