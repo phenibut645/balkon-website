@@ -2,6 +2,7 @@ import { DashboardText } from "@/lib/dashboardText";
 import { AdminStats } from "@/lib/types";
 import { AdminStreamersPanel } from "./AdminStreamersPanel";
 import { AdminStreamerApplicationsPanel } from "./AdminStreamerApplicationsPanel";
+import { AdminJobsPanel } from "./AdminJobsPanel";
 
 type AdminDashboardPanelProps = {
   t: DashboardText;
@@ -40,6 +41,7 @@ export function AdminDashboardPanel({ t, adminStatsLoading, adminStatsError, adm
 
       <AdminStreamersPanel t={t} dateLocale={dateLocale} />
       <AdminStreamerApplicationsPanel t={t} dateLocale={dateLocale} />
+      <AdminJobsPanel t={t} />
     </div>
   );
 }

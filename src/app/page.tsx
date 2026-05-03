@@ -13,6 +13,7 @@ import {
   getDiscordLoginUrl,
   getGuildOverview,
   getInventory,
+  getJobs,
   getMarket,
   getMarketCapitalization,
   getMarketForbes,
@@ -29,6 +30,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
   purchaseObsMedia,
+  runJob,
   sellInventoryItemToBot,
   getStreamerStudioAccessible,
   updateMarketListingPrice,
@@ -36,7 +38,7 @@ import {
   useInventoryServiceItem as invokeInventoryServiceItem,
 } from "@/lib/api";
 import { AdminTab, DashboardMode, DashboardSearchResult, DashboardTab, normalizeDashboardSearchValue, MarketSubTab, UserTab } from "@/lib/dashboardSearch";
-import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, GuildOverview, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, NotificationItem, ObsMediaProduct, ObsShopStreamer, OverviewSummary, ShopSubTab, StreamerStudioAccessView, UserBalance, UserGuild, UserPublicProfile } from "@/lib/types";
+import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, GuildOverview, InventoryItem, JobView, MarketCapitalizationData, MarketForbesEntry, MarketListing, NotificationItem, ObsMediaProduct, ObsShopStreamer, OverviewSummary, ShopSubTab, StreamerStudioAccessView, UserBalance, UserGuild, UserPublicProfile } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
 import { AppHeader } from "@/components/dashboard/AppHeader";
 import { NotificationBell } from "@/components/dashboard/NotificationBell";
@@ -47,12 +49,14 @@ import { InventoryPanel } from "@/components/dashboard/InventoryPanel";
 import { MarketPanel } from "@/components/dashboard/MarketPanel";
 import { BotShopPanel } from "@/components/dashboard/BotShopPanel";
 import { CraftPanel } from "@/components/dashboard/CraftPanel";
+import { JobsPanel } from "@/components/dashboard/JobsPanel";
 import { NotificationsPanel } from "@/components/dashboard/NotificationsPanel";
 import { ServersPanel } from "@/components/dashboard/ServersPanel";
 import { AdminDashboardPanel } from "@/components/dashboard/AdminDashboardPanel";
 import { AdminLogsPanel } from "@/components/dashboard/AdminLogsPanel";
 import { AdminObsPanel } from "@/components/dashboard/AdminObsPanel";
 import { AdminItemsPanel } from "@/components/dashboard/AdminItemsPanel";
+import { AdminJobsPanel } from "@/components/dashboard/AdminJobsPanel";
 import { AdminBotShopPanel } from "@/components/dashboard/AdminBotShopPanel";
 import { AdminBroadcastPanel } from "@/components/dashboard/AdminBroadcastPanel";
 import { AdminEconomyPanel } from "@/components/dashboard/AdminEconomyPanel";
@@ -139,6 +143,14 @@ export default function HomePage() {
   const [craftingRecipeId, setCraftingRecipeId] = useState<number | null>(null);
   const [craftFeedbackByRecipeId, setCraftFeedbackByRecipeId] = useState<Record<number, string>>({});
   const [craftErrorByRecipeId, setCraftErrorByRecipeId] = useState<Record<number, string>>({});
+  const [jobs, setJobs] = useState<JobView[]>([]);
+  const [jobsLoaded, setJobsLoaded] = useState(false);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [jobsError, setJobsError] = useState<string | null>(null);
+  const [runningJobId, setRunningJobId] = useState<number | null>(null);
+  const [jobFeedbackById, setJobFeedbackById] = useState<Record<number, string>>({});
+  const [jobErrorById, setJobErrorById] = useState<Record<number, string>>({});
+  const [jobCooldownInfoById, setJobCooldownInfoById] = useState<Record<number, { remainingSeconds?: number; nextAvailableAt?: string }>>({});
   const [inventoryFilter, setInventoryFilter] = useState<InventoryFilter>("all");
   const [canUseAdminMode, setCanUseAdminMode] = useState(false);
   const [adminProbeDone, setAdminProbeDone] = useState(false);
@@ -465,6 +477,14 @@ export default function HomePage() {
         destination: { kind: "userTab", tab: "craft" },
       },
       {
+        key: "tab:jobs",
+        label: t.tabJobs,
+        breadcrumb: `${t.tabJobs} → ${t.jobsClickClack}`,
+        description: t.jobsClickClack,
+        aliases: ["работа", "клик-клак", "подработать", "work", "job", "jobs", "click-clack", "töö", "klikk-klakk"],
+        destination: { kind: "userTab", tab: "jobs" },
+      },
+      {
         key: "tab:profile",
         label: t.tabProfile,
         breadcrumb: t.tabProfile,
@@ -496,6 +516,7 @@ export default function HomePage() {
       { key: "tab:adminLogs", label: t.adminTabLogs, breadcrumb: t.adminTabLogs, aliases: ["logs", "логи", "logid"], destination: { kind: "adminTab", tab: "adminLogs" } },
       { key: "tab:adminObs", label: t.adminTabObs, breadcrumb: t.adminTabObs, aliases: ["obs", "scene", "сцены"], destination: { kind: "adminTab", tab: "adminObs" } },
       { key: "tab:adminItems", label: t.adminTabItems, breadcrumb: t.adminTabItems, aliases: ["items", "предметы", "esemed"], destination: { kind: "adminTab", tab: "adminItems" } },
+      { key: "tab:adminJobs", label: t.adminTabJobs, breadcrumb: t.adminTabJobs, aliases: ["jobs", "работы", "work", "tööd"], destination: { kind: "adminTab", tab: "adminJobs" } },
       { key: "tab:adminBotShop", label: t.adminTabBotShop, breadcrumb: t.adminTabBotShop, aliases: ["shop", "магазин", "pood"], destination: { kind: "adminTab", tab: "adminBotShop" } },
       { key: "tab:adminEconomy", label: t.adminEconomy, breadcrumb: t.adminEconomy, aliases: ["валюта", "выдать валюту", "деньги", "odm", "ldm", "баланс", "currency", "balance", "give money", "valuuta", "raha"], destination: { kind: "adminTab", tab: "adminEconomy" } },
       { key: "tab:adminMessage", label: t.adminBroadcast, breadcrumb: t.adminBroadcast, aliases: ["создать сообщение", "рассылка", "broadcast", "announcement"], destination: { kind: "adminTab", tab: "adminMessage" } },
@@ -632,6 +653,14 @@ export default function HomePage() {
     setCraftingRecipeId(null);
     setCraftFeedbackByRecipeId({});
     setCraftErrorByRecipeId({});
+    setJobs([]);
+    setJobsLoaded(false);
+    setJobsLoading(false);
+    setJobsError(null);
+    setRunningJobId(null);
+    setJobFeedbackById({});
+    setJobErrorById({});
+    setJobCooldownInfoById({});
     setProfileData(null);
     setProfileGuilds([]);
     setProfileLoaded(false);
@@ -1608,6 +1637,79 @@ export default function HomePage() {
     await loadCraftRecipes();
   }, [loadCraftRecipes, loadInventory, loadOverviewSummary, t.craftFailed, t.craftMissingIngredients, t.crafted]);
 
+  const loadJobsList = useCallback(async (): Promise<void> => {
+    if (jobsLoading) {
+      return;
+    }
+
+    setJobsLoading(true);
+    setJobsError(null);
+
+    const response = await getJobs();
+    if (response.ok && Array.isArray(response.jobs)) {
+      setJobs(response.jobs);
+      setJobsLoaded(true);
+      setJobsLoading(false);
+      return;
+    }
+
+    setJobs([]);
+    setJobsLoaded(true);
+    setJobsLoading(false);
+    setJobsError(response.message || response.error || t.jobsLoadError);
+  }, [jobsLoading, t.jobsLoadError]);
+
+  const handleRunJob = useCallback(async (jobId: number): Promise<void> => {
+    setRunningJobId(jobId);
+    setJobFeedbackById(prev => ({ ...prev, [jobId]: "" }));
+    setJobErrorById(prev => ({ ...prev, [jobId]: "" }));
+
+    const response = await runJob(jobId);
+    if (!response.ok || !response.data) {
+      if (response.error === "JOB_COOLDOWN_ACTIVE") {
+        setJobCooldownInfoById(prev => ({
+          ...prev,
+          [jobId]: {
+            remainingSeconds: response.remainingSeconds,
+            nextAvailableAt: response.nextAvailableAt,
+          },
+        }));
+        setJobErrorById(prev => ({
+          ...prev,
+          [jobId]: response.message || t.jobsCooldownActive,
+        }));
+      } else {
+        setJobErrorById(prev => ({
+          ...prev,
+          [jobId]: response.message || t.jobsFailed,
+        }));
+      }
+
+      setRunningJobId(null);
+      return;
+    }
+
+    const jobData = response.data;
+
+    setJobCooldownInfoById(prev => ({
+      ...prev,
+      [jobId]: {
+        nextAvailableAt: jobData.nextAvailableAt,
+      },
+    }));
+    setJobFeedbackById(prev => ({
+      ...prev,
+      [jobId]: `${t.jobsCompleted}: +${jobData.rewardAmount} ODM`,
+    }));
+    setRunningJobId(null);
+
+    await loadBalance({ silent: true });
+    await loadOverviewSummary({ silent: true, force: true });
+    if (jobData.grantedItems.length > 0) {
+      await loadInventory({ silent: true, force: true });
+    }
+  }, [loadBalance, loadInventory, loadOverviewSummary, t.jobsCompleted, t.jobsCooldownActive, t.jobsFailed]);
+
   function handleInventoryFilterChange(nextFilter: InventoryFilter): void {
     setInventoryFilter(nextFilter);
   }
@@ -1720,6 +1822,12 @@ export default function HomePage() {
       void loadCraftRecipes();
     }
   }, [authState, activeTab, craftLoaded, craftLoading, loadCraftRecipes]);
+
+  useEffect(() => {
+    if (authState === "user" && activeTab === "jobs" && !jobsLoaded && !jobsLoading) {
+      void loadJobsList();
+    }
+  }, [activeTab, authState, jobsLoaded, jobsLoading, loadJobsList]);
 
   useEffect(() => {
     if (authState === "user" && activeTab === "profile" && !profileLoaded && !profileLoading) {
@@ -2282,6 +2390,28 @@ export default function HomePage() {
               />
             ) : null}
 
+            {activeTab === "jobs" ? (
+              <JobsPanel
+                t={t}
+                language={language}
+                dateLocale={dateLocale}
+                jobs={jobs}
+                loading={jobsLoading}
+                error={jobsError}
+                runningJobId={runningJobId}
+                jobFeedbackById={jobFeedbackById}
+                jobErrorById={jobErrorById}
+                jobCooldownInfoById={jobCooldownInfoById}
+                onRun={(jobId) => {
+                  void handleRunJob(jobId);
+                }}
+                onRefresh={() => {
+                  setJobsLoaded(false);
+                  void loadJobsList();
+                }}
+              />
+            ) : null}
+
             {activeTab === "notifications" ? (
               <NotificationsPanel
                 t={t}
@@ -2362,6 +2492,10 @@ export default function HomePage() {
 
             {activeTab === "adminItems" ? (
               <AdminItemsPanel t={t} />
+            ) : null}
+
+            {activeTab === "adminJobs" ? (
+              <AdminJobsPanel t={t} />
             ) : null}
 
             {activeTab === "adminBotShop" ? (

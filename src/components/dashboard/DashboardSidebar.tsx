@@ -150,6 +150,13 @@ export function DashboardSidebar({
           active: activeTab === "craft",
           onClick: () => onUserTabSelect("craft"),
         },
+        {
+          key: "jobs",
+          label: t.tabJobs,
+          icon: "⚒️",
+          active: activeTab === "jobs",
+          onClick: () => onUserTabSelect("jobs"),
+        },
       ],
     },
     {
@@ -223,6 +230,13 @@ export function DashboardSidebar({
           icon: "🎒",
           active: activeTab === "adminItems",
           onClick: () => onAdminTabSelect("adminItems"),
+        },
+        {
+          key: "admin-jobs",
+          label: t.adminTabJobs,
+          icon: "⚒️",
+          active: activeTab === "adminJobs",
+          onClick: () => onAdminTabSelect("adminJobs"),
         },
         {
           key: "admin-economy",
