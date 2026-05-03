@@ -36,6 +36,7 @@ type BotShopPanelProps = {
   obsBuyFeedback: Record<string, string>;
   obsBuyErrors: Record<string, string>;
   onBuyObsMediaProduct: (streamerId: number | string, productId: string) => Promise<void>;
+  onStreamerServicePurchaseSuccess?: () => Promise<void> | void;
 };
 
 export function BotShopPanel({
@@ -65,6 +66,7 @@ export function BotShopPanel({
   obsBuyFeedback,
   obsBuyErrors,
   onBuyObsMediaProduct,
+  onStreamerServicePurchaseSuccess,
 }: BotShopPanelProps) {
   const [selectedStreamerId, setSelectedStreamerId] = useState<string | null>(null);
 
@@ -130,6 +132,7 @@ export function BotShopPanel({
               onBuyMediaProduct={async (productId) => {
                 await onBuyObsMediaProduct(selectedStreamer.streamerId, productId);
               }}
+              onStreamerServicePurchaseSuccess={onStreamerServicePurchaseSuccess}
             />
           ) : (
             <BotShopObsPanel

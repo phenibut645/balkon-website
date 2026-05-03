@@ -2200,6 +2200,9 @@ export default function HomePage() {
                 obsBuyFeedback={obsBuyFeedback}
                 obsBuyErrors={obsBuyErrors}
                 onBuyObsMediaProduct={handleBuyObsMediaProduct}
+                onStreamerServicePurchaseSuccess={async () => {
+                  await loadBalance();
+                }}
               />
             ) : null}
 
@@ -2356,9 +2359,6 @@ export default function HomePage() {
               <StreamerStudioPanel
                 t={t}
                 active
-                onBalanceRefresh={async () => {
-                  await loadBalance({ silent: true });
-                }}
               />
             ) : null}
 

@@ -7,6 +7,10 @@ type StreamerServiceCatalogPanelProps = {
   t: DashboardText;
   streamerId: number;
   onPurchaseSuccess?: () => Promise<void> | void;
+  title?: string;
+  subtitle?: string;
+  buyLabel?: string;
+  sentLabel?: string;
 };
 
 type FeedbackState = {
@@ -45,7 +49,15 @@ function errorMessageForCode(t: DashboardText, code?: string, fallback?: string)
   }
 }
 
-export function StreamerServiceCatalogPanel({ t, streamerId, onPurchaseSuccess }: StreamerServiceCatalogPanelProps) {
+export function StreamerServiceCatalogPanel({
+  t,
+  streamerId,
+  onPurchaseSuccess,
+  title,
+  subtitle,
+  buyLabel,
+  sentLabel,
+}: StreamerServiceCatalogPanelProps) {
   const [services, setServices] = useState<StreamerServiceCatalogItem[]>([]);
   const [expanded, setExpanded] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -95,10 +107,10 @@ export function StreamerServiceCatalogPanel({ t, streamerId, onPurchaseSuccess }
       return t.shopObsLoading;
     }
     if (!loaded) {
-      return t.streamerStudioCatalogSubtitle;
+      return subtitle ?? t.streamerStudioCatalogSubtitle;
     }
     return services.length > 0 ? countText : t.streamerStudioCatalogEmpty;
-  }, [countText, loaded, loading, services.length, t.shopObsLoading, t.streamerStudioCatalogEmpty, t.streamerStudioCatalogSubtitle]);
+  }, [countText, loaded, loading, services.length, subtitle, t.shopObsLoading, t.streamerStudioCatalogEmpty, t.streamerStudioCatalogSubtitle]);
 
   const handlePurchase = useCallback(async (service: StreamerServiceCatalogItem) => {
     const confirmed = window.confirm(
@@ -130,18 +142,19 @@ export function StreamerServiceCatalogPanel({ t, streamerId, onPurchaseSuccess }
       await onPurchaseSuccess();
     }
 
+    const resolvedSentLabel = sentLabel ?? t.streamerStudioCatalogSent;
     const successMessage = response.data.balanceAfter >= 0
-      ? `${t.streamerStudioCatalogSent}. ${t.balanceAfter}: ${response.data.balanceAfter} ODM`
-      : t.streamerStudioCatalogSent;
+      ? `${resolvedSentLabel}. ${t.balanceAfter}: ${response.data.balanceAfter} ODM`
+      : resolvedSentLabel;
 
     setFeedback({ message: successMessage, isError: false });
-  }, [loadServices, onPurchaseSuccess, streamerId, t]);
+  }, [loadServices, onPurchaseSuccess, sentLabel, streamerId, t]);
 
   return (
     <section className={`streamer-service-catalog-panel ${expanded ? "expanded" : "collapsed"}`}>
       <div className="streamer-services-head">
         <div className="streamer-services-head-copy">
-          <h3 className="section-title small">{t.streamerStudioCatalogTitle}</h3>
+          <h3 className="section-title small">{title ?? t.streamerStudioCatalogTitle}</h3>
           <p className="market-card-hint">{summaryText}</p>
         </div>
         <div className="streamer-services-head-actions">
@@ -209,7 +222,7 @@ export function StreamerServiceCatalogPanel({ t, streamerId, onPurchaseSuccess }
                       onClick={() => void handlePurchase(service)}
                       disabled={buyingId === service.id}
                     >
-                      {buyingId === service.id ? t.buying : t.streamerStudioCatalogBuy}
+                      {buyingId === service.id ? t.buying : buyLabel ?? t.streamerStudioCatalogBuy}
                     </button>
                   </div>
                 </div>

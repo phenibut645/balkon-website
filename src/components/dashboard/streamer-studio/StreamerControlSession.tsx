@@ -7,7 +7,6 @@ import { StreamerTrustedUsersPanel } from "../StreamerTrustedUsersPanel";
 import { AgentDiagnostics } from "./components/AgentDiagnostics";
 import { AgentSetupCard } from "./components/AgentSetupCard";
 import { SceneToolbar } from "./components/SceneToolbar";
-import { StreamerServiceCatalogPanel } from "./components/StreamerServiceCatalogPanel";
 import { StreamerServicesPanel } from "./components/StreamerServicesPanel";
 import { ObsSceneItemList } from "./ObsSceneItemList";
 import { useStreamerControlSession } from "./hooks/useStreamerControlSession";
@@ -15,7 +14,6 @@ import { useStreamerControlSession } from "./hooks/useStreamerControlSession";
 type StreamerControlSessionProps = {
   t: DashboardText;
   streamer: StreamerStudioAccessView;
-  onBalanceRefresh?: () => Promise<void> | void;
   onBack: () => void;
 };
 
@@ -40,7 +38,7 @@ function getDefaultSessionTab(streamer: StreamerStudioAccessView, availableTabs:
   return availableTabs[0] ?? "streamServices";
 }
 
-export function StreamerControlSession({ t, streamer, onBalanceRefresh, onBack }: StreamerControlSessionProps) {
+export function StreamerControlSession({ t, streamer, onBack }: StreamerControlSessionProps) {
   const session = useStreamerControlSession(t, streamer);
   const availableTabs = useMemo<Array<{ id: StreamerSessionTab; label: string }>>(() => {
     const tabs: Array<{ id: StreamerSessionTab; label: string }> = [];
@@ -145,15 +143,11 @@ export function StreamerControlSession({ t, streamer, onBalanceRefresh, onBack }
         aria-labelledby="streamer-session-tab-streamServices"
         hidden={activeTab !== "streamServices"}
       >
-        <StreamerServiceCatalogPanel
-          t={t}
-          streamerId={streamer.streamerId}
-          onPurchaseSuccess={onBalanceRefresh}
-        />
-
         {streamer.canManage ? (
           <StreamerServicesPanel t={t} streamerId={streamer.streamerId} />
-        ) : null}
+        ) : (
+          <p className="state-text streamer-session-note">{t.streamerStudioServicesPurchasedInObsShop}</p>
+        )}
       </div>
 
       {streamer.canManage ? (

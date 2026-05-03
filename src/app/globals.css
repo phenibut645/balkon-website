@@ -167,6 +167,13 @@ body {
   display: none;
 }
 
+.streamer-session-note {
+  border: 1px solid rgba(95, 116, 159, 0.22);
+  border-radius: 12px;
+  background: rgba(10, 14, 24, 0.55);
+  padding: 12px;
+}
+
 .streamer-obs-control-actions {
   flex-wrap: wrap;
 }

@@ -3,6 +3,7 @@ import { DashboardText } from "@/lib/dashboardText";
 import { ObsMediaProduct, ObsShopStreamer, UserBalance } from "@/lib/types";
 import { BotShopObsMediaPanel } from "./BotShopObsMediaPanel";
 import { BotShopObsHistoryPanel } from "./BotShopObsHistoryPanel";
+import { StreamerServiceCatalogPanel } from "./streamer-studio/components/StreamerServiceCatalogPanel";
 
 type BotShopObsStreamerPanelProps = {
   t: DashboardText;
@@ -17,6 +18,7 @@ type BotShopObsStreamerPanelProps = {
   feedbackByProductId: Record<string, string>;
   errorByProductId: Record<string, string>;
   onBuyMediaProduct: (productId: string) => Promise<void>;
+  onStreamerServicePurchaseSuccess?: () => Promise<void> | void;
 };
 
 function getAgentStatusLabel(t: DashboardText, streamer: ObsShopStreamer): string {
@@ -64,8 +66,9 @@ export function BotShopObsStreamerPanel({
   feedbackByProductId,
   errorByProductId,
   onBuyMediaProduct,
+  onStreamerServicePurchaseSuccess,
 }: BotShopObsStreamerPanelProps) {
-  const [activeInnerTab, setActiveInnerTab] = useState<"media" | "history">("media");
+  const [activeInnerTab, setActiveInnerTab] = useState<"standard" | "services" | "history">("standard");
 
   return (
     <div className="obs-streamer-detail">
@@ -89,11 +92,12 @@ export function BotShopObsStreamerPanel({
       {!loading && error ? <p className="state-text state-error">{error}</p> : null}
       {!loading && !error ? (
         <>
-          <div className="shop-subtabs" role="tablist" aria-label={t.media}>
-            <button type="button" className={`shop-subtab-chip ${activeInnerTab === "media" ? "active" : ""}`} onClick={() => setActiveInnerTab("media")}>{t.media}</button>
+          <div className="shop-subtabs" role="tablist" aria-label={t.shopObs}>
+            <button type="button" className={`shop-subtab-chip ${activeInnerTab === "standard" ? "active" : ""}`} onClick={() => setActiveInnerTab("standard")}>{t.shopObsStandardEffects}</button>
+            <button type="button" className={`shop-subtab-chip ${activeInnerTab === "services" ? "active" : ""}`} onClick={() => setActiveInnerTab("services")}>{t.shopObsStreamerServices}</button>
             <button type="button" className={`shop-subtab-chip ${activeInnerTab === "history" ? "active" : ""}`} onClick={() => setActiveInnerTab("history")}>{t.obsMediaHistory}</button>
           </div>
-          {activeInnerTab === "media" ? (
+          {activeInnerTab === "standard" ? (
             <BotShopObsMediaPanel
               t={t}
               products={mediaProducts}
@@ -104,9 +108,21 @@ export function BotShopObsStreamerPanel({
               errorByProductId={errorByProductId}
               onBuy={onBuyMediaProduct}
             />
-          ) : (
+          ) : null}
+          {activeInnerTab === "services" ? (
+            <StreamerServiceCatalogPanel
+              t={t}
+              streamerId={streamer.streamerId}
+              title={t.shopObsStreamerServicesTitle}
+              subtitle={t.shopObsStreamerServicesDescription}
+              buyLabel={t.shopObsBuyService}
+              sentLabel={t.shopObsServiceSent}
+              onPurchaseSuccess={onStreamerServicePurchaseSuccess}
+            />
+          ) : null}
+          {activeInnerTab === "history" ? (
             <BotShopObsHistoryPanel t={t} dateLocale={dateLocale} />
-          )}
+          ) : null}
         </>
       ) : null}
     </div>
