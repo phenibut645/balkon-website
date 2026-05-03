@@ -359,6 +359,28 @@ export type ApiCraftRecipesResponse = {
   message?: string;
 };
 
+export type CraftExecutionConsumedIngredient = {
+  itemTemplateId: number;
+  name: string;
+  emoji: string | null;
+  amount: number;
+};
+
+export type CraftExecutionResult = {
+  recipeId: number;
+  crafted: number;
+  resultItemTemplateId: number;
+  resultAmount: number;
+  consumedIngredients: CraftExecutionConsumedIngredient[];
+};
+
+export type ApiCraftExecuteResponse = {
+  ok: boolean;
+  data?: CraftExecutionResult;
+  error?: string;
+  message?: string;
+};
+
 export type AdminCounts = {
   guilds_count: number;
   members_count: number;

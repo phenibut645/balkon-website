@@ -6,6 +6,7 @@ import {
   buyMarketListing,
   cancelMarketListing,
   createInventoryMarketListing,
+  executeCraftRecipe,
   getAdminStats,
   getBotShop,
   getCraftRecipes,
@@ -135,6 +136,9 @@ export default function HomePage() {
   const [craftLoaded, setCraftLoaded] = useState(false);
   const [craftLoading, setCraftLoading] = useState(false);
   const [craftError, setCraftError] = useState<string | null>(null);
+  const [craftingRecipeId, setCraftingRecipeId] = useState<number | null>(null);
+  const [craftFeedbackByRecipeId, setCraftFeedbackByRecipeId] = useState<Record<number, string>>({});
+  const [craftErrorByRecipeId, setCraftErrorByRecipeId] = useState<Record<number, string>>({});
   const [inventoryFilter, setInventoryFilter] = useState<InventoryFilter>("all");
   const [canUseAdminMode, setCanUseAdminMode] = useState(false);
   const [adminProbeDone, setAdminProbeDone] = useState(false);
@@ -625,6 +629,9 @@ export default function HomePage() {
     setCraftLoaded(false);
     setCraftLoading(false);
     setCraftError(null);
+    setCraftingRecipeId(null);
+    setCraftFeedbackByRecipeId({});
+    setCraftErrorByRecipeId({});
     setProfileData(null);
     setProfileGuilds([]);
     setProfileLoaded(false);
@@ -1570,6 +1577,37 @@ export default function HomePage() {
     setCraftError(response.message || response.error || t.craftError);
   }, [craftLoading, t.craftError]);
 
+  const handleCraftRecipe = useCallback(async (recipeId: number): Promise<void> => {
+    setCraftingRecipeId(recipeId);
+    setCraftFeedbackByRecipeId(prev => ({ ...prev, [recipeId]: "" }));
+    setCraftErrorByRecipeId(prev => ({ ...prev, [recipeId]: "" }));
+
+    const response = await executeCraftRecipe(recipeId, 1);
+    if (!response.ok || !response.data) {
+      const fallbackMessage = response.error === "CRAFT_REQUIREMENTS_MISSING"
+        ? t.craftMissingIngredients
+        : t.craftFailed;
+      setCraftErrorByRecipeId(prev => ({
+        ...prev,
+        [recipeId]: response.message || fallbackMessage,
+      }));
+      setCraftingRecipeId(null);
+      return;
+    }
+
+    const craftData = response.data;
+
+    setCraftFeedbackByRecipeId(prev => ({
+      ...prev,
+      [recipeId]: `${t.crafted}: x${craftData.resultAmount}`,
+    }));
+    setCraftingRecipeId(null);
+
+    await loadInventory({ silent: true, force: true });
+    await loadOverviewSummary({ silent: true, force: true });
+    await loadCraftRecipes();
+  }, [loadCraftRecipes, loadInventory, loadOverviewSummary, t.craftFailed, t.craftMissingIngredients, t.crafted]);
+
   function handleInventoryFilterChange(nextFilter: InventoryFilter): void {
     setInventoryFilter(nextFilter);
   }
@@ -2231,6 +2269,12 @@ export default function HomePage() {
                 recipes={craftRecipes}
                 loading={craftLoading}
                 error={craftError}
+                craftingRecipeId={craftingRecipeId}
+                craftFeedbackByRecipeId={craftFeedbackByRecipeId}
+                craftErrorByRecipeId={craftErrorByRecipeId}
+                onCraft={(recipeId) => {
+                  void handleCraftRecipe(recipeId);
+                }}
                 onRefresh={() => {
                   setCraftLoaded(false);
                   void loadCraftRecipes();

@@ -16,6 +16,7 @@ import {
   ApiAdminSearchResponse,
   ApiBaseResponse,
   ApiBotShopResponse,
+  ApiCraftExecuteResponse,
   ApiObsMediaPurchaseResponse,
   ApiObsMediaActionsResponse,
   ApiObsShopStreamerDetailsResponse,
@@ -1081,6 +1082,45 @@ export async function getCraftRecipes(): Promise<ApiCraftRecipesResponse> {
         ok: false,
         error: data?.error || "CRAFT_RECIPES_LOAD_FAILED",
         message: data?.message || "Failed to load craft recipes.",
+      };
+    }
+
+    if (!data || typeof data !== "object") {
+      return {
+        ok: false,
+        error: "INVALID_RESPONSE",
+        message: "Invalid API response.",
+      };
+    }
+
+    return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function executeCraftRecipe(recipeId: number, craftCount = 1): Promise<ApiCraftExecuteResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/craft/${recipeId}/craft`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ craftCount }),
+    });
+
+    const data = await response.json().catch(() => null) as ApiCraftExecuteResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "CRAFT_EXECUTION_FAILED",
+        message: data?.message || "Failed to craft recipe.",
       };
     }
 

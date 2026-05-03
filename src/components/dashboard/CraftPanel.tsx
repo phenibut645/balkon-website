@@ -8,9 +8,24 @@ type CraftPanelProps = {
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
+  craftingRecipeId: number | null;
+  craftFeedbackByRecipeId: Record<number, string>;
+  craftErrorByRecipeId: Record<number, string>;
+  onCraft: (recipeId: number) => void;
 };
 
-export function CraftPanel({ t, loadingGifs, recipes, loading, error, onRefresh }: CraftPanelProps) {
+export function CraftPanel({
+  t,
+  loadingGifs,
+  recipes,
+  loading,
+  error,
+  onRefresh,
+  craftingRecipeId,
+  craftFeedbackByRecipeId,
+  craftErrorByRecipeId,
+  onCraft,
+}: CraftPanelProps) {
   return (
     <div className="panel panel-craft">
       <div className="craft-scroll">
@@ -76,6 +91,23 @@ export function CraftPanel({ t, loadingGifs, recipes, loading, error, onRefresh 
                   <span className="meta-badge">{t.craftRecipeId} #{recipe.recipeId}</span>
                   <span className="meta-badge">{t.craftResultItemId} #{recipe.resultItemTemplateId}</span>
                 </div>
+
+                {craftFeedbackByRecipeId[recipe.recipeId] ? (
+                  <p className="state-text state-ok">{craftFeedbackByRecipeId[recipe.recipeId]}</p>
+                ) : null}
+
+                {craftErrorByRecipeId[recipe.recipeId] ? (
+                  <p className="state-text state-error">{craftErrorByRecipeId[recipe.recipeId]}</p>
+                ) : null}
+
+                <button
+                  className="pagination-btn"
+                  type="button"
+                  onClick={() => onCraft(recipe.recipeId)}
+                  disabled={craftingRecipeId === recipe.recipeId}
+                >
+                  {craftingRecipeId === recipe.recipeId ? t.crafting : t.craftAction}
+                </button>
               </article>
             ))}
           </div>
