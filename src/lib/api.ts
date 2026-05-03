@@ -60,12 +60,137 @@ import {
   ObsStudioSourceSettingsGetInput,
   ApiStreamerStudioBrowserSourceCreateResponse,
   ApiStreamerStudioBrowserSourceUpdateResponse,
+  ApiStreamerServiceDeleteResponse,
+  ApiStreamerServiceResponse,
+  ApiStreamerServicesResponse,
+  CreateStreamerServiceInput,
+  UpdateStreamerServiceInput,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
 export function getDiscordLoginUrl(): string {
   return `${API_BASE_URL}/api/auth/discord`;
+}
+
+export async function listStreamerServices(streamerId: number): Promise<ApiStreamerServicesResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/services`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerServicesResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_SERVICE_LOAD_FAILED",
+        message: data?.message || "Failed to load streamer services.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function createStreamerService(streamerId: number, payload: CreateStreamerServiceInput): Promise<ApiStreamerServiceResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/services`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerServiceResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_SERVICE_CREATE_FAILED",
+        message: data?.message || "Failed to create streamer service.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function updateStreamerService(
+  streamerId: number,
+  serviceId: number,
+  payload: UpdateStreamerServiceInput,
+): Promise<ApiStreamerServiceResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/services/${encodeURIComponent(String(serviceId))}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerServiceResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_SERVICE_UPDATE_FAILED",
+        message: data?.message || "Failed to update streamer service.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function disableStreamerService(streamerId: number, serviceId: number): Promise<ApiStreamerServiceDeleteResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/streamer-studio/${encodeURIComponent(String(streamerId))}/services/${encodeURIComponent(String(serviceId))}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiStreamerServiceDeleteResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "STREAMER_SERVICE_DELETE_FAILED",
+        message: data?.message || "Failed to disable streamer service.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
 }
 
 export async function updateStreamerStudioTextSource(

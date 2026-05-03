@@ -523,6 +523,52 @@ export type ApiStreamerStudioAgentClearResponse = ApiBaseResponse & {
   data?: StreamerStudioAgentClearResult;
 };
 
+export type StreamerServiceType = "obs_media";
+export type StreamerServiceMediaKind = "image" | "gif" | "video" | "browser";
+
+export type StreamerServiceView = {
+  id: number;
+  streamerId: number;
+  serviceKey: string;
+  title: string;
+  description: string | null;
+  serviceType: StreamerServiceType;
+  mediaKind: StreamerServiceMediaKind | null;
+  mediaUrl: string | null;
+  durationMs: number | null;
+  price: number;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ApiStreamerServicesResponse = ApiBaseResponse & {
+  services?: StreamerServiceView[];
+};
+
+export type ApiStreamerServiceResponse = ApiBaseResponse & {
+  service?: StreamerServiceView;
+};
+
+export type ApiStreamerServiceDeleteResponse = ApiBaseResponse & {
+  serviceId?: number;
+  disabled?: boolean;
+};
+
+export type CreateStreamerServiceInput = {
+  serviceKey: string;
+  title: string;
+  description?: string | null;
+  serviceType: StreamerServiceType;
+  mediaKind: StreamerServiceMediaKind;
+  mediaUrl: string;
+  durationMs: number;
+  price: number;
+  enabled: boolean;
+};
+
+export type UpdateStreamerServiceInput = Partial<CreateStreamerServiceInput>;
+
 export type ObsStudioSceneView = {
   name: string;
 };

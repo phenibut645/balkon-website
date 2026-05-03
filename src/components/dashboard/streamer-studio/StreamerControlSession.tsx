@@ -6,6 +6,7 @@ import { StreamerTrustedUsersPanel } from "../StreamerTrustedUsersPanel";
 import { AgentDiagnostics } from "./components/AgentDiagnostics";
 import { AgentSetupCard } from "./components/AgentSetupCard";
 import { SceneToolbar } from "./components/SceneToolbar";
+import { StreamerServicesPanel } from "./components/StreamerServicesPanel";
 import { ObsSceneItemList } from "./ObsSceneItemList";
 import { useStreamerControlSession } from "./hooks/useStreamerControlSession";
 
@@ -61,6 +62,10 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
 
       {streamer.canManage ? (
         <AgentSetupCard t={t} streamer={streamer} />
+      ) : null}
+
+      {streamer.canManage ? (
+        <StreamerServicesPanel t={t} streamerId={streamer.streamerId} />
       ) : null}
 
       {streamer.canManage ? (
