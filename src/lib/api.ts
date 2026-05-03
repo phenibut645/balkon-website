@@ -67,6 +67,8 @@ import {
   ApiStreamerServicesResponse,
   ApiAdminStreamerApplicationActionResponse,
   ApiAdminStreamerApplicationsResponse,
+  ApiAdminStreamerArchiveResponse,
+  ApiAdminStreamersResponse,
   ApiMyStreamerApplicationsResponse,
   ApiStreamerApplicationSubmitResponse,
   AdminStreamerApplicationStatusFilter,
@@ -220,6 +222,62 @@ export async function rejectStreamerApplication(
         ok: false,
         error: data?.error || "STREAMER_APPLICATION_REJECT_FAILED",
         message: data?.message || "Failed to reject streamer application.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function listAdminStreamers(): Promise<ApiAdminStreamersResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/streamers`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminStreamersResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_STREAMERS_LOAD_FAILED",
+        message: data?.message || "Failed to load streamers.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function archiveAdminStreamer(streamerId: number): Promise<ApiAdminStreamerArchiveResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/streamers/${encodeURIComponent(String(streamerId))}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminStreamerArchiveResponse | null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_STREAMER_ARCHIVE_FAILED",
+        message: data?.message || "Failed to archive streamer.",
       };
     }
 

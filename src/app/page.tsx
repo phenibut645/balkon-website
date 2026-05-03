@@ -58,6 +58,7 @@ import { AdminEconomyPanel } from "@/components/dashboard/AdminEconomyPanel";
 import { PlaceholderPanel } from "@/components/dashboard/PlaceholderPanel";
 import { ProfileSettingsPanel } from "@/components/dashboard/ProfileSettingsPanel";
 import { StreamerStudioPanel } from "@/components/dashboard/StreamerStudioPanel";
+import { StreamerApplicationCard } from "@/components/dashboard/StreamerApplicationCard";
 import { useSafePolling } from "@/hooks/useSafePolling";
 import { areJsonEqual } from "@/lib/shallowDataEqual";
 
@@ -410,6 +411,23 @@ export default function HomePage() {
         destination: { kind: "userTab", tab: "streamerStudio" },
       },
       {
+        key: "tab:streamerApplication",
+        label: t.tabStreamerApplication,
+        breadcrumb: t.tabStreamerApplication,
+        description: t.streamerApplicationIntro,
+        aliases: [
+          "заявка стримера",
+          "стать стримером",
+          "заявка",
+          "streamer application",
+          "become streamer",
+          "apply streamer",
+          "striimeri taotlus",
+          "taotlus",
+        ],
+        destination: { kind: "userTab", tab: "streamerApplication" },
+      },
+      {
         key: "tab:inventory",
         label: t.tabInventory,
         breadcrumb: t.tabInventory,
@@ -682,7 +700,7 @@ export default function HomePage() {
       setCanUseAdminMode(false);
       setAdminStats(null);
       setAdminStatsLoading(false);
-      setAdminStatsError(response.message || t.adminStatsError);
+      setAdminStatsError(response.message || response.error || t.adminStatsError);
     }
   }, [t.adminStatsError]);
 
@@ -2356,12 +2374,21 @@ export default function HomePage() {
               />
             ) : null}
 
+            {activeTab === "streamerApplication" ? (
+              <StreamerApplicationCard
+                t={t}
+                active
+                dateLocale={dateLocale}
+                initialGuildId={profileData?.homeGuildId ?? selectedGuildId}
+              />
+            ) : null}
+
             {activeTab === "streamerStudio" ? (
               <StreamerStudioPanel
                 t={t}
                 active
                 dateLocale={dateLocale}
-                homeGuildId={profileData?.homeGuildId ?? selectedGuildId}
+                streamerMode={streamerMode}
               />
             ) : null}
 

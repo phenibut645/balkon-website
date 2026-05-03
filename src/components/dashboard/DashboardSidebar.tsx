@@ -85,6 +85,13 @@ export function DashboardSidebar({
       title: t.tabStreamerStudio,
       items: [
         {
+          key: "streamer-application",
+          label: t.tabStreamerApplication,
+          icon: "📝",
+          active: activeTab === "streamerApplication",
+          onClick: () => onUserTabSelect("streamerApplication"),
+        },
+        {
           key: "streamer-studio",
           label: t.tabStreamerStudio,
           icon: "🎛️",

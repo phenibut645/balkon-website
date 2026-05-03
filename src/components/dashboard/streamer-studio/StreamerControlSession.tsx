@@ -14,6 +14,8 @@ import { useStreamerControlSession } from "./hooks/useStreamerControlSession";
 type StreamerControlSessionProps = {
   t: DashboardText;
   streamer: StreamerStudioAccessView;
+  streamerMode?: boolean;
+  onStreamerUpdated?: () => void;
   onBack: () => void;
 };
 
@@ -38,7 +40,7 @@ function getDefaultSessionTab(streamer: StreamerStudioAccessView, availableTabs:
   return availableTabs[0] ?? "streamServices";
 }
 
-export function StreamerControlSession({ t, streamer, onBack }: StreamerControlSessionProps) {
+export function StreamerControlSession({ t, streamer, streamerMode = false, onStreamerUpdated, onBack }: StreamerControlSessionProps) {
   const session = useStreamerControlSession(t, streamer);
   const availableTabs = useMemo<Array<{ id: StreamerSessionTab; label: string }>>(() => {
     const tabs: Array<{ id: StreamerSessionTab; label: string }> = [];
@@ -132,7 +134,7 @@ export function StreamerControlSession({ t, streamer, onBack }: StreamerControlS
           aria-labelledby="streamer-session-tab-obsAgent"
           hidden={activeTab !== "obsAgent"}
         >
-          <AgentSetupCard t={t} streamer={streamer} />
+          <AgentSetupCard t={t} streamer={streamer} streamerMode={streamerMode} onSetupChanged={onStreamerUpdated} />
         </div>
       ) : null}
 

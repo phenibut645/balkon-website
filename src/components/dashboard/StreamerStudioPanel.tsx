@@ -4,16 +4,15 @@ import { getStreamerStudioAccessible } from "@/lib/api";
 import { StreamerStudioAccessView } from "@/lib/types";
 import { StreamerStudioHome } from "./StreamerStudioHome";
 import { StreamerControlSession } from "./streamer-studio/StreamerControlSession";
-import { StreamerApplicationCard } from "./StreamerApplicationCard";
 
 type StreamerStudioPanelProps = {
   t: DashboardText;
   active: boolean;
   dateLocale: string;
-  homeGuildId?: string | null;
+  streamerMode?: boolean;
 };
 
-export function StreamerStudioPanel({ t, active, dateLocale, homeGuildId }: StreamerStudioPanelProps) {
+export function StreamerStudioPanel({ t, active, dateLocale, streamerMode = false }: StreamerStudioPanelProps) {
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,15 +91,7 @@ export function StreamerStudioPanel({ t, active, dateLocale, homeGuildId }: Stre
           {!loading && error ? <p className="state-text state-error">{error}</p> : null}
 
           {!loading && !error && accessibleSorted.length === 0 ? (
-            <>
-              <p className="state-text state-empty">{t.streamerStudioEmpty}</p>
-              <StreamerApplicationCard
-                t={t}
-                active={active}
-                dateLocale={dateLocale}
-                initialGuildId={homeGuildId}
-              />
-            </>
+            <p className="state-text state-empty">{t.streamerStudioEmpty}</p>
           ) : null}
 
           <StreamerStudioHome
@@ -113,6 +104,10 @@ export function StreamerStudioPanel({ t, active, dateLocale, homeGuildId }: Stre
         <StreamerControlSession
           t={t}
           streamer={selectedStreamer}
+          streamerMode={streamerMode}
+          onStreamerUpdated={() => {
+            void load(true);
+          }}
           onBack={() => setSelectedStreamer(null)}
         />
       )}

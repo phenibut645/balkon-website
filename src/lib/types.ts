@@ -468,6 +468,29 @@ export type ApiAdminStreamerApplicationActionResponse = ApiBaseResponse & {
   } | StreamerApplicationView;
 };
 
+export type AdminStreamerView = {
+  streamerId: number;
+  nickname: string;
+  twitchUrl: string | null;
+  ownerCount: number;
+  obsAgentConfigured: boolean;
+  obsAgentOnline: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+  archived: boolean;
+};
+
+export type ApiAdminStreamersResponse = ApiBaseResponse & {
+  data?: AdminStreamerView[];
+};
+
+export type ApiAdminStreamerArchiveResponse = ApiBaseResponse & {
+  data?: {
+    streamerId: number;
+    archived: true;
+  };
+};
+
 // ── Streamer Studio (Phase 4 UI) ──────────────────────────────────────────────
 
 export type StreamerStudioAccessRole = "owner" | "manager" | "moderator" | "bot_admin";

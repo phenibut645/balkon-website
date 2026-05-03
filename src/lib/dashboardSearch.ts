@@ -9,6 +9,7 @@ export type UserTab =
   | "profile"
   | "notifications"
   | "servers"
+  | "streamerApplication"
   | "streamerStudio";
 export type AdminTab = "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems" | "adminBotShop" | "adminEconomy" | "adminMessage";
 export type DashboardTab = UserTab | AdminTab;

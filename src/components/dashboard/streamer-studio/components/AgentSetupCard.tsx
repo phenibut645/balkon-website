@@ -11,6 +11,8 @@ import {
 type AgentSetupCardProps = {
   t: DashboardText;
   streamer: StreamerStudioAccessView;
+  streamerMode?: boolean;
+  onSetupChanged?: () => void;
 };
 
 type FeedbackState = {
@@ -40,7 +42,7 @@ function formatLastSeen(t: DashboardText, value: string | null): string {
   return formatDashboardDate(value, locale, t.streamerStudioAgentSetupUnknown);
 }
 
-export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
+export function AgentSetupCard({ t, streamer, streamerMode = false, onSetupChanged }: AgentSetupCardProps) {
   const [setup, setSetup] = useState<StreamerStudioAgentSetupView | null>(null);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -150,7 +152,8 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
       isError: false,
     });
     await loadSetup();
-  }, [customAgentId, loadSetup, streamer.streamerId, t.streamerStudioAgentSetupProvisionFailed, t.streamerStudioAgentSetupProvisionSuccess]);
+    onSetupChanged?.();
+  }, [customAgentId, loadSetup, onSetupChanged, streamer.streamerId, t.streamerStudioAgentSetupProvisionFailed, t.streamerStudioAgentSetupProvisionSuccess]);
 
   const handleBind = useCallback(async () => {
     const normalizedAgentId = bindAgentId.trim();
@@ -181,7 +184,8 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
       isError: false,
     });
     await loadSetup();
-  }, [bindAgentId, bindAgentToken, loadSetup, streamer.streamerId, t.streamerStudioAgentSetupBindFailed, t.streamerStudioAgentSetupBindSuccess, t.streamerStudioAgentSetupInvalidBind]);
+    onSetupChanged?.();
+  }, [bindAgentId, bindAgentToken, loadSetup, onSetupChanged, streamer.streamerId, t.streamerStudioAgentSetupBindFailed, t.streamerStudioAgentSetupBindSuccess, t.streamerStudioAgentSetupInvalidBind]);
 
   const handleClear = useCallback(async () => {
     const confirmed = window.confirm(t.streamerStudioAgentSetupClearConfirm);
@@ -210,7 +214,8 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
       isError: false,
     });
     await loadSetup();
-  }, [loadSetup, streamer.streamerId, t.streamerStudioAgentSetupClearConfirm, t.streamerStudioAgentSetupClearFailed, t.streamerStudioAgentSetupClearSuccess]);
+    onSetupChanged?.();
+  }, [loadSetup, onSetupChanged, streamer.streamerId, t.streamerStudioAgentSetupClearConfirm, t.streamerStudioAgentSetupClearFailed, t.streamerStudioAgentSetupClearSuccess]);
 
   if (!streamer.canManage) {
     return null;
@@ -360,6 +365,7 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
                   hiddenText={t.streamerStudioSensitiveValueHidden}
                   copyable={Boolean(setup?.relayUrl)}
                   revealable={Boolean(setup?.relayUrl)}
+                  forceHidden={streamerMode}
                 />
               </div>
               <div className="agent-setup-inline-field">
@@ -371,6 +377,7 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
                     hiddenText={t.streamerStudioSensitiveValueHidden}
                     copyable
                     revealable
+                    forceHidden={streamerMode}
                   />
                 ) : (
                   <div className="agent-setup-inline-field">
@@ -415,6 +422,7 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
                     copyable
                     revealable
                     className="agent-setup-sensitive-token"
+                    forceHidden={streamerMode}
                   />
                   <p className="market-card-hint">{t.streamerStudioAgentSetupCopyNowWarning}</p>
                 </div>

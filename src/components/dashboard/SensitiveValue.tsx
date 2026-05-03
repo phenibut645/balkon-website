@@ -11,6 +11,7 @@ type SensitiveValueProps = {
   className?: string;
   hiddenText?: string;
   monospace?: boolean;
+  forceHidden?: boolean;
 };
 
 async function copyText(value: string): Promise<boolean> {
@@ -53,6 +54,7 @@ export function SensitiveValue({
   className,
   hiddenText,
   monospace = true,
+  forceHidden = false,
 }: SensitiveValueProps) {
   const [revealed, setRevealed] = useState(defaultRevealed);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
@@ -60,6 +62,12 @@ export function SensitiveValue({
   useEffect(() => {
     setRevealed(defaultRevealed);
   }, [defaultRevealed, value]);
+
+  useEffect(() => {
+    if (forceHidden) {
+      setRevealed(false);
+    }
+  }, [forceHidden]);
 
   useEffect(() => {
     if (copyState === "idle") {
@@ -88,11 +96,11 @@ export function SensitiveValue({
     <div className={`sensitive-value${className ? ` ${className}` : ""}`}>
       {label ? <span className="sensitive-value-label">{label}</span> : null}
       <div className="sensitive-value-row">
-        <div className={`sensitive-value-display${revealed ? " revealed" : " hidden"}${monospace ? " mono" : ""}`} aria-live="polite">
-          {revealed ? value : maskedValue}
+        <div className={`sensitive-value-display${revealed && !forceHidden ? " revealed" : " hidden"}${monospace ? " mono" : ""}`} aria-live="polite">
+          {revealed && !forceHidden ? value : maskedValue}
         </div>
         <div className="sensitive-value-actions">
-          {revealable ? (
+          {revealable && !forceHidden ? (
             <button className="pagination-btn ghost sensitive-value-btn" type="button" onClick={() => setRevealed(prev => !prev)}>
               {revealed ? t.streamerStudioHideItem : t.streamerStudioShowItem}
             </button>
