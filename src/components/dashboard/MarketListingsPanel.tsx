@@ -60,10 +60,10 @@ export function MarketListingsPanel({
   const [buyConfirmListing, setBuyConfirmListing] = useState<MarketListing | null>(null);
   const [cancelConfirmListing, setCancelConfirmListing] = useState<MarketListing | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(16);
 
   const lastKnownServerPriceRef = useRef<Map<number, number>>(new Map());
   const dirtyPriceDraftIdsRef = useRef<Set<number>>(new Set());
-  const pageSize = 8;
 
   useEffect(() => {
     const prevMap = lastKnownServerPriceRef.current;
@@ -127,7 +127,35 @@ export function MarketListingsPanel({
     });
   }, [marketListings]);
 
-  const totalPages = useMemo(() => Math.max(1, Math.ceil(marketListings.length / pageSize)), [marketListings.length]);
+  useEffect(() => {
+    const updatePageSize = () => {
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      const width = window.innerWidth;
+      if (width <= 640) {
+        setPageSize(4);
+        return;
+      }
+
+      if (width <= 900) {
+        setPageSize(8);
+        return;
+      }
+
+      setPageSize(16);
+    };
+
+    updatePageSize();
+    window.addEventListener("resize", updatePageSize);
+
+    return () => {
+      window.removeEventListener("resize", updatePageSize);
+    };
+  }, []);
+
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(marketListings.length / pageSize)), [marketListings.length, pageSize]);
 
   useEffect(() => {
     setCurrentPage(prev => Math.min(Math.max(prev, 1), totalPages));
@@ -136,7 +164,7 @@ export function MarketListingsPanel({
   const paginatedListings = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return marketListings.slice(start, start + pageSize);
-  }, [currentPage, marketListings]);
+  }, [currentPage, marketListings, pageSize]);
 
   const handleConfirmBuy = useCallback(async () => {
     const listing = buyConfirmListing;
@@ -245,18 +273,6 @@ export function MarketListingsPanel({
 
       {!marketLoading && !marketError && marketListings.length > 0 ? (
         <>
-          <div className="inventory-pagination market-pagination">
-            <button type="button" className="pagination-btn" onClick={goToPreviousPage} disabled={currentPage <= 1}>
-              {t.previous}
-            </button>
-            <span className="pagination-status">
-              {t.page} {currentPage}/{totalPages}
-            </span>
-            <button type="button" className="pagination-btn" onClick={goToNextPage} disabled={currentPage >= totalPages}>
-              {t.next}
-            </button>
-          </div>
-
           <div className="market-grid">
             {paginatedListings.map(listing => {
               const rarityAccent = listing.rarityColorHex || "#44506d";

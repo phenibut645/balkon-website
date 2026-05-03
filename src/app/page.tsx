@@ -240,6 +240,7 @@ export default function HomePage() {
   const [jobFeedbackById, setJobFeedbackById] = useState<Record<number, string>>({});
   const [jobErrorById, setJobErrorById] = useState<Record<number, string>>({});
   const [jobCooldownInfoById, setJobCooldownInfoById] = useState<Record<number, JobCooldownState>>({});
+  const runningJobIdRef = useRef<number | null>(null);
   const [inventoryFilter, setInventoryFilter] = useState<InventoryFilter>("all");
   const [canUseAdminMode, setCanUseAdminMode] = useState(false);
   const [adminProbeDone, setAdminProbeDone] = useState(false);
@@ -811,6 +812,7 @@ export default function HomePage() {
     setJobsLoaded(false);
     setJobsLoading(false);
     setJobsError(null);
+    runningJobIdRef.current = null;
     setRunningJobId(null);
     setJobFeedbackById({});
     setJobErrorById({});
@@ -1814,7 +1816,7 @@ export default function HomePage() {
   }, [jobsLoading, t.jobsLoadError]);
 
   const handleRunJob = useCallback(async (jobId: number): Promise<void> => {
-    if (runningJobId === jobId) {
+    if (runningJobIdRef.current === jobId) {
       return;
     }
 
@@ -1835,6 +1837,7 @@ export default function HomePage() {
       return;
     }
 
+    runningJobIdRef.current = jobId;
     setRunningJobId(jobId);
     setJobFeedbackById(prev => ({ ...prev, [jobId]: "" }));
     setJobErrorById(prev => ({ ...prev, [jobId]: "" }));
@@ -1862,6 +1865,9 @@ export default function HomePage() {
         }));
       }
 
+      if (runningJobIdRef.current === jobId) {
+        runningJobIdRef.current = null;
+      }
       setRunningJobId(null);
       return;
     }
@@ -1879,6 +1885,9 @@ export default function HomePage() {
       ...prev,
       [jobId]: `${t.jobsCompleted}: +${jobData.rewardAmount} ODM`,
     }));
+    if (runningJobIdRef.current === jobId) {
+      runningJobIdRef.current = null;
+    }
     setRunningJobId(null);
 
     await loadBalance({ silent: true });
@@ -1886,7 +1895,7 @@ export default function HomePage() {
     if (jobData.grantedItems.length > 0) {
       await loadInventory({ silent: true, force: true });
     }
-  }, [jobCooldownInfoById, loadBalance, loadInventory, loadOverviewSummary, runningJobId, t.jobsCompleted, t.jobsCooldownActive, t.jobsFailed]);
+  }, [jobCooldownInfoById, loadBalance, loadInventory, loadOverviewSummary, t.jobsCompleted, t.jobsCooldownActive, t.jobsFailed]);
 
   function handleInventoryFilterChange(nextFilter: InventoryFilter): void {
     setInventoryFilter(nextFilter);

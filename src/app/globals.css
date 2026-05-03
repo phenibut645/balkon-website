@@ -49,6 +49,24 @@ body {
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+  height: 100%;
+}
+
+.streamer-card-body {
+  display: grid;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.streamer-card-action-row {
+  margin-top: auto;
+  display: flex;
+}
+
+.streamer-card-action-row .pagination-btn {
+  width: 100%;
+  justify-content: center;
 }
 
 .streamer-application-card,
@@ -3317,9 +3335,9 @@ body {
 
 .market-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(185px, 225px));
-  justify-content: start;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 12px;
+  align-items: stretch;
 }
 
 .botshop-grid {
@@ -3878,6 +3896,7 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  height: 100%;
   transition: transform 0.18s ease, box-shadow 0.22s ease, border-color 0.18s ease;
 }
 
@@ -3895,6 +3914,7 @@ body {
   flex: 1 1 auto;
   flex-direction: column;
   align-content: stretch;
+  min-height: 100%;
 }
 
 .market-description.compact {
@@ -3932,9 +3952,11 @@ body {
 }
 
 .market-seller-inline {
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
   gap: 4px;
+  min-width: 0;
 }
 
 .market-seller-inline .user-identity {
@@ -3942,7 +3964,7 @@ body {
 }
 
 .market-seller-inline .user-identity-name {
-  max-width: 12ch;
+  max-width: 16ch;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3959,7 +3981,7 @@ body {
 }
 
 .market-pagination {
-  margin: 4px 0 12px;
+  margin: 12px 0 0;
 }
 
 .market-pagination:last-child {
