@@ -67,6 +67,8 @@ type LoadOptions = {
   force?: boolean;
 };
 
+const MARKET_ENTRY_REFRESH_MIN_GAP_MS = 15000;
+
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "v0.1.0";
 const BOT_UI_STATUS: BotUiStatus = (
   (process.env.NEXT_PUBLIC_BOT_UI_STATUS || "online").toLowerCase() === "offline"
@@ -184,6 +186,10 @@ export default function HomePage() {
   const [obsBuyErrors, setObsBuyErrors] = useState<Record<string, string>>({});
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const marketLastLoadedAtRef = useRef(0);
+  const inventoryLastLoadedAtRef = useRef(0);
+  const previousActiveTabRef = useRef<DashboardTab | null>(null);
+  const previousMarketSubTabRef = useRef<MarketSubTab | null>(null);
   const notificationsSummaryLoadingRef = useRef(false);
   const notificationsSummaryLastLoadedAtRef = useRef(0);
   const overviewLoadingRef = useRef(false);
@@ -700,6 +706,7 @@ export default function HomePage() {
       const nextItems = response.items;
       setInventory(prev => (areJsonEqual(prev, nextItems) ? prev : nextItems));
       setInventoryLoaded(true);
+      inventoryLastLoadedAtRef.current = Date.now();
       setInventoryError(null);
       if (!silent) {
         setInventoryLoading(false);
@@ -731,6 +738,7 @@ export default function HomePage() {
       const nextListings = response.listings;
       setMarketListings(prev => (areJsonEqual(prev, nextListings) ? prev : nextListings));
       setMarketLoaded(true);
+      marketLastLoadedAtRef.current = Date.now();
       setMarketError(null);
       if (!silent) {
         setMarketLoading(false);
@@ -1504,6 +1512,37 @@ export default function HomePage() {
       void loadMarket();
     }
   }, [authState, activeTab, marketLoaded, marketLoading, loadMarket]);
+
+  useEffect(() => {
+    const previousActiveTab = previousActiveTabRef.current;
+    const previousMarketSubTab = previousMarketSubTabRef.current;
+
+    previousActiveTabRef.current = activeTab;
+    previousMarketSubTabRef.current = marketSubTab;
+
+    if (authState !== "user" || dashboardMode !== "user" || activeTab !== "market") {
+      return;
+    }
+
+    const enteredMarketTab = previousActiveTab !== "market";
+    const enteredMarketListings = marketSubTab === "listings" && (previousActiveTab !== "market" || previousMarketSubTab !== "listings");
+
+    if (!enteredMarketTab && !enteredMarketListings) {
+      return;
+    }
+
+    const now = Date.now();
+    const shouldRefreshMarketSilently = marketLoaded && now - marketLastLoadedAtRef.current >= MARKET_ENTRY_REFRESH_MIN_GAP_MS;
+    const shouldRefreshInventorySilently = inventoryLoaded && now - inventoryLastLoadedAtRef.current >= MARKET_ENTRY_REFRESH_MIN_GAP_MS;
+
+    if (shouldRefreshMarketSilently) {
+      void loadMarket({ silent: true });
+    }
+
+    if (shouldRefreshInventorySilently) {
+      void loadInventory({ silent: true });
+    }
+  }, [activeTab, authState, dashboardMode, inventoryLoaded, loadInventory, loadMarket, marketLoaded, marketSubTab]);
 
   useEffect(() => {
     if (authState === "user" && activeTab === "market" && !marketCapitalizationLoaded && !marketCapitalizationLoading) {
