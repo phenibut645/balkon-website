@@ -90,13 +90,14 @@ export function StreamerControlSession({ t, streamer, onBalanceRefresh, onBack }
 
   return (
     <div className="streamer-control-session">
-      <div className="inventory-toolbar">
-        <div className="session-head">
-          <button className="pagination-btn ghost" type="button" onClick={onBack}>
-            {t.streamerStudioBack}
-          </button>
+      <div className="streamer-session-header">
+        <div className="streamer-session-header-main">
+          <h2 className="section-title streamer-session-title">{streamer.nickname}</h2>
           <AgentDiagnostics t={t} streamer={streamer} agentStatusText={session.agentStatusText} />
         </div>
+        <button className="pagination-btn ghost streamer-session-back" type="button" onClick={onBack}>
+          {t.streamerStudioBack}
+        </button>
       </div>
 
       {!streamer.obsAgentConfigured ? (

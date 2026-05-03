@@ -117,6 +117,42 @@ body {
   align-items: center;
 }
 
+.streamer-session-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid rgba(95, 116, 159, 0.22);
+  border-radius: 14px;
+  background: rgba(10, 14, 24, 0.55);
+  backdrop-filter: blur(14px);
+  min-width: 0;
+}
+
+.streamer-session-header-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.streamer-session-title {
+  margin: 0;
+}
+
+.streamer-session-back {
+  flex: 0 0 auto;
+}
+
+.agent-diagnostics {
+  display: grid;
+  gap: 2px;
+}
+
+.agent-diagnostics .market-card-hint {
+  margin: 0;
+}
+
 .streamer-session-tabs {
   margin-bottom: 0;
 }
@@ -1461,6 +1497,15 @@ body {
 }
 
 @media (max-width: 960px) {
+  .streamer-session-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .streamer-session-back {
+    align-self: flex-end;
+  }
+
   .streamer-studio-session-grid {
     gap: 10px;
   }

@@ -9,8 +9,7 @@ type AgentDiagnosticsProps = {
 
 export function AgentDiagnostics({ t, streamer, agentStatusText }: AgentDiagnosticsProps) {
   return (
-    <div>
-      <h3 className="section-title">{streamer.nickname}</h3>
+    <div className="agent-diagnostics">
       <p className="market-card-hint">{agentStatusText}</p>
       {streamer.obsAgentConfigured ? (
         <p className="market-card-hint">

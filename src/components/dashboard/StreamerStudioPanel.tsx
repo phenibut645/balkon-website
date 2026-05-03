@@ -74,29 +74,31 @@ export function StreamerStudioPanel({ t, active, onBalanceRefresh }: StreamerStu
 
   return (
     <div className="streamer-studio-panel">
-      <div className="inventory-toolbar">
-        <div>
-          <h2 className="section-title">{t.streamerStudioTitle}</h2>
-          <p className="market-card-hint">{t.streamerStudioSubtitle}</p>
-        </div>
-        <button className="pagination-btn" type="button" onClick={() => void load(false)}>
-          {t.streamerStudioRefresh}
-        </button>
-      </div>
-
-      {loading ? <p className="state-text">{t.shopObsLoading}</p> : null}
-      {!loading && error ? <p className="state-text state-error">{error}</p> : null}
-
-      {!loading && !error && accessibleSorted.length === 0 ? (
-        <p className="state-text state-empty">{t.streamerStudioEmpty}</p>
-      ) : null}
-
       {!selectedStreamer ? (
-        <StreamerStudioHome
-          t={t}
-          streamers={accessibleSorted}
-          onOpenControl={setSelectedStreamer}
-        />
+        <>
+          <div className="inventory-toolbar">
+            <div>
+              <h2 className="section-title">{t.streamerStudioTitle}</h2>
+              <p className="market-card-hint">{t.streamerStudioSubtitle}</p>
+            </div>
+            <button className="pagination-btn" type="button" onClick={() => void load(false)}>
+              {t.streamerStudioRefresh}
+            </button>
+          </div>
+
+          {loading ? <p className="state-text">{t.shopObsLoading}</p> : null}
+          {!loading && error ? <p className="state-text state-error">{error}</p> : null}
+
+          {!loading && !error && accessibleSorted.length === 0 ? (
+            <p className="state-text state-empty">{t.streamerStudioEmpty}</p>
+          ) : null}
+
+          <StreamerStudioHome
+            t={t}
+            streamers={accessibleSorted}
+            onOpenControl={setSelectedStreamer}
+          />
+        </>
       ) : (
         <StreamerControlSession
           t={t}
@@ -108,4 +110,3 @@ export function StreamerStudioPanel({ t, active, onBalanceRefresh }: StreamerStu
     </div>
   );
 }
-
