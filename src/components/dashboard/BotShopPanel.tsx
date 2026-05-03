@@ -7,6 +7,7 @@ import { BotShopItemsPanel } from "./BotShopItemsPanel";
 import { BotShopOverviewPanel } from "./BotShopOverviewPanel";
 import { BotShopCasesPanel } from "./BotShopCasesPanel";
 import { BotShopObsPanel } from "./BotShopObsPanel";
+import { BotShopObsHistoryPanel } from "./BotShopObsHistoryPanel";
 import { BotShopObsStreamerPanel } from "./BotShopObsStreamerPanel";
 
 type BotShopPanelProps = {
@@ -91,6 +92,7 @@ export function BotShopPanel({
           <button type="button" className={`dashboard-subtab-chip ${shopSubTab === "items" ? "active" : ""}`} onClick={() => onShopSubTabChange("items")}>{t.shopItems}</button>
           <button type="button" className={`dashboard-subtab-chip ${shopSubTab === "cases" ? "active" : ""}`} onClick={() => onShopSubTabChange("cases")}>{t.shopCases}</button>
           <button type="button" className={`dashboard-subtab-chip ${shopSubTab === "obs" ? "active" : ""}`} onClick={() => onShopSubTabChange("obs")}>{t.shopObs}</button>
+          <button type="button" className={`dashboard-subtab-chip ${shopSubTab === "obsHistory" ? "active" : ""}`} onClick={() => onShopSubTabChange("obsHistory")}>{t.obsHistory}</button>
         </div>
 
         {shopSubTab === "overview" ? (
@@ -150,6 +152,10 @@ export function BotShopPanel({
               }}
             />
           )
+        ) : null}
+
+        {shopSubTab === "obsHistory" ? (
+          <BotShopObsHistoryPanel t={t} dateLocale={dateLocale} />
         ) : null}
       </div>
     </div>

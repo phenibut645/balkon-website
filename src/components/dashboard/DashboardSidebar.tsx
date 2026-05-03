@@ -65,8 +65,9 @@ export function DashboardSidebar({
   onAdminTabSelect,
   onShopSubTabSelect,
 }: DashboardSidebarProps) {
-  const botShopGeneralActive = activeTab === "botShop" && shopSubTab !== "obs";
+  const botShopGeneralActive = activeTab === "botShop" && shopSubTab !== "obs" && shopSubTab !== "obsHistory";
   const obsActive = activeTab === "botShop" && shopSubTab === "obs";
+  const obsHistoryActive = activeTab === "botShop" && shopSubTab === "obsHistory";
 
   const userSections: SidebarSection[] = [
     {
@@ -173,8 +174,8 @@ export function DashboardSidebar({
           key: "obs-history",
           label: t.obsHistory,
           icon: "▣",
-          active: false,
-          onClick: () => onShopSubTabSelect("obs"),
+          active: obsHistoryActive,
+          onClick: () => onShopSubTabSelect("obsHistory"),
         },
       ],
     },

@@ -563,6 +563,14 @@ export default function HomePage() {
         destination: { kind: "shopSubtab", subtab: "obs" },
       },
       {
+        key: "shop:obs-history",
+        label: `${t.tabBotShop} → ${t.obsHistory}`,
+        breadcrumb: `${t.tabBotShop} → ${t.obsHistory}`,
+        description: t.obsMediaHistory,
+        aliases: ["obs history", "obs история", "история obs", "media history", "история медиа", "ajalugu", "history"],
+        destination: { kind: "shopSubtab", subtab: "obsHistory" },
+      },
+      {
         key: "tab:streamerStudio",
         label: t.tabStreamerStudio,
         breadcrumb: t.tabStreamerStudio,
@@ -2421,7 +2429,7 @@ export default function HomePage() {
                 onOpenMarket={() => handleUserTabSelect("market")}
                 onOpenBotShop={() => handleShopSubTabShortcut("overview")}
                 onOpenObsShop={() => handleShopSubTabShortcut("obs")}
-                onOpenObsHistory={() => handleShopSubTabShortcut("obs")}
+                onOpenObsHistory={() => handleShopSubTabShortcut("obsHistory")}
                 onOpenNotifications={() => handleUserTabSelect("notifications")}
                 onOpenProfile={() => handleUserTabSelect("profile")}
               />

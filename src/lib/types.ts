@@ -269,7 +269,7 @@ export type BotShopListing = {
   rarityColorHex: string | null;
 };
 
-export type ShopSubTab = "overview" | "items" | "cases" | "obs";
+export type ShopSubTab = "overview" | "items" | "cases" | "obs" | "obsHistory";
 
 export type ObsShopStreamer = {
   streamerId: number | string;
