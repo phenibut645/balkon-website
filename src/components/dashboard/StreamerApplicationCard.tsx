@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getMyStreamerApplications, submitStreamerApplication } from "@/lib/api";
 import { DashboardText, formatDashboardDate } from "@/lib/dashboardText";
 import { StreamerApplicationStatus, StreamerApplicationView } from "@/lib/types";
@@ -31,6 +31,7 @@ export function StreamerApplicationCard({ t, active, dateLocale, initialGuildId 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const inFlightRef = useRef(false);
   const [discordGuildId, setDiscordGuildId] = useState(initialGuildId ?? "");
   const [requestedNickname, setRequestedNickname] = useState("");
   const [twitchUrl, setTwitchUrl] = useState("");
@@ -46,24 +47,34 @@ export function StreamerApplicationCard({ t, active, dateLocale, initialGuildId 
   }, [discordGuildId, initialGuildId]);
 
   const loadApplications = useCallback(async (silent = false): Promise<void> => {
+    if (inFlightRef.current) {
+      return;
+    }
+
+    inFlightRef.current = true;
+
     if (!silent) {
       setLoading(true);
       setError(null);
     }
 
-    const response = await getMyStreamerApplications();
-    if (response.ok) {
-      setApplications(response.data ?? []);
-      setLoaded(true);
-      if (!silent) {
-        setError(null);
+    try {
+      const response = await getMyStreamerApplications();
+      if (response.ok) {
+        setApplications(response.data ?? []);
+        if (!silent) {
+          setError(null);
+        }
+      } else if (!silent) {
+        setError(response.message || t.streamerApplicationLoadFailed);
       }
-    } else if (!silent) {
-      setError(response.message || t.streamerApplicationLoadFailed);
-    }
 
-    if (!silent) {
-      setLoading(false);
+      setLoaded(true);
+    } finally {
+      if (!silent) {
+        setLoading(false);
+      }
+      inFlightRef.current = false;
     }
   }, [t.streamerApplicationLoadFailed]);
 
