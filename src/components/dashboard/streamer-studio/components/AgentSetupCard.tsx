@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { bindStreamerStudioAgent, clearStreamerStudioAgent, getStreamerStudioAgentSetup, provisionStreamerStudioAgent } from "@/lib/api";
 import { DashboardText, formatDashboardDate } from "@/lib/dashboardText";
+import { SensitiveValue } from "@/components/dashboard/SensitiveValue";
 import {
   StreamerStudioAccessView,
   StreamerStudioAgentProvisionResult,
@@ -39,36 +40,6 @@ function formatLastSeen(t: DashboardText, value: string | null): string {
   return formatDashboardDate(value, locale, t.streamerStudioAgentSetupUnknown);
 }
 
-async function copyText(value: string): Promise<boolean> {
-  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(value);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  if (typeof document === "undefined") {
-    return false;
-  }
-
-  try {
-    const textArea = document.createElement("textarea");
-    textArea.value = value;
-    textArea.setAttribute("readonly", "true");
-    textArea.style.position = "absolute";
-    textArea.style.left = "-9999px";
-    document.body.appendChild(textArea);
-    textArea.select();
-    const successful = document.execCommand("copy");
-    document.body.removeChild(textArea);
-    return successful;
-  } catch {
-    return false;
-  }
-}
-
 export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
   const [setup, setSetup] = useState<StreamerStudioAgentSetupView | null>(null);
   const [loading, setLoading] = useState(false);
@@ -77,11 +48,11 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
   const [customAgentId, setCustomAgentId] = useState("");
   const [bindAgentId, setBindAgentId] = useState("");
   const [bindAgentToken, setBindAgentToken] = useState("");
+  const [bindTokenVisible, setBindTokenVisible] = useState(false);
   const [generatedToken, setGeneratedToken] = useState<StreamerStudioAgentProvisionResult | null>(null);
   const [provisioning, setProvisioning] = useState(false);
   const [binding, setBinding] = useState(false);
   const [clearing, setClearing] = useState(false);
-  const [copiedField, setCopiedField] = useState<"agentId" | "token" | null>(null);
 
   const loadSetup = useCallback(async () => {
     setLoading(true);
@@ -104,18 +75,9 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
   useEffect(() => {
     setGeneratedToken(null);
     setBindAgentToken("");
-    setCopiedField(null);
+    setBindTokenVisible(false);
     void loadSetup();
   }, [loadSetup]);
-
-  useEffect(() => {
-    if (!feedback || !copiedField) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => setCopiedField(null), 1800);
-    return () => window.clearTimeout(timer);
-  }, [feedback, copiedField]);
 
   const compactStatus = useMemo(() => {
     if (!setup) {
@@ -166,15 +128,6 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
   const currentAgentId = setup?.agentId ?? null;
   const capabilityCount = setup?.capabilities.length ?? 0;
 
-  const handleCopy = useCallback(async (value: string, field: "agentId" | "token") => {
-    const copied = await copyText(value);
-    setCopiedField(copied ? field : null);
-    setFeedback({
-      message: copied ? t.streamerStudioAgentSetupCopied : t.streamerStudioAgentSetupCopyFailed,
-      isError: !copied,
-    });
-  }, [t.streamerStudioAgentSetupCopied, t.streamerStudioAgentSetupCopyFailed]);
-
   const handleProvision = useCallback(async () => {
     setProvisioning(true);
     setFeedback(null);
@@ -221,6 +174,7 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
     }
 
     setBindAgentToken("");
+    setBindTokenVisible(false);
     setGeneratedToken(null);
     setFeedback({
       message: t.streamerStudioAgentSetupBindSuccess,
@@ -250,6 +204,7 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
 
     setGeneratedToken(null);
     setBindAgentToken("");
+    setBindTokenVisible(false);
     setFeedback({
       message: t.streamerStudioAgentSetupClearSuccess,
       isError: false,
@@ -398,19 +353,31 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
                 <li>{t.streamerStudioAgentSetupInstructionStart}</li>
               </ul>
               <div className="agent-setup-inline-field">
-                <span>{t.streamerStudioAgentSetupRelayLabel}</span>
-                <strong>{setup?.relayUrl ?? t.streamerStudioAgentSetupRelayUnavailable}</strong>
+                <SensitiveValue
+                  t={t}
+                  label={t.streamerStudioAgentSetupRelayLabel}
+                  value={setup?.relayUrl ?? t.streamerStudioAgentSetupRelayUnavailable}
+                  hiddenText={t.streamerStudioSensitiveValueHidden}
+                  copyable={Boolean(setup?.relayUrl)}
+                  revealable={Boolean(setup?.relayUrl)}
+                />
               </div>
               <div className="agent-setup-inline-field">
-                <span>{t.streamerStudioAgentSetupAgentIdLabel}</span>
-                <div className="agent-setup-inline-value">
-                  <strong>{currentAgentId ?? t.streamerStudioAgentSetupUnknown}</strong>
-                  {currentAgentId ? (
-                    <button className="pagination-btn ghost" type="button" onClick={() => void handleCopy(currentAgentId, "agentId")}>
-                      {copiedField === "agentId" ? t.streamerStudioAgentSetupCopied : t.streamerStudioAgentSetupCopy}
-                    </button>
-                  ) : null}
-                </div>
+                {currentAgentId ? (
+                  <SensitiveValue
+                    t={t}
+                    label={t.streamerStudioAgentSetupAgentIdLabel}
+                    value={currentAgentId}
+                    hiddenText={t.streamerStudioSensitiveValueHidden}
+                    copyable
+                    revealable
+                  />
+                ) : (
+                  <div className="agent-setup-inline-field">
+                    <span>{t.streamerStudioAgentSetupAgentIdLabel}</span>
+                    <strong>{t.streamerStudioAgentSetupUnknown}</strong>
+                  </div>
+                )}
               </div>
               <div className="agent-setup-inline-field">
                 <span>{t.streamerStudioAgentSetupTokenLabel}</span>
@@ -440,13 +407,15 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
 
               {generatedToken ? (
                 <div className="agent-setup-token-box">
-                  <div className="agent-setup-token-head">
-                    <strong>{t.streamerStudioAgentSetupOneTimeTitle}</strong>
-                    <button className="pagination-btn ghost" type="button" onClick={() => void handleCopy(generatedToken.agentToken, "token")}>
-                      {copiedField === "token" ? t.streamerStudioAgentSetupCopied : t.streamerStudioAgentSetupCopy}
-                    </button>
-                  </div>
-                  <code>{generatedToken.agentToken}</code>
+                  <strong>{t.streamerStudioAgentSetupOneTimeTitle}</strong>
+                  <SensitiveValue
+                    t={t}
+                    value={generatedToken.agentToken}
+                    hiddenText={t.streamerStudioTokenHiddenForStreamerMode}
+                    copyable
+                    revealable
+                    className="agent-setup-sensitive-token"
+                  />
                   <p className="market-card-hint">{t.streamerStudioAgentSetupCopyNowWarning}</p>
                 </div>
               ) : null}
@@ -466,7 +435,12 @@ export function AgentSetupCard({ t, streamer }: AgentSetupCardProps) {
                 </label>
                 <label className="streamer-transform-field">
                   <span>{t.streamerStudioAgentSetupTokenLabel}</span>
-                  <input type="password" value={bindAgentToken} onChange={(event) => setBindAgentToken(event.target.value)} autoComplete="off" />
+                  <div className="agent-setup-token-input-row">
+                    <input type={bindTokenVisible ? "text" : "password"} value={bindAgentToken} onChange={(event) => setBindAgentToken(event.target.value)} autoComplete="off" />
+                    <button className="pagination-btn ghost sensitive-value-btn" type="button" onClick={() => setBindTokenVisible(prev => !prev)}>
+                      {bindTokenVisible ? t.streamerStudioHideItem : t.streamerStudioRevealToken}
+                    </button>
+                  </div>
                 </label>
               </div>
               <button className="pagination-btn" type="button" onClick={() => void handleBind()} disabled={binding}>

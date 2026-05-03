@@ -534,6 +534,72 @@ body {
   flex-wrap: wrap;
 }
 
+.sensitive-value {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sensitive-value-label {
+  color: #9eb0d4;
+  font-size: 11px;
+}
+
+.sensitive-value-row {
+  display: grid;
+  gap: 8px;
+}
+
+.sensitive-value-display {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(138, 162, 215, 0.16);
+  background: rgba(8, 12, 22, 0.74);
+  color: #edf3ff;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.sensitive-value-display.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.sensitive-value-display.hidden {
+  color: #c8d3ec;
+  filter: blur(4px);
+  user-select: none;
+}
+
+.sensitive-value-display.revealed {
+  filter: none;
+}
+
+.sensitive-value-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sensitive-value-btn {
+  min-height: 32px;
+}
+
+.agent-setup-token-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.agent-setup-token-input-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .agent-setup-inline-value strong,
 .agent-setup-inline-field strong {
   overflow-wrap: anywhere;
@@ -593,6 +659,11 @@ body {
   .agent-setup-head-actions,
   .agent-setup-tab-actions {
     justify-content: flex-start;
+  }
+
+  .agent-setup-token-input-row {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
