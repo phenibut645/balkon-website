@@ -6,12 +6,13 @@ export type UserTab =
   | "market"
   | "botShop"
   | "craft"
+  | "jobs"
   | "profile"
   | "notifications"
   | "servers"
   | "streamerApplication"
   | "streamerStudio";
-export type AdminTab = "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems" | "adminBotShop" | "adminEconomy" | "adminMessage";
+export type AdminTab = "adminDashboard" | "adminServers" | "adminLogs" | "adminObs" | "adminItems" | "adminJobs" | "adminBotShop" | "adminEconomy" | "adminMessage";
 export type DashboardTab = UserTab | AdminTab;
 export type DashboardMode = "user" | "admin";
 export type MarketSubTab = "overview" | "listings" | "forbes";

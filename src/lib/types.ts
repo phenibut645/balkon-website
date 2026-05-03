@@ -381,6 +381,78 @@ export type ApiCraftExecuteResponse = {
   message?: string;
 };
 
+export type JobView = {
+  id: number;
+  jobKey: string;
+  titleRu: string;
+  titleEn: string | null;
+  titleEt: string | null;
+  descriptionRu: string | null;
+  descriptionEn: string | null;
+  descriptionEt: string | null;
+  iconUrl: string | null;
+  rewardAmount: number;
+  cooldownSeconds: number;
+  enabled: boolean;
+  rewardItemId: number | null;
+  rewardItemName: string | null;
+  rewardItemEmoji: string | null;
+  rewardItemChancePercent: number | null;
+  rewardItemQuantity: number | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type JobRunGrantedItem = {
+  itemTemplateId: number;
+  name: string;
+  emoji: string | null;
+  quantity: number;
+};
+
+export type JobRunResult = {
+  jobId: number;
+  rewardAmount: number;
+  balanceAfter: number;
+  grantedItems: JobRunGrantedItem[];
+  nextAvailableAt: string;
+};
+
+export type JobInput = {
+  jobKey: string;
+  titleRu: string;
+  titleEn?: string | null;
+  titleEt?: string | null;
+  descriptionRu?: string | null;
+  descriptionEn?: string | null;
+  descriptionEt?: string | null;
+  iconUrl?: string | null;
+  rewardAmount: number;
+  cooldownSeconds: number;
+  enabled: boolean;
+  rewardItemId?: number | null;
+  rewardItemChancePercent?: number | null;
+  rewardItemQuantity?: number | null;
+};
+
+export type ApiJobsResponse = ApiBaseResponse & {
+  jobs?: JobView[];
+};
+
+export type ApiJobRunResponse = ApiBaseResponse & {
+  data?: JobRunResult;
+  remainingSeconds?: number;
+  nextAvailableAt?: string;
+};
+
+export type ApiAdminJobsResponse = ApiBaseResponse & {
+  data?: JobView[];
+};
+
+export type ApiAdminJobMutationResponse = ApiBaseResponse & {
+  data?: JobView | { jobId: number; disabled: true };
+};
+
 export type AdminCounts = {
   guilds_count: number;
   members_count: number;

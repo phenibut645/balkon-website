@@ -1,17 +1,22 @@
 import {
   AdminBotShopInput,
   AdminItemInput,
+  JobInput,
   AdminStatsResponse,
   ApiAdminBotShopMutationResponse,
   ApiAdminBotShopResponse,
   ApiAdminBroadcastNotificationResponse,
   ApiAdminEconomyAdjustResponse,
+  ApiAdminJobMutationResponse,
+  ApiAdminJobsResponse,
   ApiAdminItemMutationResponse,
   ApiAdminItemsResponse,
   ApiAdminRaritiesResponse,
   ApiNotificationMutationResponse,
   ApiNotificationsResponse,
   ApiNotificationsSummaryResponse,
+  ApiJobRunResponse,
+  ApiJobsResponse,
   ApiOverviewMeResponse,
   ApiAdminSearchResponse,
   ApiBaseResponse,
@@ -1133,6 +1138,190 @@ export async function executeCraftRecipe(recipeId: number, craftCount = 1): Prom
     }
 
     return data;
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getJobs(): Promise<ApiJobsResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/jobs`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiJobsResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "JOB_LOAD_FAILED",
+        message: data?.message || "Failed to load jobs.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function runJob(jobId: number): Promise<ApiJobRunResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/jobs/${jobId}/run`, {
+      method: "POST",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiJobRunResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "JOB_RUN_FAILED",
+        message: data?.message || "Failed to run job.",
+        remainingSeconds: data?.remainingSeconds,
+        nextAvailableAt: data?.nextAvailableAt,
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function getAdminJobs(): Promise<ApiAdminJobsResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/jobs`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminJobsResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_JOBS_LOAD_FAILED",
+        message: data?.message || "Failed to load admin jobs.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function createAdminJob(input: JobInput): Promise<ApiAdminJobMutationResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/jobs`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminJobMutationResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_JOB_CREATE_FAILED",
+        message: data?.message || "Failed to create job.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function updateAdminJob(jobId: number, input: JobInput): Promise<ApiAdminJobMutationResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/jobs/${jobId}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminJobMutationResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_JOB_UPDATE_FAILED",
+        message: data?.message || "Failed to update job.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
+  } catch {
+    return {
+      ok: false,
+      error: "NETWORK_ERROR",
+      message: "Failed to reach API.",
+    };
+  }
+}
+
+export async function disableAdminJob(jobId: number): Promise<ApiAdminJobMutationResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/jobs/${jobId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    const data = await response.json().catch(() => null) as ApiAdminJobMutationResponse | null;
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data?.error || "ADMIN_JOB_DISABLE_FAILED",
+        message: data?.message || "Failed to disable job.",
+      };
+    }
+
+    return data && typeof data === "object"
+      ? data
+      : { ok: false, error: "INVALID_RESPONSE", message: "Invalid API response." };
   } catch {
     return {
       ok: false,
