@@ -3263,8 +3263,9 @@ body {
 
 .market-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(185px, 225px));
+  justify-content: start;
+  gap: 12px;
 }
 
 .botshop-grid {
@@ -3734,6 +3735,128 @@ body {
 
 .inventory-content.compact .inventory-title {
   font-size: 14px;
+}
+
+.market-card.compact {
+  width: 100%;
+  text-align: left;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  transition: transform 0.18s ease, box-shadow 0.22s ease, border-color 0.18s ease;
+}
+
+.market-card.compact:hover {
+  transform: none;
+  border-color: rgba(132, 146, 255, 0.65);
+}
+
+.market-card.compact:hover .market-image {
+  transform: scale(1.025);
+}
+
+.market-content.compact {
+  align-content: stretch;
+}
+
+.market-description.compact {
+  margin: 0;
+  min-height: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.market-meta.compact {
+  margin-top: 0;
+}
+
+.market-content.compact .meta-badge {
+  font-size: 10px;
+  padding: 2px 7px;
+}
+
+.market-compact-meta {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: #9eb0d4;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.market-compact-meta > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.market-seller-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.market-seller-inline .user-identity {
+  min-width: 0;
+}
+
+.market-seller-inline .user-identity-name {
+  max-width: 12ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.market-card.compact .market-card-actions {
+  margin-top: 0;
+  padding-top: 8px;
+  gap: 6px;
+}
+
+.market-card.compact .state-text {
+  margin: 0;
+  font-size: 12px;
+}
+
+.market-card.compact .market-card-actions-row .pagination-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.market-own-listing-details {
+  display: grid;
+  gap: 8px;
+}
+
+.market-own-listing-summary {
+  cursor: pointer;
+  list-style: none;
+  border: 1px solid rgba(96, 112, 149, 0.42);
+  border-radius: 10px;
+  background: rgba(20, 27, 42, 0.68);
+  color: #d4e1fd;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 9px;
+  text-align: center;
+}
+
+.market-own-listing-summary::-webkit-details-marker {
+  display: none;
+}
+
+.market-own-listing-details[open] .market-own-listing-summary {
+  border-color: rgba(132, 146, 255, 0.58);
+  background: rgba(88, 101, 242, 0.18);
+}
+
+.market-listing-price-label {
+  flex: 1 1 100%;
+  width: 100%;
 }
 
 .inventory-tier-badge {

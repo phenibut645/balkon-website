@@ -237,7 +237,7 @@ export function MarketListingsPanel({
             return (
               <article
                 key={listing.listingId}
-                className="item-card market-card"
+                className="item-card market-card compact"
                 style={{ borderColor: `${rarityAccent}66`, boxShadow: `0 0 0 1px ${rarityAccent}22 inset` }}
               >
                 <ItemMedia
@@ -245,25 +245,23 @@ export function MarketListingsPanel({
                   imageUrl={listing.imageUrl}
                   emoji={listing.emoji}
                   accentColor={rarityAccent}
-                  className="market-media"
-                  imageClassName="market-image"
-                  fallbackClassName="market-emoji-fallback"
+                  className="inventory-media compact market-media"
+                  imageClassName="inventory-image market-image"
+                  fallbackClassName="inventory-emoji-fallback market-emoji-fallback"
+                  overlay={<span className="inventory-tier-badge">{t.tier} {listing.tier}</span>}
                 />
 
-                <div className="item-card-content market-content">
-                  <h3 className="item-card-title market-title">{listing.name}</h3>
-                  <p className="item-card-description market-description">{listing.description}</p>
+                <div className="item-card-content inventory-content compact market-content">
+                  <h3 className="item-card-title inventory-title market-title">{listing.name}</h3>
+                  <p className="item-card-description inventory-description market-description compact">{listing.description}</p>
 
                   <ItemBadgeRow
-                    className="market-meta"
+                    className="inventory-meta compact market-meta"
                     badges={[
                       <span key="rarity" className="meta-badge rarity-badge" style={{ borderColor: `${rarityAccent}66` }}>
                         {listing.rarityName}
                       </span>,
                       <span key="type" className="meta-badge">{listing.itemType}</span>,
-                      <span key="tier" className="meta-badge">Tier {listing.tier}</span>,
-                      <span key="listingId" className="meta-badge">{t.marketListingId} #{listing.listingId}</span>,
-                      <span key="inventoryId" className="meta-badge">{t.marketInventoryItemId} #{listing.inventoryItemId}</span>,
                       <span key="price" className="meta-badge price">{t.marketPrice}: {listing.price} ODM</span>,
                       <span key="tradeable" className={`meta-badge ${listing.tradeable ? "ok" : "muted"}`}>
                         {listing.tradeable ? t.tradeableYes : t.tradeableNo}
@@ -274,19 +272,23 @@ export function MarketListingsPanel({
                     ]}
                   />
 
-                  <div className="item-card-supporting-row market-seller-chip">
-                    <span className="item-card-label market-card-label">{t.marketSeller}</span>
-                    <UserIdentity
-                      user={{
-                        discordId: listing.sellerDiscordId,
-                        username: null,
-                        globalName: null,
-                        avatarUrl: null,
-                      }}
-                      size="sm"
-                      showAvatar={false}
-                      mode={streamerMode ? "streamer" : "normal"}
-                    />
+                  <div className="market-compact-meta">
+                    <span>{t.marketListingId} #{listing.listingId}</span>
+                    <span>{t.marketInventoryItemId} #{listing.inventoryItemId}</span>
+                    <span className="market-seller-inline">
+                      {t.marketSeller}:{" "}
+                      <UserIdentity
+                        user={{
+                          discordId: listing.sellerDiscordId,
+                          username: null,
+                          globalName: null,
+                          avatarUrl: null,
+                        }}
+                        size="sm"
+                        showAvatar={false}
+                        mode={streamerMode ? "streamer" : "normal"}
+                      />
+                    </span>
                   </div>
 
                   <div className="market-card-actions item-card-actions">
@@ -298,89 +300,92 @@ export function MarketListingsPanel({
                     ) : null}
 
                     {isMine ? (
-                      <>
-                        <div className="market-listing-price-row">
-                          <span className="item-card-label market-card-label">{t.listingOfferPriceLabel}</span>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            className="inventory-search-input compact"
-                            value={draft}
-                            onFocus={() => {
-                              dirtyPriceDraftIdsRef.current.add(listing.listingId);
-                            }}
-                            onBlur={event => {
-                              const rawDraft = event.currentTarget.value;
-                              const parsed = parsePositiveFinitePrice(rawDraft);
-                              if (parsed !== null && (parsed === listing.price || Math.abs(parsed - listing.price) < 1e-9)) {
+                      <details className="market-own-listing-details">
+                          <summary className="market-own-listing-summary">{t.updateListingPrice}</summary>
+                          <div className="market-listing-price-row">
+                            <label className="inventory-price-label market-listing-price-label">
+                              <span>{t.listingOfferPriceLabel}</span>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                className="inventory-search-input compact"
+                                value={draft}
+                                onFocus={() => {
+                                  dirtyPriceDraftIdsRef.current.add(listing.listingId);
+                                }}
+                                onBlur={event => {
+                                  const rawDraft = event.currentTarget.value;
+                                  const parsed = parsePositiveFinitePrice(rawDraft);
+                                  if (parsed !== null && (parsed === listing.price || Math.abs(parsed - listing.price) < 1e-9)) {
+                                    dirtyPriceDraftIdsRef.current.delete(listing.listingId);
+                                  }
+                                }}
+                                onChange={event => {
+                                  dirtyPriceDraftIdsRef.current.add(listing.listingId);
+                                  const value = event.target.value;
+                                  setListingPriceDraftById(prev => ({ ...prev, [listing.listingId]: value }));
+                                  setPriceDraftLocalErrorById(prev => {
+                                    if (!prev[listing.listingId]) {
+                                      return prev;
+                                    }
+                                    const next = { ...prev };
+                                    delete next[listing.listingId];
+                                    return next;
+                                  });
+                                  onClearMarketListingMessage(listing.listingId);
+                                }}
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              className="pagination-btn"
+                              disabled={
+                                updateBusy
+                                || cancelBusy
+                                || buyBusy
+                              }
+                              onClick={() => {
+                                const parsed = parsePositiveFinitePrice(
+                                  listingPriceDraftById[listing.listingId] ?? String(listing.price),
+                                );
+                                if (parsed === null) {
+                                  setPriceDraftLocalErrorById(prev => ({
+                                    ...prev,
+                                    [listing.listingId]: t.invalidPositiveFinitePrice,
+                                  }));
+                                  return;
+                                }
+                                setPriceDraftLocalErrorById(prev => {
+                                  if (!prev[listing.listingId]) {
+                                    return prev;
+                                  }
+                                  const next = { ...prev };
+                                  delete next[listing.listingId];
+                                  return next;
+                                });
+                                void onUpdateMarketListingPrice(listing.listingId, parsed);
                                 dirtyPriceDraftIdsRef.current.delete(listing.listingId);
+                              }}
+                            >
+                              {updateBusy ? t.updatingMarketPrice : t.updateListingPrice}
+                            </button>
+                            <button
+                              type="button"
+                              className="pagination-btn admin-danger-btn"
+                              disabled={
+                                cancelBusy
+                                || updateBusy
+                                || buyBusy
                               }
-                            }}
-                            onChange={event => {
-                              dirtyPriceDraftIdsRef.current.add(listing.listingId);
-                              const value = event.target.value;
-                              setListingPriceDraftById(prev => ({ ...prev, [listing.listingId]: value }));
-                              setPriceDraftLocalErrorById(prev => {
-                                if (!prev[listing.listingId]) {
-                                  return prev;
-                                }
-                                const next = { ...prev };
-                                delete next[listing.listingId];
-                                return next;
-                              });
-                              onClearMarketListingMessage(listing.listingId);
-                            }}
-                          />
-                          <button
-                            type="button"
-                            className="pagination-btn"
-                            disabled={
-                              updateBusy
-                              || cancelBusy
-                              || buyBusy
-                            }
-                            onClick={() => {
-                              const parsed = parsePositiveFinitePrice(
-                                listingPriceDraftById[listing.listingId] ?? String(listing.price),
-                              );
-                              if (parsed === null) {
-                                setPriceDraftLocalErrorById(prev => ({
-                                  ...prev,
-                                  [listing.listingId]: t.invalidPositiveFinitePrice,
-                                }));
-                                return;
-                              }
-                              setPriceDraftLocalErrorById(prev => {
-                                if (!prev[listing.listingId]) {
-                                  return prev;
-                                }
-                                const next = { ...prev };
-                                delete next[listing.listingId];
-                                return next;
-                              });
-                              void onUpdateMarketListingPrice(listing.listingId, parsed);
-                              dirtyPriceDraftIdsRef.current.delete(listing.listingId);
-                            }}
-                          >
-                            {updateBusy ? t.updatingMarketPrice : t.updateListingPrice}
-                          </button>
-                          <button
-                            type="button"
-                            className="pagination-btn admin-danger-btn"
-                            disabled={
-                              cancelBusy
-                              || updateBusy
-                              || buyBusy
-                            }
-                            onClick={() => setCancelConfirmListing(listing)}
-                          >
-                            {cancelBusy ? t.cancellingMarketListing : t.cancelListing}
-                          </button>
-                        </div>
-                        {priceLocalErr ? (
-                          <p className="state-text state-error">{priceLocalErr}</p>
-                        ) : null}
-                      </>
+                              onClick={() => setCancelConfirmListing(listing)}
+                            >
+                              {cancelBusy ? t.cancellingMarketListing : t.cancelListing}
+                            </button>
+                          </div>
+                          {priceLocalErr ? (
+                            <p className="state-text state-error">{priceLocalErr}</p>
+                          ) : null}
+                      </details>
                     ) : (
                       <div className="market-card-actions-row item-card-actions-row">
                         <button
