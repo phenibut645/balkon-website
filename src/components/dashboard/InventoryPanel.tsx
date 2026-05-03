@@ -4,6 +4,7 @@ import { InventoryItem, StreamerStudioAccessView } from "@/lib/types";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ItemBadgeRow } from "./items/ItemBadgeRow";
 import { ItemMedia } from "./items/ItemMedia";
+import { UserIdentity } from "./UserIdentity";
 
 type InventoryFilter = "all" | "materials" | "sellable" | "tradeable";
 
@@ -19,6 +20,7 @@ type InventoryPanelProps = {
   inventoryEmptyText: string;
   inventoryItems: InventoryItem[];
   dateLocale: string;
+  streamerMode?: boolean;
   sellingInventoryId: number | null;
   listingInventoryId: number | null;
   usingServiceInventoryId: number | null;
@@ -74,6 +76,7 @@ export function InventoryPanel({
   inventoryEmptyText,
   inventoryItems,
   dateLocale,
+  streamerMode = false,
   sellingInventoryId,
   listingInventoryId,
   usingServiceInventoryId,
@@ -210,7 +213,6 @@ export function InventoryPanel({
 
     const rect = viewport.getBoundingClientRect();
     const availableWidth = Math.max(0, rect.width - GRID_SAFE_HORIZONTAL_PADDING);
-    const availableHeight = Math.max(0, rect.height - GRID_SAFE_VERTICAL_PADDING);
 
     const isStackedMobile =
       typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
@@ -233,8 +235,9 @@ export function InventoryPanel({
       columns = candidate;
     }
 
-    const rows = Math.max(1, Math.floor((availableHeight + GRID_GAP) / (cardHeight + GRID_GAP)));
-    const pageSize = Math.max(1, columns * rows);
+    const rows = 2;
+    const viewportHeight = Math.max(cardHeight * rows + GRID_GAP * (rows - 1) + GRID_SAFE_VERTICAL_PADDING, cardHeight + GRID_SAFE_VERTICAL_PADDING);
+    const pageSize = Math.max(columns, columns * rows);
 
     setGridMetrics(prev => {
       if (
@@ -242,7 +245,7 @@ export function InventoryPanel({
         && prev.rows === rows
         && prev.pageSize === pageSize
         && prev.cardHeight === cardHeight
-        && prev.gap === GRID_GAP
+        && prev.gap === viewportHeight
       ) {
         return prev;
       }
@@ -252,7 +255,7 @@ export function InventoryPanel({
         rows,
         pageSize,
         cardHeight,
-        gap: GRID_GAP,
+        gap: viewportHeight,
       };
     });
   }, [selectedItem]);
@@ -306,7 +309,8 @@ export function InventoryPanel({
     return {
       "--inventory-grid-columns": String(gridMetrics.columns),
       "--inventory-card-height": `${gridMetrics.cardHeight}px`,
-      "--inventory-grid-gap": `${gridMetrics.gap}px`,
+      "--inventory-grid-gap": `${GRID_GAP}px`,
+      "--inventory-grid-min-height": `${gridMetrics.gap}px`,
     } as CSSProperties;
   }, [gridMetrics.cardHeight, gridMetrics.columns, gridMetrics.gap]);
 
@@ -612,9 +616,41 @@ export function InventoryPanel({
 
                       <div className="inventory-details-meta">
                         <p><strong>{t.obtained}:</strong> {formatDashboardDate(selectedItem.obtainedAt, dateLocale, t.unknownDate)}</p>
-                        <p><strong>{t.owner}:</strong> {selectedItem.ownerDiscordId}</p>
+                        <div>
+                          <strong>{t.owner}:</strong>
+                          <div className="inventory-identity-row">
+                            <UserIdentity
+                              user={{
+                                discordId: selectedItem.ownerDiscordId,
+                                username: selectedItem.ownerDisplayName,
+                                globalName: selectedItem.ownerDisplayName,
+                                avatarUrl: selectedItem.ownerAvatarUrl,
+                              }}
+                              size="sm"
+                              showAvatar={!streamerMode}
+                              showDiscordId
+                              mode={streamerMode ? "streamer" : "normal"}
+                            />
+                          </div>
+                        </div>
                         {selectedItem.originalOwnerDiscordId ? (
-                          <p><strong>{t.originalOwner}:</strong> {selectedItem.originalOwnerDiscordId}</p>
+                          <div>
+                            <strong>{t.originalOwner}:</strong>
+                            <div className="inventory-identity-row">
+                              <UserIdentity
+                                user={{
+                                  discordId: selectedItem.originalOwnerDiscordId,
+                                  username: selectedItem.originalOwnerDisplayName,
+                                  globalName: selectedItem.originalOwnerDisplayName,
+                                  avatarUrl: selectedItem.originalOwnerAvatarUrl,
+                                }}
+                                size="sm"
+                                showAvatar={!streamerMode}
+                                showDiscordId
+                                mode={streamerMode ? "streamer" : "normal"}
+                              />
+                            </div>
+                          </div>
                         ) : null}
                       </div>
 

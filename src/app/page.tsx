@@ -78,6 +78,93 @@ type LoadOptions = {
 };
 
 const MARKET_ENTRY_REFRESH_MIN_GAP_MS = 15000;
+const JOB_COOLDOWNS_STORAGE_KEY = "balkon.jobs.cooldowns";
+
+type JobCooldownState = {
+  remainingSeconds?: number;
+  nextAvailableAt?: string;
+};
+
+function getRemainingJobCooldownSeconds(nextAvailableAt?: string): number | null {
+  if (!nextAvailableAt) {
+    return null;
+  }
+
+  const nextMs = Date.parse(nextAvailableAt);
+  if (Number.isNaN(nextMs)) {
+    return null;
+  }
+
+  const remainingMs = nextMs - Date.now();
+  if (remainingMs <= 0) {
+    return 0;
+  }
+
+  return Math.ceil(remainingMs / 1000);
+}
+
+function readPersistedJobCooldowns(): Record<number, JobCooldownState> {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(JOB_COOLDOWNS_STORAGE_KEY);
+    if (!raw) {
+      return {};
+    }
+
+    const parsed = JSON.parse(raw) as Record<string, { nextAvailableAt?: unknown }>;
+    const nextState: Record<number, JobCooldownState> = {};
+    for (const [jobIdRaw, value] of Object.entries(parsed || {})) {
+      const jobId = Number(jobIdRaw);
+      if (!Number.isInteger(jobId) || jobId <= 0 || typeof value?.nextAvailableAt !== "string") {
+        continue;
+      }
+
+      const remainingSeconds = getRemainingJobCooldownSeconds(value.nextAvailableAt);
+      if (remainingSeconds && remainingSeconds > 0) {
+        nextState[jobId] = {
+          nextAvailableAt: value.nextAvailableAt,
+          remainingSeconds,
+        };
+      }
+    }
+
+    return nextState;
+  } catch {
+    return {};
+  }
+}
+
+function persistJobCooldowns(cooldowns: Record<number, JobCooldownState>): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const serialized: Record<number, { nextAvailableAt: string }> = {};
+  for (const [jobIdRaw, cooldown] of Object.entries(cooldowns)) {
+    if (!cooldown.nextAvailableAt) {
+      continue;
+    }
+
+    const remainingSeconds = getRemainingJobCooldownSeconds(cooldown.nextAvailableAt);
+    if (!remainingSeconds || remainingSeconds <= 0) {
+      continue;
+    }
+
+    serialized[Number(jobIdRaw)] = {
+      nextAvailableAt: cooldown.nextAvailableAt,
+    };
+  }
+
+  if (!Object.keys(serialized).length) {
+    window.sessionStorage.removeItem(JOB_COOLDOWNS_STORAGE_KEY);
+    return;
+  }
+
+  window.sessionStorage.setItem(JOB_COOLDOWNS_STORAGE_KEY, JSON.stringify(serialized));
+}
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "v0.1.0";
 const BOT_UI_STATUS: BotUiStatus = (
@@ -152,7 +239,7 @@ export default function HomePage() {
   const [runningJobId, setRunningJobId] = useState<number | null>(null);
   const [jobFeedbackById, setJobFeedbackById] = useState<Record<number, string>>({});
   const [jobErrorById, setJobErrorById] = useState<Record<number, string>>({});
-  const [jobCooldownInfoById, setJobCooldownInfoById] = useState<Record<number, { remainingSeconds?: number; nextAvailableAt?: string }>>({});
+  const [jobCooldownInfoById, setJobCooldownInfoById] = useState<Record<number, JobCooldownState>>({});
   const [inventoryFilter, setInventoryFilter] = useState<InventoryFilter>("all");
   const [canUseAdminMode, setCanUseAdminMode] = useState(false);
   const [adminProbeDone, setAdminProbeDone] = useState(false);
@@ -226,6 +313,70 @@ export default function HomePage() {
   const user = meResponse?.me;
   const roles = useMemo(() => user?.roles ?? [], [user?.roles]);
   const t = DASHBOARD_TEXT[language];
+
+  useEffect(() => {
+    setJobCooldownInfoById(prev => {
+      const restored = readPersistedJobCooldowns();
+      if (!Object.keys(restored).length) {
+        return prev;
+      }
+
+      return {
+        ...restored,
+        ...prev,
+      };
+    });
+  }, []);
+
+  useEffect(() => {
+    persistJobCooldowns(jobCooldownInfoById);
+  }, [jobCooldownInfoById]);
+
+  useEffect(() => {
+    const hasFutureCooldown = Object.values(jobCooldownInfoById).some(cooldown => {
+      const remaining = getRemainingJobCooldownSeconds(cooldown.nextAvailableAt);
+      return remaining !== null && remaining > 0;
+    });
+
+    if (!hasFutureCooldown) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setJobCooldownInfoById(prev => {
+        let changed = false;
+        const nextState: Record<number, JobCooldownState> = {};
+
+        for (const [jobIdRaw, cooldown] of Object.entries(prev)) {
+          const remainingSeconds = getRemainingJobCooldownSeconds(cooldown.nextAvailableAt);
+          if (remainingSeconds === null) {
+            nextState[Number(jobIdRaw)] = cooldown;
+            continue;
+          }
+
+          if (remainingSeconds <= 0) {
+            changed = true;
+            continue;
+          }
+
+          const normalized: JobCooldownState = {
+            ...cooldown,
+            remainingSeconds,
+          };
+
+          if (normalized.remainingSeconds !== cooldown.remainingSeconds) {
+            changed = true;
+          }
+
+          nextState[Number(jobIdRaw)] = normalized;
+        }
+
+        return changed ? nextState : prev;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [jobCooldownInfoById]);
 
   const statusText = useMemo(() => {
     if (BOT_UI_STATUS === "offline") {
@@ -1663,6 +1814,27 @@ export default function HomePage() {
   }, [jobsLoading, t.jobsLoadError]);
 
   const handleRunJob = useCallback(async (jobId: number): Promise<void> => {
+    if (runningJobId === jobId) {
+      return;
+    }
+
+    const localCooldown = jobCooldownInfoById[jobId];
+    const remainingSeconds = getRemainingJobCooldownSeconds(localCooldown?.nextAvailableAt);
+    if (remainingSeconds !== null && remainingSeconds > 0) {
+      setJobCooldownInfoById(prev => ({
+        ...prev,
+        [jobId]: {
+          ...prev[jobId],
+          remainingSeconds,
+        },
+      }));
+      setJobErrorById(prev => ({
+        ...prev,
+        [jobId]: t.jobsCooldownActive,
+      }));
+      return;
+    }
+
     setRunningJobId(jobId);
     setJobFeedbackById(prev => ({ ...prev, [jobId]: "" }));
     setJobErrorById(prev => ({ ...prev, [jobId]: "" }));
@@ -1673,8 +1845,10 @@ export default function HomePage() {
         setJobCooldownInfoById(prev => ({
           ...prev,
           [jobId]: {
-            remainingSeconds: response.remainingSeconds,
             nextAvailableAt: response.nextAvailableAt,
+            remainingSeconds: response.nextAvailableAt
+              ? getRemainingJobCooldownSeconds(response.nextAvailableAt) ?? response.remainingSeconds
+              : response.remainingSeconds,
           },
         }));
         setJobErrorById(prev => ({
@@ -1698,6 +1872,7 @@ export default function HomePage() {
       ...prev,
       [jobId]: {
         nextAvailableAt: jobData.nextAvailableAt,
+        remainingSeconds: getRemainingJobCooldownSeconds(jobData.nextAvailableAt) ?? undefined,
       },
     }));
     setJobFeedbackById(prev => ({
@@ -1711,7 +1886,7 @@ export default function HomePage() {
     if (jobData.grantedItems.length > 0) {
       await loadInventory({ silent: true, force: true });
     }
-  }, [loadBalance, loadInventory, loadOverviewSummary, t.jobsCompleted, t.jobsCooldownActive, t.jobsFailed]);
+  }, [jobCooldownInfoById, loadBalance, loadInventory, loadOverviewSummary, runningJobId, t.jobsCompleted, t.jobsCooldownActive, t.jobsFailed]);
 
   function handleInventoryFilterChange(nextFilter: InventoryFilter): void {
     setInventoryFilter(nextFilter);
@@ -2256,6 +2431,7 @@ export default function HomePage() {
                 inventoryEmptyText={inventoryEmptyText}
                 inventoryItems={filteredInventory}
                 dateLocale={dateLocale}
+                streamerMode={streamerMode}
                 sellingInventoryId={inventorySellingId}
                 listingInventoryId={inventoryListingId}
                 usingServiceInventoryId={inventoryUsingServiceId}

@@ -15,7 +15,11 @@ export type ApiMeResponse = {
 export type InventoryItem = {
   inventoryItemId: number;
   ownerDiscordId: string;
+  ownerDisplayName: string;
+  ownerAvatarUrl: string | null;
   originalOwnerDiscordId: string | null;
+  originalOwnerDisplayName: string | null;
+  originalOwnerAvatarUrl: string | null;
   obtainedAt: string | Date;
   tier: number;
   itemTemplateId: number;
@@ -41,10 +45,16 @@ export type ApiInventoryResponse = {
 export type MarketListing = {
   listingId: number;
   sellerDiscordId: string;
+  sellerDisplayName: string;
+  sellerAvatarUrl: string | null;
   price: number;
   inventoryItemId: number;
   ownerDiscordId: string;
+  ownerDisplayName: string;
+  ownerAvatarUrl: string | null;
   originalOwnerDiscordId: string | null;
+  originalOwnerDisplayName: string | null;
+  originalOwnerAvatarUrl: string | null;
   obtainedAt: string | Date;
   tier: number;
   itemTemplateId: number;

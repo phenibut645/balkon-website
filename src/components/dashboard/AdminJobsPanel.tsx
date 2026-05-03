@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createAdminJob, disableAdminJob, getAdminJobs, updateAdminJob } from "@/lib/api";
+import { createAdminJob, disableAdminJob, getAdminItems, getAdminJobs, updateAdminJob } from "@/lib/api";
 import { DashboardText } from "@/lib/dashboardText";
-import { JobInput, JobView } from "@/lib/types";
+import { AdminItem, JobInput, JobView } from "@/lib/types";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 type AdminJobsPanelProps = {
@@ -84,11 +84,14 @@ function mapFormToInput(form: JobFormState): JobInput {
 
 export function AdminJobsPanel({ t }: AdminJobsPanelProps) {
   const [jobs, setJobs] = useState<JobView[]>([]);
+  const [adminItems, setAdminItems] = useState<AdminItem[]>([]);
+  const [adminItemsError, setAdminItemsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [rewardItemQuery, setRewardItemQuery] = useState("");
   const [editingJob, setEditingJob] = useState<JobView | null>(null);
   const [disableTarget, setDisableTarget] = useState<JobView | null>(null);
   const [disabling, setDisabling] = useState(false);
@@ -115,7 +118,41 @@ export function AdminJobsPanel({ t }: AdminJobsPanelProps) {
   }, [loadJobs]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadAdminItemsList(): Promise<void> {
+      const response = await getAdminItems();
+      if (cancelled) {
+        return;
+      }
+
+      if (response.ok && Array.isArray(response.items)) {
+        setAdminItems(response.items);
+        setAdminItemsError(null);
+        return;
+      }
+
+      setAdminItems([]);
+      setAdminItemsError(response.message || response.error || t.adminJobsRewardItemLoadFailed);
+    }
+
+    void loadAdminItemsList();
+    return () => {
+      cancelled = true;
+    };
+  }, [t.adminJobsRewardItemLoadFailed]);
+
+  useEffect(() => {
     setForm(editingJob ? mapJobToForm(editingJob) : INITIAL_FORM_STATE);
+  }, [editingJob]);
+
+  useEffect(() => {
+    if (editingJob?.rewardItemName) {
+      setRewardItemQuery(editingJob.rewardItemName);
+      return;
+    }
+
+    setRewardItemQuery("");
   }, [editingJob]);
 
   const filteredJobs = useMemo(() => {
@@ -132,11 +169,41 @@ export function AdminJobsPanel({ t }: AdminJobsPanelProps) {
     });
   }, [jobs, query]);
 
+  const filteredRewardItems = useMemo(() => {
+    const normalizedQuery = rewardItemQuery.trim().toLowerCase();
+    if (!normalizedQuery.length) {
+      return adminItems.slice(0, 150);
+    }
+
+    return adminItems
+      .filter(item => {
+        return item.name.toLowerCase().includes(normalizedQuery)
+          || item.itemType.toLowerCase().includes(normalizedQuery)
+          || item.rarityName.toLowerCase().includes(normalizedQuery)
+          || String(item.id).includes(normalizedQuery);
+      })
+      .slice(0, 150);
+  }, [adminItems, rewardItemQuery]);
+
   function updateForm<K extends keyof JobFormState>(key: K, value: JobFormState[K]): void {
     setForm(prev => ({
       ...prev,
       [key]: value,
     }));
+  }
+
+  function handleRewardItemSelect(value: string): void {
+    updateForm("rewardItemId", value);
+
+    if (!value) {
+      setRewardItemQuery("");
+      return;
+    }
+
+    const selected = adminItems.find(item => String(item.id) === value);
+    if (selected) {
+      setRewardItemQuery(selected.name);
+    }
   }
 
   async function handleSubmit(): Promise<void> {
@@ -202,48 +269,12 @@ export function AdminJobsPanel({ t }: AdminJobsPanelProps) {
           ) : null}
         </div>
 
-        <div className="admin-form-grid">
-          <label>
+        <div className="admin-form-grid admin-jobs-form-grid admin-jobs-form-row admin-jobs-form-row-top">
+          <label className="admin-jobs-field admin-jobs-field-key">
             <span className="admin-field-label">{t.adminJobsJobKey}</span>
             <input className="admin-field-input" value={form.jobKey} onChange={event => updateForm("jobKey", event.target.value)} />
           </label>
-          <label>
-            <span className="admin-field-label">{t.adminJobsTitleRu}</span>
-            <input className="admin-field-input" value={form.titleRu} onChange={event => updateForm("titleRu", event.target.value)} />
-          </label>
-          <label>
-            <span className="admin-field-label">{t.adminJobsTitleEn}</span>
-            <input className="admin-field-input" value={form.titleEn} onChange={event => updateForm("titleEn", event.target.value)} />
-          </label>
-          <label>
-            <span className="admin-field-label">{t.adminJobsTitleEt}</span>
-            <input className="admin-field-input" value={form.titleEt} onChange={event => updateForm("titleEt", event.target.value)} />
-          </label>
-          <label>
-            <span className="admin-field-label">{t.adminJobsIconUrl}</span>
-            <input className="admin-field-input" value={form.iconUrl} onChange={event => updateForm("iconUrl", event.target.value)} />
-          </label>
-          <label>
-            <span className="admin-field-label">{t.adminJobsRewardAmount}</span>
-            <input className="admin-field-input" type="number" min="0" value={form.rewardAmount} onChange={event => updateForm("rewardAmount", event.target.value)} />
-          </label>
-          <label>
-            <span className="admin-field-label">{t.adminJobsCooldownSeconds}</span>
-            <input className="admin-field-input" type="number" min="0" value={form.cooldownSeconds} onChange={event => updateForm("cooldownSeconds", event.target.value)} />
-          </label>
-          <label>
-            <span className="admin-field-label">{t.adminJobsRewardItemId}</span>
-            <input className="admin-field-input" type="number" min="1" value={form.rewardItemId} onChange={event => updateForm("rewardItemId", event.target.value)} />
-          </label>
-          <label>
-            <span className="admin-field-label">{t.adminJobsItemChance}</span>
-            <input className="admin-field-input" type="number" min="0" max="100" step="0.01" value={form.rewardItemChancePercent} onChange={event => updateForm("rewardItemChancePercent", event.target.value)} />
-          </label>
-          <label>
-            <span className="admin-field-label">{t.adminJobsRewardItemQuantity}</span>
-            <input className="admin-field-input" type="number" min="1" value={form.rewardItemQuantity} onChange={event => updateForm("rewardItemQuantity", event.target.value)} />
-          </label>
-          <div className="admin-checkbox-wrap">
+          <div className="admin-checkbox-wrap admin-jobs-enabled-wrap">
             <label className="admin-checkbox-label">
               <input type="checkbox" checked={form.enabled} onChange={event => updateForm("enabled", event.target.checked)} />
               <span>{t.adminJobsEnabled}</span>
@@ -251,19 +282,100 @@ export function AdminJobsPanel({ t }: AdminJobsPanelProps) {
           </div>
         </div>
 
-        <div className="admin-form-grid">
-          <label>
+        <div className="admin-form-grid admin-jobs-form-grid admin-jobs-form-row admin-jobs-form-row-titles">
+          <label className="admin-jobs-field admin-jobs-field-wide">
+            <span className="admin-field-label">{t.adminJobsTitleRu}</span>
+            <input className="admin-field-input" value={form.titleRu} onChange={event => updateForm("titleRu", event.target.value)} />
+          </label>
+          <label className="admin-jobs-field admin-jobs-field-wide">
+            <span className="admin-field-label">{t.adminJobsTitleEn}</span>
+            <input className="admin-field-input" value={form.titleEn} onChange={event => updateForm("titleEn", event.target.value)} />
+          </label>
+          <label className="admin-jobs-field admin-jobs-field-wide">
+            <span className="admin-field-label">{t.adminJobsTitleEt}</span>
+            <input className="admin-field-input" value={form.titleEt} onChange={event => updateForm("titleEt", event.target.value)} />
+          </label>
+        </div>
+
+        <div className="admin-form-grid admin-jobs-form-grid admin-jobs-form-row admin-jobs-form-row-descriptions">
+          <label className="admin-jobs-field admin-jobs-field-wide">
             <span className="admin-field-label">{t.adminJobsDescriptionRu}</span>
             <textarea className="admin-field-input admin-textarea" value={form.descriptionRu} onChange={event => updateForm("descriptionRu", event.target.value)} />
           </label>
-          <label>
+          <label className="admin-jobs-field admin-jobs-field-wide">
             <span className="admin-field-label">{t.adminJobsDescriptionEn}</span>
             <textarea className="admin-field-input admin-textarea" value={form.descriptionEn} onChange={event => updateForm("descriptionEn", event.target.value)} />
           </label>
-          <label>
+          <label className="admin-jobs-field admin-jobs-field-wide">
             <span className="admin-field-label">{t.adminJobsDescriptionEt}</span>
             <textarea className="admin-field-input admin-textarea" value={form.descriptionEt} onChange={event => updateForm("descriptionEt", event.target.value)} />
           </label>
+        </div>
+
+        <div className="admin-form-grid admin-jobs-form-grid admin-jobs-form-row admin-jobs-form-row-icon">
+          <label className="admin-jobs-field admin-jobs-field-full">
+            <span className="admin-field-label">{t.adminJobsIconUrl}</span>
+            <input className="admin-field-input" value={form.iconUrl} onChange={event => updateForm("iconUrl", event.target.value)} />
+          </label>
+        </div>
+
+        <div className="admin-form-grid admin-jobs-form-grid admin-jobs-form-row admin-jobs-form-row-numeric">
+          <label className="admin-jobs-field admin-jobs-field-compact">
+            <span className="admin-field-label">{t.adminJobsRewardAmount}</span>
+            <input className="admin-field-input" type="number" min="0" value={form.rewardAmount} onChange={event => updateForm("rewardAmount", event.target.value)} />
+          </label>
+          <label className="admin-jobs-field admin-jobs-field-compact">
+            <span className="admin-field-label">{t.adminJobsCooldownSeconds}</span>
+            <input className="admin-field-input" type="number" min="0" value={form.cooldownSeconds} onChange={event => updateForm("cooldownSeconds", event.target.value)} />
+          </label>
+          <label className="admin-jobs-field admin-jobs-field-compact">
+            <span className="admin-field-label">{t.adminJobsItemChance}</span>
+            <input className="admin-field-input" type="number" min="0" max="100" step="0.01" value={form.rewardItemChancePercent} onChange={event => updateForm("rewardItemChancePercent", event.target.value)} />
+          </label>
+          <label className="admin-jobs-field admin-jobs-field-compact">
+            <span className="admin-field-label">{t.adminJobsRewardItemQuantity}</span>
+            <input className="admin-field-input" type="number" min="1" value={form.rewardItemQuantity} onChange={event => updateForm("rewardItemQuantity", event.target.value)} />
+          </label>
+        </div>
+
+        <div className="admin-form-grid admin-jobs-form-grid admin-jobs-form-row admin-jobs-form-row-reward">
+          <div className="admin-jobs-reward-picker">
+            <span className="admin-field-label">{t.adminJobsRewardItem}</span>
+            {adminItems.length > 0 ? (
+              <div className="admin-jobs-reward-picker-grid">
+                <label className="admin-jobs-field admin-jobs-field-full">
+                  <span className="admin-field-label">{t.adminJobsRewardItemSearch}</span>
+                  <input
+                    className="admin-field-input"
+                    value={rewardItemQuery}
+                    onChange={event => setRewardItemQuery(event.target.value)}
+                    placeholder={t.adminJobsRewardItemSearchPlaceholder}
+                  />
+                </label>
+                <label className="admin-jobs-field admin-jobs-field-full">
+                  <span className="admin-field-label">{t.adminJobsRewardItemSelect}</span>
+                  <select
+                    className="admin-field-input"
+                    value={form.rewardItemId}
+                    onChange={event => handleRewardItemSelect(event.target.value)}
+                  >
+                    <option value="">{t.adminJobsRewardItemNone}</option>
+                    {filteredRewardItems.map(item => (
+                      <option key={item.id} value={String(item.id)}>
+                        {item.emoji ? `${item.emoji} ` : ""}{item.name} · #{item.id}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            ) : (
+              <label className="admin-jobs-field admin-jobs-field-full">
+                <span className="admin-field-label">{t.adminJobsRewardItemId}</span>
+                <input className="admin-field-input" type="number" min="1" value={form.rewardItemId} onChange={event => updateForm("rewardItemId", event.target.value)} />
+              </label>
+            )}
+            {adminItemsError ? <p className="market-card-hint">{adminItemsError}</p> : null}
+          </div>
         </div>
 
         <div className="admin-form-actions">

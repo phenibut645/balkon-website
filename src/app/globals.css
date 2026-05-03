@@ -3774,14 +3774,15 @@ body {
 .inventory-grid-viewport {
   min-width: 0;
   min-height: 0;
-  height: 100%;
+  height: auto;
+  align-self: start;
   overflow: hidden;
   padding: 4px 2px 6px;
 }
 
 .inventory-grid-wrap {
   min-width: 0;
-  min-height: 100%;
+  min-height: var(--inventory-grid-min-height, 0px);
   overflow: hidden;
   transition: opacity 0.24s ease;
 }
@@ -3890,6 +3891,9 @@ body {
 }
 
 .market-content.compact {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   align-content: stretch;
 }
 
@@ -3948,6 +3952,18 @@ body {
   margin-top: 0;
   padding-top: 8px;
   gap: 6px;
+}
+
+.market-card-actions-stretch {
+  margin-top: auto !important;
+}
+
+.market-pagination {
+  margin: 4px 0 12px;
+}
+
+.market-pagination:last-child {
+  margin-bottom: 0;
 }
 
 .market-card.compact .state-text {
@@ -4015,6 +4031,14 @@ body {
   border-radius: 999px;
   background: #8ea8ff;
   box-shadow: 0 0 14px rgba(142, 168, 255, 0.8);
+}
+
+.inventory-identity-row {
+  margin-top: 6px;
+}
+
+.inventory-identity-row .user-identity-name {
+  overflow-wrap: anywhere;
 }
 
 .inventory-details-panel {
@@ -4394,6 +4418,47 @@ body {
 .admin-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.admin-jobs-form-grid {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.admin-jobs-field {
+  min-width: 0;
+}
+
+.admin-jobs-field-key {
+  grid-column: span 8;
+}
+
+.admin-jobs-enabled-wrap {
+  grid-column: span 4;
+  justify-content: flex-end;
+}
+
+.admin-jobs-field-wide {
+  grid-column: span 4;
+}
+
+.admin-jobs-field-full {
+  grid-column: 1 / -1;
+}
+
+.admin-jobs-field-compact {
+  grid-column: span 3;
+}
+
+.admin-jobs-reward-picker {
+  display: grid;
+  gap: 10px;
+  grid-column: 1 / -1;
+}
+
+.admin-jobs-reward-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -5038,6 +5103,19 @@ body {
 
   .admin-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-jobs-form-grid,
+  .admin-jobs-reward-picker-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-jobs-field-key,
+  .admin-jobs-enabled-wrap,
+  .admin-jobs-field-wide,
+  .admin-jobs-field-full,
+  .admin-jobs-field-compact {
+    grid-column: auto;
   }
 
   .admin-search-input {

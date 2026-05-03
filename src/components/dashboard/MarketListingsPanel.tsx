@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { DashboardText } from "@/lib/dashboardText";
 import { MarketListing } from "@/lib/types";
 import { UserIdentity } from "./UserIdentity";
@@ -58,9 +59,11 @@ export function MarketListingsPanel({
   const [priceDraftLocalErrorById, setPriceDraftLocalErrorById] = useState<Record<number, string>>({});
   const [buyConfirmListing, setBuyConfirmListing] = useState<MarketListing | null>(null);
   const [cancelConfirmListing, setCancelConfirmListing] = useState<MarketListing | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const lastKnownServerPriceRef = useRef<Map<number, number>>(new Map());
   const dirtyPriceDraftIdsRef = useRef<Set<number>>(new Set());
+  const pageSize = 8;
 
   useEffect(() => {
     const prevMap = lastKnownServerPriceRef.current;
@@ -124,6 +127,17 @@ export function MarketListingsPanel({
     });
   }, [marketListings]);
 
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(marketListings.length / pageSize)), [marketListings.length]);
+
+  useEffect(() => {
+    setCurrentPage(prev => Math.min(Math.max(prev, 1), totalPages));
+  }, [totalPages]);
+
+  const paginatedListings = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return marketListings.slice(start, start + pageSize);
+  }, [currentPage, marketListings]);
+
   const handleConfirmBuy = useCallback(async () => {
     const listing = buyConfirmListing;
     if (!listing) {
@@ -141,6 +155,14 @@ export function MarketListingsPanel({
     await onCancelMarketListing(listing.listingId);
     setCancelConfirmListing(null);
   }, [cancelConfirmListing, onCancelMarketListing]);
+
+  const goToPreviousPage = useCallback(() => {
+    setCurrentPage(prev => Math.max(1, prev - 1));
+  }, []);
+
+  const goToNextPage = useCallback(() => {
+    setCurrentPage(prev => Math.min(totalPages, prev + 1));
+  }, [totalPages]);
 
   return (
     <div className="market-subpanel">
@@ -222,85 +244,100 @@ export function MarketListingsPanel({
       ) : null}
 
       {!marketLoading && !marketError && marketListings.length > 0 ? (
-        <div className="market-grid">
-          {marketListings.map(listing => {
-            const rarityAccent = listing.rarityColorHex || "#44506d";
-            const isMine = listing.sellerDiscordId === myDiscordId;
-            const draft = listingPriceDraftById[listing.listingId] ?? String(listing.price);
-            const buyBusy = marketBuyingListingId === listing.listingId;
-            const updateBusy = marketUpdatingListingId === listing.listingId;
-            const cancelBusy = marketCancellingListingId === listing.listingId;
-            const listingFeedback = marketListingFeedbackById[listing.listingId];
-            const listingError = marketListingErrorById[listing.listingId];
-            const priceLocalErr = priceDraftLocalErrorById[listing.listingId];
+        <>
+          <div className="inventory-pagination market-pagination">
+            <button type="button" className="pagination-btn" onClick={goToPreviousPage} disabled={currentPage <= 1}>
+              {t.previous}
+            </button>
+            <span className="pagination-status">
+              {t.page} {currentPage}/{totalPages}
+            </span>
+            <button type="button" className="pagination-btn" onClick={goToNextPage} disabled={currentPage >= totalPages}>
+              {t.next}
+            </button>
+          </div>
 
-            return (
-              <article
-                key={listing.listingId}
-                className="item-card market-card compact"
-                style={{ borderColor: `${rarityAccent}66`, boxShadow: `0 0 0 1px ${rarityAccent}22 inset` }}
-              >
-                <ItemMedia
-                  name={listing.name}
-                  imageUrl={listing.imageUrl}
-                  emoji={listing.emoji}
-                  accentColor={rarityAccent}
-                  className="inventory-media compact market-media"
-                  imageClassName="inventory-image market-image"
-                  fallbackClassName="inventory-emoji-fallback market-emoji-fallback"
-                  overlay={<span className="inventory-tier-badge">{t.tier} {listing.tier}</span>}
-                />
+          <div className="market-grid">
+            {paginatedListings.map(listing => {
+              const rarityAccent = listing.rarityColorHex || "#44506d";
+              const isMine = listing.sellerDiscordId === myDiscordId;
+              const draft = listingPriceDraftById[listing.listingId] ?? String(listing.price);
 
-                <div className="item-card-content inventory-content compact market-content">
-                  <h3 className="item-card-title inventory-title market-title">{listing.name}</h3>
-                  <p className="item-card-description inventory-description market-description compact">{listing.description}</p>
+              const buyBusy = marketBuyingListingId === listing.listingId;
+              const updateBusy = marketUpdatingListingId === listing.listingId;
+              const cancelBusy = marketCancellingListingId === listing.listingId;
+              const listingFeedback = marketListingFeedbackById[listing.listingId];
+              const listingError = marketListingErrorById[listing.listingId];
+              const priceLocalErr = priceDraftLocalErrorById[listing.listingId];
 
-                  <ItemBadgeRow
-                    className="inventory-meta compact market-meta"
-                    badges={[
-                      <span key="rarity" className="meta-badge rarity-badge" style={{ borderColor: `${rarityAccent}66` }}>
-                        {listing.rarityName}
-                      </span>,
-                      <span key="type" className="meta-badge">{listing.itemType}</span>,
-                      <span key="price" className="meta-badge price">{t.marketPrice}: {listing.price} ODM</span>,
-                      <span key="tradeable" className={`meta-badge ${listing.tradeable ? "ok" : "muted"}`}>
-                        {listing.tradeable ? t.tradeableYes : t.tradeableNo}
-                      </span>,
-                      <span key="sellable" className={`meta-badge ${listing.sellable ? "ok" : "muted"}`}>
-                        {listing.sellable ? t.sellableYes : t.sellableNo}
-                      </span>,
-                    ]}
+              return (
+                <article
+                  key={listing.listingId}
+                  className="item-card market-card compact"
+                  style={{ borderColor: `${rarityAccent}66`, boxShadow: `0 0 0 1px ${rarityAccent}22 inset` }}
+                >
+                  <ItemMedia
+                    name={listing.name}
+                    imageUrl={listing.imageUrl}
+                    emoji={listing.emoji}
+                    accentColor={rarityAccent}
+                    className="inventory-media compact market-media"
+                    imageClassName="inventory-image market-image"
+                    fallbackClassName="inventory-emoji-fallback market-emoji-fallback"
+                    overlay={<span className="inventory-tier-badge">{t.tier} {listing.tier}</span>}
                   />
 
-                  <div className="market-compact-meta">
-                    <span>{t.marketListingId} #{listing.listingId}</span>
-                    <span>{t.marketInventoryItemId} #{listing.inventoryItemId}</span>
-                    <span className="market-seller-inline">
-                      {t.marketSeller}:{" "}
-                      <UserIdentity
-                        user={{
-                          discordId: listing.sellerDiscordId,
-                          username: null,
-                          globalName: null,
-                          avatarUrl: null,
-                        }}
-                        size="sm"
-                        showAvatar={false}
-                        mode={streamerMode ? "streamer" : "normal"}
-                      />
-                    </span>
-                  </div>
+                  <div className="item-card-content inventory-content compact market-content">
+                    <h3 className="item-card-title inventory-title market-title">{listing.name}</h3>
+                    <p className="item-card-description inventory-description market-description compact">{listing.description}</p>
 
-                  <div className="market-card-actions item-card-actions">
-                    {listingFeedback ? (
-                      <p className="state-text state-success">{listingFeedback}</p>
-                    ) : null}
-                    {listingError ? (
-                      <p className="state-text state-error">{listingError}</p>
-                    ) : null}
+                    <ItemBadgeRow
+                      className="inventory-meta compact market-meta"
+                      badges={[
+                        <span key="rarity" className="meta-badge rarity-badge" style={{ borderColor: `${rarityAccent}66` }}>
+                          {listing.rarityName}
+                        </span>,
+                        <span key="type" className="meta-badge">{listing.itemType}</span>,
+                        <span key="price" className="meta-badge price">{t.marketPrice}: {listing.price} ODM</span>,
+                        <span key="tradeable" className={`meta-badge ${listing.tradeable ? "ok" : "muted"}`}>
+                          {listing.tradeable ? t.tradeableYes : t.tradeableNo}
+                        </span>,
+                        <span key="sellable" className={`meta-badge ${listing.sellable ? "ok" : "muted"}`}>
+                          {listing.sellable ? t.sellableYes : t.sellableNo}
+                        </span>,
+                      ]}
+                    />
 
-                    {isMine ? (
-                      <details className="market-own-listing-details">
+                    <div className="market-compact-meta">
+                      <span>{t.marketListingId} #{listing.listingId}</span>
+                      <span>{t.marketInventoryItemId} #{listing.inventoryItemId}</span>
+                      <span className="market-seller-inline">
+                        {t.marketSeller}:{" "}
+                        <UserIdentity
+                          user={{
+                            discordId: listing.sellerDiscordId,
+                            username: listing.sellerDisplayName,
+                            globalName: listing.sellerDisplayName,
+                            avatarUrl: listing.sellerAvatarUrl,
+                          }}
+                          size="sm"
+                          showAvatar={!streamerMode}
+                          showDiscordId
+                          mode={streamerMode ? "streamer" : "normal"}
+                        />
+                      </span>
+                    </div>
+
+                    <div className="market-card-actions item-card-actions market-card-actions-stretch">
+                      {listingFeedback ? (
+                        <p className="state-text state-success">{listingFeedback}</p>
+                      ) : null}
+                      {listingError ? (
+                        <p className="state-text state-error">{listingError}</p>
+                      ) : null}
+
+                      {isMine ? (
+                        <details className="market-own-listing-details">
                           <summary className="market-own-listing-summary">{t.updateListingPrice}</summary>
                           <div className="market-listing-price-row">
                             <label className="inventory-price-label market-listing-price-label">
@@ -385,28 +422,43 @@ export function MarketListingsPanel({
                           {priceLocalErr ? (
                             <p className="state-text state-error">{priceLocalErr}</p>
                           ) : null}
-                      </details>
-                    ) : (
-                      <div className="market-card-actions-row item-card-actions-row">
-                        <button
-                          type="button"
-                          className="pagination-btn"
-                          disabled={buyBusy || updateBusy || cancelBusy}
-                          onClick={() => {
-                            setBuyConfirmListing(listing);
-                            onClearMarketListingMessage(listing.listingId);
-                          }}
-                        >
-                          {buyBusy ? t.marketBuyingListing : t.marketBuyListing}
-                        </button>
-                      </div>
-                    )}
+                        </details>
+                      ) : (
+                        <div className="market-card-actions-row item-card-actions-row">
+                          <button
+                            type="button"
+                            className="pagination-btn"
+                            disabled={buyBusy || updateBusy || cancelBusy}
+                            onClick={() => {
+                              setBuyConfirmListing(listing);
+                              onClearMarketListingMessage(listing.listingId);
+                            }}
+                          >
+                            {buyBusy ? t.marketBuyingListing : t.marketBuyListing}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {totalPages > 1 ? (
+            <div className="inventory-pagination market-pagination">
+              <button type="button" className="pagination-btn" onClick={goToPreviousPage} disabled={currentPage <= 1}>
+                {t.previous}
+              </button>
+              <span className="pagination-status">
+                {t.page} {currentPage}/{totalPages}
+              </span>
+              <button type="button" className="pagination-btn" onClick={goToNextPage} disabled={currentPage >= totalPages}>
+                {t.next}
+              </button>
+            </div>
+          ) : null}
+        </>
       ) : null}
     </div>
   );

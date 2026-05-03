@@ -23,6 +23,15 @@ export function getSafeDisplayName(user: UserIdentityView, streamerMode: boolean
   return `Viewer #${suffix}`;
 }
 
+export function getSafeDiscordId(discordId: string, streamerMode: boolean): string {
+  if (!streamerMode) {
+    return discordId;
+  }
+
+  const visibleTail = discordId.slice(-4);
+  return `••••${visibleTail}`;
+}
+
 export function getInitials(value: string): string {
   const parts = value
     .trim()

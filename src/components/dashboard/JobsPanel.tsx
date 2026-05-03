@@ -84,6 +84,9 @@ export function JobsPanel({
               const title = pickLocalizedValue(language, job.titleRu, job.titleEn, job.titleEt) || job.titleRu;
               const description = pickLocalizedValue(language, job.descriptionRu, job.descriptionEn, job.descriptionEt);
               const cooldownInfo = jobCooldownInfoById[job.id];
+              const remainingCooldownSeconds = cooldownInfo?.remainingSeconds;
+              const isCoolingDown = typeof remainingCooldownSeconds === "number" && remainingCooldownSeconds > 0;
+              const isBusy = runningJobId === job.id || isCoolingDown;
 
               return (
                 <article className="craft-card jobs-card" key={job.id}>
@@ -133,7 +136,7 @@ export function JobsPanel({
 
                   {cooldownInfo?.remainingSeconds !== undefined ? (
                     <p className="market-card-hint">
-                      {t.jobsCooldown}: {cooldownInfo.remainingSeconds}s
+                      {t.jobsCooldown}: {formatCooldown(cooldownInfo.remainingSeconds)}
                     </p>
                   ) : null}
 
@@ -147,9 +150,13 @@ export function JobsPanel({
                     className="pagination-btn"
                     type="button"
                     onClick={() => onRun(job.id)}
-                    disabled={runningJobId === job.id}
+                    disabled={isBusy}
                   >
-                    {runningJobId === job.id ? t.jobsWorking : t.jobsWorkButton}
+                    {runningJobId === job.id
+                      ? t.jobsWorking
+                      : isCoolingDown && remainingCooldownSeconds !== undefined
+                        ? `${t.jobsWorkButton} (${formatCooldown(remainingCooldownSeconds)})`
+                        : t.jobsWorkButton}
                   </button>
                 </article>
               );

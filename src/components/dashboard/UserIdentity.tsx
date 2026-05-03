@@ -1,5 +1,5 @@
 import { UserIdentityView } from "@/lib/types";
-import { getInitials, getSafeAvatarSeed, getSafeDisplayName } from "@/lib/userIdentityPrivacy";
+import { getInitials, getSafeAvatarSeed, getSafeDiscordId, getSafeDisplayName } from "@/lib/userIdentityPrivacy";
 
 type UserIdentityProps = {
   user: UserIdentityView;
@@ -22,6 +22,7 @@ export function UserIdentity({
 }: UserIdentityProps) {
   const streamerMode = mode === "streamer";
   const displayName = getSafeDisplayName(user, streamerMode);
+  const safeDiscordId = getSafeDiscordId(user.discordId, streamerMode);
   const initials = getInitials(displayName);
   const seed = getSafeAvatarSeed(user);
   const hue = seed % 360;
@@ -51,7 +52,7 @@ export function UserIdentity({
         {!subtitle && !streamerMode && !hasCachedIdentity && missingProfileLabel ? (
           <p className="user-identity-subtitle">{missingProfileLabel}</p>
         ) : null}
-        {showDiscordId ? <p className="user-identity-subtitle">ID: {user.discordId}</p> : null}
+        {showDiscordId ? <p className="user-identity-subtitle">ID: {safeDiscordId}</p> : null}
       </div>
     </div>
   );
