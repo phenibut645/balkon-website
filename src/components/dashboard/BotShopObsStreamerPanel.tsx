@@ -69,6 +69,7 @@ export function BotShopObsStreamerPanel({
   onStreamerServicePurchaseSuccess,
 }: BotShopObsStreamerPanelProps) {
   const [activeInnerTab, setActiveInnerTab] = useState<"standard" | "services" | "history">("standard");
+  const streamerId = Number(streamer.streamerId);
 
   return (
     <div className="obs-streamer-detail">
@@ -109,10 +110,10 @@ export function BotShopObsStreamerPanel({
               onBuy={onBuyMediaProduct}
             />
           ) : null}
-          {activeInnerTab === "services" ? (
+          {activeInnerTab === "services" && Number.isFinite(streamerId) ? (
             <StreamerServiceCatalogPanel
               t={t}
-              streamerId={streamer.streamerId}
+              streamerId={streamerId}
               title={t.shopObsStreamerServicesTitle}
               subtitle={t.shopObsStreamerServicesDescription}
               buyLabel={t.shopObsBuyService}
