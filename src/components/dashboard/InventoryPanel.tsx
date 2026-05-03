@@ -1,6 +1,6 @@
 import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DashboardText, formatDashboardDate } from "@/lib/dashboardText";
-import { InventoryItem } from "@/lib/types";
+import { InventoryItem, StreamerStudioAccessView } from "@/lib/types";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ItemBadgeRow } from "./items/ItemBadgeRow";
 import { ItemMedia } from "./items/ItemMedia";
@@ -21,11 +21,17 @@ type InventoryPanelProps = {
   dateLocale: string;
   sellingInventoryId: number | null;
   listingInventoryId: number | null;
+  usingServiceInventoryId: number | null;
   listedInventoryItemIds: Set<number>;
   inventoryActionFeedbackById: Record<number, string>;
   inventoryActionErrorById: Record<number, string>;
+  accessibleServiceStreamers: StreamerStudioAccessView[];
+  accessibleServiceStreamersLoading: boolean;
+  accessibleServiceStreamersError: string | null;
   onSellToBot: (inventoryItemId: number) => void | Promise<void>;
   onListOnMarket: (inventoryItemId: number, price: number) => void | Promise<void>;
+  onUseServiceItem: (inventoryItemId: number, streamerId: number) => void | Promise<void>;
+  onLoadAccessibleServiceStreamers: () => void | Promise<void>;
   onClearInventoryItemMessage: (inventoryItemId: number) => void;
 };
 
@@ -70,17 +76,24 @@ export function InventoryPanel({
   dateLocale,
   sellingInventoryId,
   listingInventoryId,
+  usingServiceInventoryId,
   listedInventoryItemIds,
   inventoryActionFeedbackById,
   inventoryActionErrorById,
+  accessibleServiceStreamers,
+  accessibleServiceStreamersLoading,
+  accessibleServiceStreamersError,
   onSellToBot,
   onListOnMarket,
+  onUseServiceItem,
+  onLoadAccessibleServiceStreamers,
   onClearInventoryItemMessage,
 }: InventoryPanelProps) {
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [confirmSellItem, setConfirmSellItem] = useState<InventoryItem | null>(null);
   const [listPriceDraft, setListPriceDraft] = useState("");
   const [listPriceLocalError, setListPriceLocalError] = useState<string | null>(null);
+  const [serviceStreamerDraftById, setServiceStreamerDraftById] = useState<Record<number, string>>({});
   const [inventorySearchQuery, setInventorySearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [gridMetrics, setGridMetrics] = useState<GridMetrics>({
@@ -117,6 +130,36 @@ export function InventoryPanel({
     setListPriceDraft("");
     setListPriceLocalError(null);
   }, [selectedItem?.inventoryItemId]);
+
+  useEffect(() => {
+    if (!selectedItem || String(selectedItem.itemType).toLowerCase() !== "service") {
+      return;
+    }
+
+    onLoadAccessibleServiceStreamers();
+  }, [onLoadAccessibleServiceStreamers, selectedItem]);
+
+  useEffect(() => {
+    if (!selectedItem || String(selectedItem.itemType).toLowerCase() !== "service") {
+      return;
+    }
+
+    const inventoryItemId = selectedItem.inventoryItemId;
+    const currentDraft = serviceStreamerDraftById[inventoryItemId];
+    if (currentDraft) {
+      return;
+    }
+
+    const firstAvailable = accessibleServiceStreamers[0];
+    if (!firstAvailable) {
+      return;
+    }
+
+    setServiceStreamerDraftById(prev => ({
+      ...prev,
+      [inventoryItemId]: String(firstAvailable.streamerId),
+    }));
+  }, [accessibleServiceStreamers, selectedItem, serviceStreamerDraftById]);
 
   useEffect(() => {
     if (inventoryLoading || inventoryError || filteredInventoryLength === 0) {
@@ -282,6 +325,11 @@ export function InventoryPanel({
     selectedItem && listedInventoryItemIds.has(selectedItem.inventoryItemId),
   );
   const selectedCanListOnMarket = Boolean(selectedItem?.tradeable) && !selectedIsListedOnMarket;
+  const selectedIsServiceItem = String(selectedItem?.itemType ?? "").toLowerCase() === "service";
+  const selectedServiceStreamerDraft = selectedItem
+    ? serviceStreamerDraftById[selectedItem.inventoryItemId] ?? ""
+    : "";
+  const selectedCanUseService = selectedIsServiceItem && accessibleServiceStreamers.length > 0;
   const selectedInventoryActionFeedback = selectedItem
     ? inventoryActionFeedbackById[selectedItem.inventoryItemId] ?? null
     : null;
@@ -326,6 +374,29 @@ export function InventoryPanel({
     setListPriceLocalError(null);
     await onListOnMarket(selectedItem.inventoryItemId, parsed);
   }, [listPriceDraft, onListOnMarket, selectedItem, t.invalidPositiveFinitePrice]);
+
+  const handleServiceStreamerChange = useCallback((inventoryItemId: number, value: string) => {
+    setServiceStreamerDraftById(prev => ({
+      ...prev,
+      [inventoryItemId]: value,
+    }));
+    onClearInventoryItemMessage(inventoryItemId);
+  }, [onClearInventoryItemMessage]);
+
+  const handleUseService = useCallback(async () => {
+    if (!selectedItem) {
+      return;
+    }
+
+    const rawStreamerId = serviceStreamerDraftById[selectedItem.inventoryItemId] ?? "";
+    const streamerId = Number(rawStreamerId);
+    if (!Number.isInteger(streamerId) || streamerId <= 0) {
+      onClearInventoryItemMessage(selectedItem.inventoryItemId);
+      return;
+    }
+
+    await onUseServiceItem(selectedItem.inventoryItemId, streamerId);
+  }, [onUseServiceItem, onClearInventoryItemMessage, selectedItem, serviceStreamerDraftById]);
 
   const goToPreviousPage = useCallback(() => {
     setCurrentPage(prev => Math.max(1, prev - 1));
@@ -547,7 +618,7 @@ export function InventoryPanel({
                         ) : null}
                       </div>
 
-                      {selectedCanSellToBot || selectedCanListOnMarket || (selectedItem.tradeable && selectedIsListedOnMarket) ? (
+                      {selectedCanSellToBot || selectedCanListOnMarket || (selectedItem.tradeable && selectedIsListedOnMarket) || selectedIsServiceItem ? (
                         <div className="inventory-details-actions item-card-actions">
                           {selectedInventoryActionFeedback ? (
                             <p className="state-text state-success">{selectedInventoryActionFeedback}</p>
@@ -602,6 +673,54 @@ export function InventoryPanel({
                                   </button>
                                 </div>
                               </details>
+                            ) : null}
+                            {selectedIsServiceItem ? (
+                              <div className="inventory-service-action-block">
+                                <p className="inventory-service-action-title">{t.useService}</p>
+                                {accessibleServiceStreamersError ? (
+                                  <p className="state-text state-error compact">{accessibleServiceStreamersError}</p>
+                                ) : null}
+                                {accessibleServiceStreamersLoading ? (
+                                  <p className="state-text compact">{t.usingServiceLoadingTargets}</p>
+                                ) : null}
+                                {!accessibleServiceStreamersLoading && accessibleServiceStreamers.length === 0 ? (
+                                  <p className="state-text compact">{t.noAvailableStreamers}</p>
+                                ) : null}
+                                <div className="inventory-service-controls">
+                                  <label className="inventory-price-label inventory-service-label">
+                                    <span>{t.selectStreamer}</span>
+                                    <select
+                                      className="inventory-search-input compact inventory-service-select"
+                                      value={selectedServiceStreamerDraft}
+                                      disabled={!selectedCanUseService || usingServiceInventoryId === selectedItem.inventoryItemId}
+                                      onChange={event => handleServiceStreamerChange(selectedItem.inventoryItemId, event.target.value)}
+                                    >
+                                      <option value="">{t.selectStreamer}</option>
+                                      {accessibleServiceStreamers.map(streamer => (
+                                        <option key={streamer.streamerId} value={String(streamer.streamerId)}>
+                                          {streamer.nickname}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                  <button
+                                    type="button"
+                                    className="pagination-btn"
+                                    disabled={
+                                      usingServiceInventoryId === selectedItem.inventoryItemId
+                                      || sellingInventoryId === selectedItem.inventoryItemId
+                                      || listingInventoryId === selectedItem.inventoryItemId
+                                      || !selectedCanUseService
+                                      || !selectedServiceStreamerDraft
+                                    }
+                                    onClick={() => {
+                                      void handleUseService();
+                                    }}
+                                  >
+                                    {usingServiceInventoryId === selectedItem.inventoryItemId ? t.usingService : t.useService}
+                                  </button>
+                                </div>
+                              </div>
                             ) : null}
                           </div>
                         </div>

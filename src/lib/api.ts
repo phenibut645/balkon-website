@@ -1336,6 +1336,7 @@ export {
   createInventoryMarketListing,
   buyMarketListing,
   sellInventoryItemToBot,
+  useInventoryServiceItem,
   updateMarketListingPrice,
 } from "./api/playerMarket";
 

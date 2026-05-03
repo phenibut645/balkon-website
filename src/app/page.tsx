@@ -32,7 +32,7 @@ import {
   getStreamerStudioAccessible,
   updateMarketListingPrice,
   updateMyProfile,
-  useInventoryServiceItem,
+  useInventoryServiceItem as invokeInventoryServiceItem,
 } from "@/lib/api";
 import { AdminTab, DashboardMode, DashboardSearchResult, DashboardTab, normalizeDashboardSearchValue, MarketSubTab, UserTab } from "@/lib/dashboardSearch";
 import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, GuildOverview, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, NotificationItem, ObsMediaProduct, ObsShopStreamer, OverviewSummary, ShopSubTab, StreamerStudioAccessView, UserBalance, UserGuild, UserPublicProfile } from "@/lib/types";
@@ -1399,11 +1399,11 @@ export default function HomePage() {
     handleClearInventoryItemMessage(inventoryItemId);
     setInventoryUsingServiceId(inventoryItemId);
 
-    const response = await useInventoryServiceItem(inventoryItemId, streamerId);
+    const response = await invokeInventoryServiceItem(inventoryItemId, streamerId);
     setInventoryUsingServiceId(null);
 
     if (!response.ok) {
-      const message = [response.message, response.error].filter(Boolean).join(" — ") || t.marketMutationFailed;
+      const message = [response.message, response.error].filter(Boolean).join(" — ") || t.inventoryServiceUseFailed;
       setInventoryActionErrorById(prev => ({ ...prev, [inventoryItemId]: message }));
       return;
     }
@@ -1414,8 +1414,12 @@ export default function HomePage() {
       [inventoryItemId]: consumed ? t.inventoryServiceUseSuccessConsumed : t.inventoryServiceUseSuccess,
     }));
 
-    await loadInventory({ silent: true, force: true });
-  }, [handleClearInventoryItemMessage, loadInventory, t.inventoryServiceUseSuccess, t.inventoryServiceUseSuccessConsumed, t.marketMutationFailed]);
+    if (consumed) {
+      await loadInventory({ silent: true, force: true });
+      await loadMarket({ silent: true, force: true });
+      await loadOverviewSummary({ silent: true, force: true });
+    }
+  }, [handleClearInventoryItemMessage, loadInventory, loadMarket, loadOverviewSummary, t.inventoryServiceUseFailed, t.inventoryServiceUseSuccess, t.inventoryServiceUseSuccessConsumed]);
 
   const handleBuyMarketListing = useCallback(async (listingId: number): Promise<void> => {
     handleClearMarketListingMessage(listingId);
@@ -1570,6 +1574,17 @@ export default function HomePage() {
       void loadInventory();
     }
   }, [authState, activeTab, inventoryLoaded, inventoryLoading, loadInventory]);
+
+  useEffect(() => {
+    if (
+      authState === "user"
+      && activeTab === "inventory"
+      && !accessibleServiceStreamersLoaded
+      && !accessibleServiceStreamersLoading
+    ) {
+      void loadAccessibleServiceStreamers();
+    }
+  }, [accessibleServiceStreamersLoaded, accessibleServiceStreamersLoading, activeTab, authState, loadAccessibleServiceStreamers]);
 
   useEffect(() => {
     if (authState === "user" && activeTab === "market" && !marketLoaded && !marketLoading) {

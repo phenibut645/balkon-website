@@ -73,14 +73,14 @@ export async function sellInventoryItemToBot(inventoryItemId: number): Promise<A
 
 export async function useInventoryServiceItem(
   inventoryItemId: number,
-  streamerId?: number,
+  streamerId: number,
 ): Promise<ApiInventoryUseServiceResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/inventory/${encodeURIComponent(String(inventoryItemId))}/use-service`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(streamerId ? { streamerId } : {}),
+      body: JSON.stringify({ streamerId }),
     });
 
     const data = await response.json().catch(() => null) as ApiInventoryUseServiceResponse | null;
