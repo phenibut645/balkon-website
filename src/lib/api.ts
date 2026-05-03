@@ -1331,6 +1331,14 @@ export async function markAllNotificationsRead(): Promise<ApiNotificationMutatio
   }
 }
 
+export {
+  cancelMarketListing,
+  createInventoryMarketListing,
+  buyMarketListing,
+  sellInventoryItemToBot,
+  updateMarketListingPrice,
+} from "./api/playerMarket";
+
 export * from "./api/streamerStudio";
 
 export async function adminBroadcastNotification(input: AdminBroadcastNotificationInput): Promise<ApiAdminBroadcastNotificationResponse> {

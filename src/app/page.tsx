@@ -1,7 +1,37 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buyBotShopListing, getAdminStats, getBotShop, getCraftRecipes, getDiscordLoginUrl, getGuildOverview, getInventory, getMarket, getMarketCapitalization, getMarketForbes, getMe, getMyBalance, getMyGuilds, getMyProfile, getNotifications, getNotificationsSummary, getObsShopStreamerDetails, getObsShopStreamers, getOverviewMe, logout, markAllNotificationsRead, markNotificationRead, purchaseObsMedia, updateMyProfile } from "@/lib/api";
+import {
+  buyBotShopListing,
+  buyMarketListing,
+  cancelMarketListing,
+  createInventoryMarketListing,
+  getAdminStats,
+  getBotShop,
+  getCraftRecipes,
+  getDiscordLoginUrl,
+  getGuildOverview,
+  getInventory,
+  getMarket,
+  getMarketCapitalization,
+  getMarketForbes,
+  getMe,
+  getMyBalance,
+  getMyGuilds,
+  getMyProfile,
+  getNotifications,
+  getNotificationsSummary,
+  getObsShopStreamerDetails,
+  getObsShopStreamers,
+  getOverviewMe,
+  logout,
+  markAllNotificationsRead,
+  markNotificationRead,
+  purchaseObsMedia,
+  sellInventoryItemToBot,
+  updateMarketListingPrice,
+  updateMyProfile,
+} from "@/lib/api";
 import { AdminTab, DashboardMode, DashboardSearchResult, DashboardTab, normalizeDashboardSearchValue, MarketSubTab, UserTab } from "@/lib/dashboardSearch";
 import { AdminStats, ApiMeResponse, AvailableGuild, BotShopListing, CraftRecipe, GuildOverview, InventoryItem, MarketCapitalizationData, MarketForbesEntry, MarketListing, NotificationItem, ObsMediaProduct, ObsShopStreamer, OverviewSummary, ShopSubTab, UserBalance, UserGuild, UserPublicProfile } from "@/lib/types";
 import { DASHBOARD_TEXT, DATE_LOCALE_BY_LANGUAGE, LanguageCode } from "@/lib/dashboardText";
@@ -85,6 +115,15 @@ export default function HomePage() {
   const [buyingListingId, setBuyingListingId] = useState<number | null>(null);
   const [buyFeedback, setBuyFeedback] = useState<Record<number, string>>({});
   const [buyErrors, setBuyErrors] = useState<Record<number, string>>({});
+  const [inventorySellingId, setInventorySellingId] = useState<number | null>(null);
+  const [inventoryListingId, setInventoryListingId] = useState<number | null>(null);
+  const [inventoryActionFeedback, setInventoryActionFeedback] = useState<string | null>(null);
+  const [inventoryActionError, setInventoryActionError] = useState<string | null>(null);
+  const [marketBuyingListingId, setMarketBuyingListingId] = useState<number | null>(null);
+  const [marketUpdatingListingId, setMarketUpdatingListingId] = useState<number | null>(null);
+  const [marketCancellingListingId, setMarketCancellingListingId] = useState<number | null>(null);
+  const [marketListingFeedbackById, setMarketListingFeedbackById] = useState<Record<number, string>>({});
+  const [marketListingErrorById, setMarketListingErrorById] = useState<Record<number, string>>({});
   const [craftRecipes, setCraftRecipes] = useState<CraftRecipe[]>([]);
   const [craftLoaded, setCraftLoaded] = useState(false);
   const [craftLoading, setCraftLoading] = useState(false);
@@ -1195,6 +1234,126 @@ export default function HomePage() {
     }
   }, [balanceLoading, t.balanceLoadFailed]);
 
+  const handleClearMarketListingMessage = useCallback((listingId: number): void => {
+    setMarketListingFeedbackById(prev => {
+      if (!prev[listingId]) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[listingId];
+      return next;
+    });
+    setMarketListingErrorById(prev => {
+      if (!prev[listingId]) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[listingId];
+      return next;
+    });
+  }, []);
+
+  const handleSellInventoryToBot = useCallback(async (inventoryItemId: number): Promise<void> => {
+    setInventoryActionFeedback(null);
+    setInventoryActionError(null);
+    setInventorySellingId(inventoryItemId);
+
+    const response = await sellInventoryItemToBot(inventoryItemId);
+    setInventorySellingId(null);
+
+    if (!response.ok) {
+      const message = [response.message, response.error].filter(Boolean).join(" — ") || t.marketMutationFailed;
+      setInventoryActionError(message);
+      return;
+    }
+
+    const received = response.data?.received;
+    setInventoryActionFeedback(
+      typeof received === "number" && Number.isFinite(received)
+        ? t.marketSellBotSuccessReceived.replace("{received}", String(received))
+        : t.marketSellBotSuccess,
+    );
+
+    await loadInventory({ silent: true });
+    await loadBalance({ silent: true });
+    await loadOverviewSummary({ silent: true, force: true });
+  }, [loadBalance, loadInventory, loadOverviewSummary, t.marketMutationFailed, t.marketSellBotSuccess, t.marketSellBotSuccessReceived]);
+
+  const handleListInventoryOnMarket = useCallback(async (inventoryItemId: number, price: number): Promise<void> => {
+    setInventoryActionFeedback(null);
+    setInventoryActionError(null);
+    setInventoryListingId(inventoryItemId);
+
+    const response = await createInventoryMarketListing(inventoryItemId, price);
+    setInventoryListingId(null);
+
+    if (!response.ok) {
+      const message = [response.message, response.error].filter(Boolean).join(" — ") || t.marketMutationFailed;
+      setInventoryActionError(message);
+      return;
+    }
+
+    setInventoryActionFeedback(t.marketListSuccess);
+    await loadInventory({ silent: true });
+    await loadMarket({ silent: true });
+  }, [loadInventory, loadMarket, t.marketListSuccess, t.marketMutationFailed]);
+
+  const handleBuyMarketListing = useCallback(async (listingId: number): Promise<void> => {
+    handleClearMarketListingMessage(listingId);
+    setMarketBuyingListingId(listingId);
+
+    const response = await buyMarketListing(listingId);
+    setMarketBuyingListingId(null);
+
+    if (!response.ok) {
+      const message = [response.message, response.error].filter(Boolean).join(" — ") || t.marketMutationFailed;
+      setMarketListingErrorById(prev => ({ ...prev, [listingId]: message }));
+      return;
+    }
+
+    setMarketListingFeedbackById(prev => ({ ...prev, [listingId]: t.marketBuySuccess }));
+
+    await loadMarket({ silent: true });
+    await loadInventory({ silent: true });
+    await loadBalance({ silent: true });
+    await loadOverviewSummary({ silent: true, force: true });
+  }, [handleClearMarketListingMessage, loadBalance, loadInventory, loadMarket, loadOverviewSummary, t.marketBuySuccess, t.marketMutationFailed]);
+
+  const handleUpdateMarketListingPrice = useCallback(async (listingId: number, price: number): Promise<void> => {
+    handleClearMarketListingMessage(listingId);
+    setMarketUpdatingListingId(listingId);
+
+    const response = await updateMarketListingPrice(listingId, price);
+    setMarketUpdatingListingId(null);
+
+    if (!response.ok) {
+      const message = [response.message, response.error].filter(Boolean).join(" — ") || t.marketMutationFailed;
+      setMarketListingErrorById(prev => ({ ...prev, [listingId]: message }));
+      return;
+    }
+
+    setMarketListingFeedbackById(prev => ({ ...prev, [listingId]: t.marketUpdatePriceSuccess }));
+    await loadMarket({ silent: true });
+  }, [handleClearMarketListingMessage, loadMarket, t.marketMutationFailed, t.marketUpdatePriceSuccess]);
+
+  const handleCancelMarketListing = useCallback(async (listingId: number): Promise<void> => {
+    handleClearMarketListingMessage(listingId);
+    setMarketCancellingListingId(listingId);
+
+    const response = await cancelMarketListing(listingId);
+    setMarketCancellingListingId(null);
+
+    if (!response.ok) {
+      const message = [response.message, response.error].filter(Boolean).join(" — ") || t.marketMutationFailed;
+      setMarketListingErrorById(prev => ({ ...prev, [listingId]: message }));
+      return;
+    }
+
+    setMarketListingFeedbackById(prev => ({ ...prev, [listingId]: t.marketCancelSuccess }));
+    await loadMarket({ silent: true });
+    await loadInventory({ silent: true });
+  }, [handleClearMarketListingMessage, loadInventory, loadMarket, t.marketCancelSuccess, t.marketMutationFailed]);
+
   const handleBuyBotShopListing = useCallback(async (listingId: number, amount: number): Promise<void> => {
     if (!Number.isInteger(amount) || amount <= 0) {
       setBuyErrors(prev => ({ ...prev, [listingId]: "Amount must be a positive integer." }));
@@ -1749,6 +1908,16 @@ export default function HomePage() {
                 inventoryEmptyText={inventoryEmptyText}
                 inventoryItems={filteredInventory}
                 dateLocale={dateLocale}
+                sellingInventoryId={inventorySellingId}
+                listingInventoryId={inventoryListingId}
+                inventoryActionFeedback={inventoryActionFeedback}
+                inventoryActionError={inventoryActionError}
+                onSellToBot={(id) => {
+                  void handleSellInventoryToBot(id);
+                }}
+                onListOnMarket={(id, price) => {
+                  void handleListInventoryOnMarket(id, price);
+                }}
               />
             ) : null}
 
@@ -1781,6 +1950,22 @@ export default function HomePage() {
                   setMarketForbesLoaded(false);
                   void loadMarketForbes();
                 }}
+                myDiscordId={user.discordId}
+                marketBuyingListingId={marketBuyingListingId}
+                marketUpdatingListingId={marketUpdatingListingId}
+                marketCancellingListingId={marketCancellingListingId}
+                marketListingFeedbackById={marketListingFeedbackById}
+                marketListingErrorById={marketListingErrorById}
+                onBuyMarketListing={(id) => {
+                  void handleBuyMarketListing(id);
+                }}
+                onUpdateMarketListingPrice={(id, price) => {
+                  void handleUpdateMarketListingPrice(id, price);
+                }}
+                onCancelMarketListing={(id) => {
+                  void handleCancelMarketListing(id);
+                }}
+                onClearMarketListingMessage={handleClearMarketListingMessage}
               />
             ) : null}
 

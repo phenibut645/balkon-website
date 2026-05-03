@@ -67,6 +67,45 @@ export type ApiMarketResponse = {
   message?: string;
 };
 
+export type ApiInventoryMarketListingResponse = ApiBaseResponse & {
+  data?: {
+    listingId: number;
+    inventoryItemId: number;
+    price: number;
+  };
+};
+
+export type ApiInventorySellToBotResponse = ApiBaseResponse & {
+  data?: {
+    inventoryItemId: number;
+    received: number;
+    balance: number;
+  };
+};
+
+export type ApiMarketListingBuyResponse = ApiBaseResponse & {
+  data?: {
+    listingId: number;
+    inventoryItemId: number;
+    balance: number;
+  };
+};
+
+export type ApiMarketListingUpdatePriceResponse = ApiBaseResponse & {
+  data?: {
+    listingId: number;
+    price: number;
+  };
+};
+
+export type ApiMarketListingCancelResponse = ApiBaseResponse & {
+  data?: {
+    listingId: number;
+    inventoryItemId: number;
+    cancelled: true;
+  };
+};
+
 export type UserIdentityView = {
   discordId: string;
   username: string | null;

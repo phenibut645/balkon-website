@@ -1,6 +1,7 @@
 import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DashboardText, formatDashboardDate } from "@/lib/dashboardText";
 import { InventoryItem } from "@/lib/types";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 type InventoryFilter = "all" | "materials" | "sellable" | "tradeable";
 
@@ -16,7 +17,22 @@ type InventoryPanelProps = {
   inventoryEmptyText: string;
   inventoryItems: InventoryItem[];
   dateLocale: string;
+  sellingInventoryId: number | null;
+  listingInventoryId: number | null;
+  inventoryActionFeedback: string | null;
+  inventoryActionError: string | null;
+  onSellToBot: (inventoryItemId: number) => void | Promise<void>;
+  onListOnMarket: (inventoryItemId: number, price: number) => void | Promise<void>;
 };
+
+function parsePositiveFinitePrice(raw: string): number | null {
+  const trimmed = raw.trim().replace(",", ".");
+  const n = Number(trimmed);
+  if (!Number.isFinite(n) || n <= 0) {
+    return null;
+  }
+  return n;
+}
 
 const GRID_GAP = 12;
 const CARD_MIN_WIDTH_DEFAULT = 185;
@@ -48,8 +64,17 @@ export function InventoryPanel({
   inventoryEmptyText,
   inventoryItems,
   dateLocale,
+  sellingInventoryId,
+  listingInventoryId,
+  inventoryActionFeedback,
+  inventoryActionError,
+  onSellToBot,
+  onListOnMarket,
 }: InventoryPanelProps) {
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [confirmSellItem, setConfirmSellItem] = useState<InventoryItem | null>(null);
+  const [listPriceDraft, setListPriceDraft] = useState("");
+  const [listPriceLocalError, setListPriceLocalError] = useState<string | null>(null);
   const [inventorySearchQuery, setInventorySearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [gridMetrics, setGridMetrics] = useState<GridMetrics>({
@@ -81,6 +106,11 @@ export function InventoryPanel({
       setSelectedItem(null);
     }
   }, [inventoryItems, selectedItem]);
+
+  useEffect(() => {
+    setListPriceDraft("");
+    setListPriceLocalError(null);
+  }, [selectedItem?.inventoryItemId]);
 
   useEffect(() => {
     if (inventoryLoading || inventoryError || filteredInventoryLength === 0) {
@@ -239,6 +269,33 @@ export function InventoryPanel({
     setInventorySearchQuery("");
   }, []);
 
+  const selectedCanSellToBot = Boolean(
+    selectedItem?.sellable && selectedItem.botSellPrice !== null,
+  );
+  const selectedCanListOnMarket = Boolean(selectedItem?.tradeable);
+
+  const handleConfirmSellToBot = useCallback(async () => {
+    const item = confirmSellItem;
+    if (!item) {
+      return;
+    }
+    await onSellToBot(item.inventoryItemId);
+    setConfirmSellItem(null);
+  }, [confirmSellItem, onSellToBot]);
+
+  const handleSubmitListPrice = useCallback(async () => {
+    if (!selectedItem) {
+      return;
+    }
+    const parsed = parsePositiveFinitePrice(listPriceDraft);
+    if (parsed === null) {
+      setListPriceLocalError(t.invalidPositiveFinitePrice);
+      return;
+    }
+    setListPriceLocalError(null);
+    await onListOnMarket(selectedItem.inventoryItemId, parsed);
+  }, [listPriceDraft, onListOnMarket, selectedItem, t.invalidPositiveFinitePrice]);
+
   const goToPreviousPage = useCallback(() => {
     setCurrentPage(prev => Math.max(1, prev - 1));
   }, []);
@@ -249,6 +306,23 @@ export function InventoryPanel({
 
   return (
     <div className="panel panel-inventory">
+      <ConfirmDialog
+        open={confirmSellItem !== null}
+        title={t.confirmSellToBotTitle}
+        message={confirmSellItem ? `${confirmSellItem.name}. ${t.confirmSellToBotMessage}` : ""}
+        confirmLabel={t.sellToBot}
+        cancelLabel={t.close}
+        busy={confirmSellItem !== null && sellingInventoryId === confirmSellItem.inventoryItemId}
+        onConfirm={() => {
+          void handleConfirmSellToBot();
+        }}
+        onCancel={() => {
+          if (confirmSellItem && sellingInventoryId === confirmSellItem.inventoryItemId) {
+            return;
+          }
+          setConfirmSellItem(null);
+        }}
+      />
       <div className="inventory-scroll">
         <div className="inventory-toolbar">
           <div className="inventory-toolbar-main">
@@ -465,6 +539,63 @@ export function InventoryPanel({
                           <p><strong>{t.originalOwner}:</strong> {selectedItem.originalOwnerDiscordId}</p>
                         ) : null}
                       </div>
+
+                      {selectedCanSellToBot || selectedCanListOnMarket ? (
+                        <div className="inventory-details-actions">
+                          {inventoryActionFeedback ? (
+                            <p className="state-text state-success">{inventoryActionFeedback}</p>
+                          ) : null}
+                          {inventoryActionError ? (
+                            <p className="state-text state-error">{inventoryActionError}</p>
+                          ) : null}
+                          <div className="inventory-actions-row">
+                            {selectedCanSellToBot ? (
+                              <button
+                                type="button"
+                                className="pagination-btn"
+                                disabled={sellingInventoryId === selectedItem.inventoryItemId || listingInventoryId === selectedItem.inventoryItemId}
+                                onClick={() => setConfirmSellItem(selectedItem)}
+                              >
+                                {sellingInventoryId === selectedItem.inventoryItemId ? t.sellingToBot : t.sellToBot}
+                              </button>
+                            ) : null}
+                            {selectedCanListOnMarket ? (
+                              <details className="inventory-list-on-market-details">
+                                <summary className="inventory-list-on-market-summary">{t.listOnMarket}</summary>
+                                <div className="inventory-list-on-market-fields">
+                                  <label className="inventory-price-label">
+                                    <span>{t.listingOfferPriceLabel}</span>
+                                    <input
+                                      type="text"
+                                      inputMode="decimal"
+                                      className="inventory-search-input compact"
+                                      placeholder={t.listingOfferPricePlaceholder}
+                                      value={listPriceDraft}
+                                      onChange={event => {
+                                        setListPriceDraft(event.target.value);
+                                        setListPriceLocalError(null);
+                                      }}
+                                    />
+                                  </label>
+                                  {listPriceLocalError ? (
+                                    <p className="state-text state-error">{listPriceLocalError}</p>
+                                  ) : null}
+                                  <button
+                                    type="button"
+                                    className="pagination-btn"
+                                    disabled={listingInventoryId === selectedItem.inventoryItemId || sellingInventoryId === selectedItem.inventoryItemId}
+                                    onClick={() => {
+                                      void handleSubmitListPrice();
+                                    }}
+                                  >
+                                    {listingInventoryId === selectedItem.inventoryItemId ? t.listingOnMarket : t.listOnMarket}
+                                  </button>
+                                </div>
+                              </details>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 </aside>

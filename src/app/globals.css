@@ -2725,6 +2725,10 @@ body {
   color: #ff9e9e;
 }
 
+.state-text.state-success {
+  color: #9ddcb0;
+}
+
 .state-empty {
   color: #97a4c0;
 }
@@ -3390,6 +3394,72 @@ body {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid rgba(79, 96, 133, 0.34);
+}
+
+.inventory-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.inventory-list-on-market-details {
+  flex: 1 1 100%;
+}
+
+.inventory-list-on-market-summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: #dce7ff;
+  list-style-position: outside;
+}
+
+.inventory-list-on-market-fields {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(79, 96, 133, 0.25);
+}
+
+.inventory-price-label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: #9eb0d4;
+}
+
+.inventory-search-input.compact {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.market-card-actions {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(79, 96, 133, 0.28);
+  display: grid;
+  gap: 8px;
+}
+
+.market-card-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.market-listing-price-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.market-listing-price-row .inventory-search-input.compact {
+  width: auto;
+  min-width: 100px;
+  max-width: 160px;
 }
 
 .inventory-details-empty {

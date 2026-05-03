@@ -24,6 +24,16 @@ type MarketPanelProps = {
   onRefreshListings: () => void;
   onRefreshCapitalization: () => void;
   onRefreshForbes: () => void;
+  myDiscordId: string;
+  marketBuyingListingId: number | null;
+  marketUpdatingListingId: number | null;
+  marketCancellingListingId: number | null;
+  marketListingFeedbackById: Record<number, string>;
+  marketListingErrorById: Record<number, string>;
+  onBuyMarketListing: (listingId: number) => void | Promise<void>;
+  onUpdateMarketListingPrice: (listingId: number, price: number) => void | Promise<void>;
+  onCancelMarketListing: (listingId: number) => void | Promise<void>;
+  onClearMarketListingMessage: (listingId: number) => void;
 };
 
 export function MarketPanel({
@@ -45,6 +55,16 @@ export function MarketPanel({
   onRefreshListings,
   onRefreshCapitalization,
   onRefreshForbes,
+  myDiscordId,
+  marketBuyingListingId,
+  marketUpdatingListingId,
+  marketCancellingListingId,
+  marketListingFeedbackById,
+  marketListingErrorById,
+  onBuyMarketListing,
+  onUpdateMarketListingPrice,
+  onCancelMarketListing,
+  onClearMarketListingMessage,
 }: MarketPanelProps) {
   return (
     <div className="panel panel-market">
@@ -106,6 +126,16 @@ export function MarketPanel({
             marketError={marketError}
             streamerMode={streamerMode}
             onRefresh={onRefreshListings}
+            myDiscordId={myDiscordId}
+            marketBuyingListingId={marketBuyingListingId}
+            marketUpdatingListingId={marketUpdatingListingId}
+            marketCancellingListingId={marketCancellingListingId}
+            marketListingFeedbackById={marketListingFeedbackById}
+            marketListingErrorById={marketListingErrorById}
+            onBuyMarketListing={onBuyMarketListing}
+            onUpdateMarketListingPrice={onUpdateMarketListingPrice}
+            onCancelMarketListing={onCancelMarketListing}
+            onClearMarketListingMessage={onClearMarketListingMessage}
           />
         )}
       </div>
